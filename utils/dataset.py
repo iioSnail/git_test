@@ -3,14 +3,14 @@ from torch.utils.data import Dataset
 
 class CSCDataset(Dataset):
 
-    def __init__(self, training_data):
+    def __init__(self, dataset):
         super(CSCDataset, self).__init__()
-        self.training_data = training_data
+        self.dataset = dataset
 
     def __getitem__(self, index):
-        src = self.training_data[index]['src']
-        tgt = self.training_data[index]['tgt']
+        src = self.dataset[index]['src']
+        tgt = self.dataset[index]['tgt']
         return src, tgt
 
     def __len__(self):
-        return len(self.training_data)
+        return len(self.dataset)

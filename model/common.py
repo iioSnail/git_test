@@ -50,6 +50,13 @@ class BERT(nn.Module):
         self.bert = AutoModel.from_pretrained(model_path)
 
     @staticmethod
+    def get_tokenizer(model_path="hfl/chinese-roberta-wwm-ext"):
+        if BERT.tokenizer is None:
+            BERT.tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+        return BERT.tokenizer
+
+    @staticmethod
     def get_bert_inputs(sentences, max_length=128, model_path="hfl/chinese-roberta-wwm-ext"):
         """
         The model instance of Hugging Face takes in special input parameters. Therefore,
@@ -58,12 +65,11 @@ class BERT(nn.Module):
         :param max_length: The max length of a sentence. The sentence will be padded or truncated if it's
                            length is greater than or less than the max length.
         """
-        if BERT.tokenizer is None:
-            BERT.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        tokenizer = BERT.get_tokenizer()
 
-        inputs = BERT.tokenizer(sentences,
-                                padding='max_length',
-                                max_length=max_length,
-                                return_tensors='pt',
-                                truncation=True)
+        inputs = tokenizer(sentences,
+                           padding='max_length',
+                           max_length=max_length,
+                           return_tensors='pt',
+                           truncation=True)
         return inputs
