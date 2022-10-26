@@ -9,6 +9,12 @@ class CSCBaseModel(nn.Module):
     def __init__(self):
         super(CSCBaseModel, self).__init__()
 
+    def forward(self, *args, **kwargs):
+        pass
+
+    def compute_loss(self, *args, **kwargs):
+        pass
+
     def predict(self, text):
         """
         Predict a sentence, which will revise the wrong characters in the sentence and return the correct sentence.

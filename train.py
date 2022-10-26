@@ -1,12 +1,12 @@
 import argparse
 import pickle
 
+import numpy as np
 import torch
-from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from model.CSCModelV1 import CSCModel
-from utils.dataloader import collate_fn, create_dataloader
-from utils.dataset import CSCDataset
+from utils.dataloader import create_dataloader
 from utils.utils import setup_seed
 
 
@@ -17,17 +17,110 @@ class Train(object):
         self.train_loader, self.valid_loader = create_dataloader(self.args)
         self.model = CSCModel()
 
-    def train_epoch(self):
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
 
-        for inputs, targets, detection_targets in self.train_loader:
+    def train_epoch(self):
+        progress = tqdm(self.train_loader, desc="Training")
+        for inputs, targets, detection_targets in progress:
+            inputs, targets, detection_targets = inputs.to(self.args.device), \
+                                                 targets.to(self.args.device), \
+                                                 detection_targets.to(self.args.device)
+            self.optimizer.zero_grad()
+
+            outputs, detection_outputs = self.model(inputs)
+            loss = self.model.compute_loss(outputs, targets, detection_outputs, detection_targets)
+            loss.backward()
+            self.optimizer.step()
+
+            outputs = outputs.argmax(dim=2)
+            matrix = Train.character_level_confusion_matrix(outputs, targets,
+                                                            detection_outputs, detection_targets,
+                                                            inputs.attention_mask)
+
+            detection_matrix = Train.compute_matrix(*matrix[0])
+            correction_matrix = Train.compute_matrix(*matrix[1])
+
+            progress.set_postfix({
+                'loss': loss.item(),
+                'd_precision': detection_matrix[0],
+                'd_recall': detection_matrix[1],
+                'd_f1_score': detection_matrix[2],
+                'c_precision': correction_matrix[0],
+                'c_recall': correction_matrix[1],
+                'c_f1_score': correction_matrix[2],
+            })
+
+    def train(self):
+        for epoch in range(self.args.epochs):
+            self.train_epoch()
+
+            self.validate()
+
+            torch.save({
+                'model': self.model.state_dict(),
+                'optimizer': self.optimizer.state_dict(),
+                'epoch': epoch + 1,
+            }, self.args.model_path)
+
+    def validate(self):
+        matrix = np.zeros([2, 4])
+
+        progress = tqdm(self.valid_loader, desc="Validation")
+        for inputs, targets, detection_targets in progress:
             inputs, targets, detection_targets = inputs.to(self.args.device), \
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
 
             outputs, detection_outputs = self.model(inputs)
-            print(outputs.size())
-            print(detection_outputs.size())
+            outputs = outputs.argmax(dim=2)
 
+            matrix += Train.character_level_confusion_matrix(outputs, targets,
+                                                             detection_outputs, detection_targets,
+                                                             inputs.attention_mask)
+
+            detection_matrix = Train.compute_matrix(*matrix[0])
+            correction_matrix = Train.compute_matrix(*matrix[1])
+            progress.set_postfix({
+                'd_precision': detection_matrix[0],
+                'd_recall': detection_matrix[1],
+                'd_f1_score': detection_matrix[2],
+                'c_precision': correction_matrix[0],
+                'c_recall': correction_matrix[1],
+                'c_f1_score': correction_matrix[2],
+            })
+
+        print("Detection Precision: {}, Recall: {}, F1-Score: {}".format(
+            *Train.character_level_confusion_matrix(*matrix[0])))
+        print("Correction Precision: {}, Recall: {}, F1-Score: {}".format(
+            *Train.character_level_confusion_matrix(*matrix[1])))
+
+    @staticmethod
+    def character_level_confusion_matrix(outputs, targets, detection_outputs, detection_targets, mask):
+        detection_targets[mask == 0] = -1
+        # todo mask
+
+        d_tp, d_fp, d_tn, d_fn = 0, 0, 0, 0
+        c_tp, c_fp, c_tn, c_fn = 0, 0, 0, 0
+
+        d_tp = (detection_outputs[detection_targets == 1] == 1).sum().item()
+        d_fp = (detection_targets[detection_outputs == 1] != 1).sum().item()
+        d_tn = (detection_outputs[detection_targets == 0] == 0).sum().item()
+        d_fn = (detection_targets[detection_outputs == 0] != 0).sum().item()
+
+        c_tp = (outputs[detection_targets == 1] == targets[detection_targets == 1]).sum().item()
+        c_fp = (outputs != targets)[detection_targets == 0].sum().item()
+        c_tn = (outputs == targets)[detection_targets == 0].sum().item()
+        c_fn = (outputs[detection_targets == 1] != targets[detection_targets == 1]).sum().item()
+
+        return np.array([[d_tp, d_fp, d_tn, d_fn],
+                         [c_tp, c_fp, c_tn, c_fn]])
+
+    @staticmethod
+    def compute_matrix(tp, fp, tn, fn):
+        precision = tp / (tp + fp + 1e-9)
+        recall = tp / (tp + fn + 1e-9)
+        f1_score = 2 * (precision * recall) / (precision + recall + 1e-9)
+        return precision, recall, f1_score
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
@@ -43,6 +136,8 @@ class Train(object):
         parser.add_argument('--log-interval', type=int, default='20',
                             help='Print training info every {log_interval} steps.')
         parser.add_argument('--seed', type=int, default=0, help='The random seed.')
+        parser.add_argument('--lr', type=float, default=2e-5, help='Learning rate.')
+        parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
 
         args = parser.parse_known_args()[0]
         print(args)
@@ -58,4 +153,4 @@ class Train(object):
 
 if __name__ == '__main__':
     train = Train()
-    train.train_epoch()
+    train.train()

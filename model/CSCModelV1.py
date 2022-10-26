@@ -57,9 +57,9 @@ class CorrectionModel(nn.Module):
         self.predict_layer = nn.Linear(768, len(BERT.get_tokenizer()))
 
     def forward(self, inputs, detection_outputs):
-        outputs = self.bert(**inputs)
+        outputs = self.bert(**inputs).last_hidden_state
         word_embeddings = self.word_embeddings(inputs['input_ids'])
-        outputs = detection_outputs * word_embeddings + (1 - detection_outputs) * outputs
+        outputs = detection_outputs.unsqueeze(2) * word_embeddings + (1 - detection_outputs).unsqueeze(2) * outputs
         return self.predict_layer(outputs)
 
 
@@ -72,7 +72,18 @@ class CSCModel(CSCBaseModel):
         self.detection_model = DetectionModel(self.bert)
         self.correction_model = CorrectionModel(self.bert)
 
+        self.detection_criteria = nn.BCELoss()
+        self.correction_criteria = nn.CrossEntropyLoss()
+
     def forward(self, inputs):
         detection_outputs = self.detection_model(inputs)
         outputs = self.correction_model(inputs, detection_outputs)
         return outputs, detection_outputs
+
+    def compute_loss(self, outputs, targets, detection_outputs, detection_targets, coefficient=0.7):
+        detection_loss = self.detection_criteria(detection_outputs, detection_targets)
+        outputs = outputs.view(outputs.size(0) * outputs.size(1), -1)
+        targets = targets.view(-1)
+        correction_loss = self.correction_criteria(outputs, targets)
+
+        return coefficient * correction_loss + (1 - coefficient) * detection_loss
