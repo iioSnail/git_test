@@ -15,7 +15,7 @@ class Train(object):
     def __init__(self):
         self.args = self.parse_args()
         self.train_loader, self.valid_loader = create_dataloader(self.args)
-        self.model = CSCModel()
+        self.model = CSCModel().to(self.args.device)
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
 
