@@ -28,12 +28,13 @@ class DetectionModel(nn.Module):
 
         self.norm = LayerNorm(768)
 
-    def forward(self, inputs):
+    def forward(self, inputs, bert_outputs):
         token_num = inputs['input_ids'].size(1)
-        outputs = self.bert(**inputs)
-        word_embeddings = self.word_embeddings(inputs['input_ids'])
-        cls_outputs = outputs.last_hidden_state[:, 0:1, :].repeat(1, token_num, 1)
-        outputs = torch.concat([outputs.last_hidden_state, word_embeddings, cls_outputs], dim=2)
+        outputs = bert_outputs
+        with torch.no_grad():
+            word_embeddings = self.word_embeddings(inputs['input_ids'])
+        cls_outputs = outputs[:, 0:1, :].repeat(1, token_num, 1)
+        outputs = torch.concat([outputs, word_embeddings, cls_outputs], dim=2)
         fusion_outputs = self.fusion_layer(outputs)
 
         x = fusion_outputs
@@ -46,6 +47,9 @@ class DetectionModel(nn.Module):
         outputs = self.norm(outputs)
         return self.output_layer(outputs).squeeze(2) * inputs['attention_mask']
 
+    def get_optimized_params(self):
+        return list(set(self.parameters()) - set(self.bert.parameters()))
+
 
 class CorrectionModel(nn.Module):
 
@@ -56,12 +60,14 @@ class CorrectionModel(nn.Module):
         self.word_embeddings = self.bert.get_input_embeddings()
         self.predict_layer = nn.Linear(768, len(BERT.get_tokenizer()))
 
-    def forward(self, inputs, detection_outputs):
-        outputs = self.bert(**inputs).last_hidden_state
+    def forward(self, inputs, detection_outputs, bert_outputs):
+        outputs = bert_outputs
         word_embeddings = self.word_embeddings(inputs['input_ids'])
         outputs = detection_outputs.unsqueeze(2) * word_embeddings + (1 - detection_outputs).unsqueeze(2) * outputs
         return self.predict_layer(outputs)
 
+    def get_optimized_params(self):
+        return list(set(self.parameters()) - set(self.bert.parameters()))
 
 class CSCModel(CSCBaseModel):
 
@@ -76,14 +82,17 @@ class CSCModel(CSCBaseModel):
         self.correction_criteria = nn.CrossEntropyLoss()
 
     def forward(self, inputs):
-        detection_outputs = self.detection_model(inputs)
-        outputs = self.correction_model(inputs, detection_outputs)
+        with torch.no_grad():
+            bert_outputs = self.bert(**inputs).last_hidden_state
+
+        detection_outputs = self.detection_model(inputs, bert_outputs)
+        outputs = self.correction_model(inputs, detection_outputs, bert_outputs)
         return outputs, detection_outputs
 
-    def compute_loss(self, outputs, targets, detection_outputs, detection_targets, coefficient=0.7):
+    def compute_loss(self, outputs, targets, detection_outputs, detection_targets):
         detection_loss = self.detection_criteria(detection_outputs, detection_targets)
         outputs = outputs.view(outputs.size(0) * outputs.size(1), -1)
         targets = targets.view(-1)
         correction_loss = self.correction_criteria(outputs, targets)
 
-        return coefficient * correction_loss + (1 - coefficient) * detection_loss
+        return detection_loss, correction_loss

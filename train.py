@@ -15,9 +15,10 @@ class Train(object):
     def __init__(self):
         self.args = self.parse_args()
         self.train_loader, self.valid_loader = create_dataloader(self.args)
-        self.model = CSCModel().to(self.args.device)
+        self.model = CSCModel().train().to(self.args.device)
 
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
+        self.detection_optimizer = torch.optim.Adam(self.model.detection_model.get_optimized_params(), lr=self.args.lr)
+        self.correction_optimizer = torch.optim.Adam(self.model.correction_model.get_optimized_params(), lr=self.args.lr)
 
     def train_epoch(self):
         progress = tqdm(self.train_loader, desc="Training")
@@ -25,12 +26,15 @@ class Train(object):
             inputs, targets, detection_targets = inputs.to(self.args.device), \
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
-            self.optimizer.zero_grad()
+            self.detection_optimizer.zero_grad()
+            self.correction_optimizer.zero_grad()
 
             outputs, detection_outputs = self.model(inputs)
-            loss = self.model.compute_loss(outputs, targets, detection_outputs, detection_targets)
-            loss.backward()
-            self.optimizer.step()
+            d_loss, c_loss = self.model.compute_loss(outputs, targets, detection_outputs, detection_targets)
+            d_loss.backward()
+            c_loss.backward()
+            self.detection_optimizer.step()
+            self.correction_optimizer.step()
 
             outputs = outputs.argmax(dim=2)
             matrix = Train.character_level_confusion_matrix(outputs, targets,
@@ -41,7 +45,8 @@ class Train(object):
             correction_matrix = Train.compute_matrix(*matrix[1])
 
             progress.set_postfix({
-                'loss': loss.item(),
+                'd_loss': d_loss.item(),
+                'c_loss': c_loss.item(),
                 'd_precision': detection_matrix[0],
                 'd_recall': detection_matrix[1],
                 'd_f1_score': detection_matrix[2],
@@ -58,7 +63,8 @@ class Train(object):
 
             torch.save({
                 'model': self.model.state_dict(),
-                'optimizer': self.optimizer.state_dict(),
+                'd_optimizer': self.detection_optimizer.state_dict(),
+                'c_optimizer': self.correction_optimizer.state_dict(),
                 'epoch': epoch + 1,
             }, self.args.model_path)
 
