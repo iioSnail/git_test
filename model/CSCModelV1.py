@@ -31,8 +31,7 @@ class DetectionModel(nn.Module):
     def forward(self, inputs, bert_outputs):
         token_num = inputs['input_ids'].size(1)
         outputs = bert_outputs
-        with torch.no_grad():
-            word_embeddings = self.word_embeddings(inputs['input_ids'])
+        word_embeddings = self.word_embeddings(inputs['input_ids'])
         cls_outputs = outputs[:, 0:1, :].repeat(1, token_num, 1)
         outputs = torch.concat([outputs, word_embeddings, cls_outputs], dim=2)
         fusion_outputs = self.fusion_layer(outputs)
