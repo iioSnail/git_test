@@ -18,7 +18,8 @@ class Train(object):
         self.model = CSCModel().train().to(self.args.device)
 
         self.detection_optimizer = torch.optim.Adam(self.model.detection_model.get_optimized_params(), lr=self.args.lr)
-        self.correction_optimizer = torch.optim.Adam(self.model.correction_model.get_optimized_params(), lr=self.args.lr)
+        self.correction_optimizer = torch.optim.Adam(self.model.correction_model.get_optimized_params(),
+                                                     lr=self.args.lr)
 
     def train_epoch(self):
         progress = tqdm(self.train_loader, desc="Training")
@@ -37,7 +38,7 @@ class Train(object):
             self.correction_optimizer.step()
 
             outputs = outputs.argmax(dim=2)
-            matrix = Train.character_level_confusion_matrix(outputs, targets,
+            matrix = self.character_level_confusion_matrix(outputs, targets,
                                                             detection_outputs, detection_targets,
                                                             inputs.attention_mask)
 
@@ -80,7 +81,7 @@ class Train(object):
             outputs, detection_outputs = self.model(inputs)
             outputs = outputs.argmax(dim=2)
 
-            matrix += Train.character_level_confusion_matrix(outputs, targets,
+            matrix += self.character_level_confusion_matrix(outputs, targets,
                                                              detection_outputs, detection_targets,
                                                              inputs.attention_mask)
 
@@ -96,17 +97,18 @@ class Train(object):
             })
 
         print("Detection Precision: {}, Recall: {}, F1-Score: {}".format(
-            *Train.character_level_confusion_matrix(*matrix[0])))
+            *self.character_level_confusion_matrix(*matrix[0])))
         print("Correction Precision: {}, Recall: {}, F1-Score: {}".format(
-            *Train.character_level_confusion_matrix(*matrix[1])))
+            *self.character_level_confusion_matrix(*matrix[1])))
 
-    @staticmethod
-    def character_level_confusion_matrix(outputs, targets, detection_outputs, detection_targets, mask):
+    def character_level_confusion_matrix(self, outputs, targets,
+                                         detection_outputs, detection_targets, mask):
         detection_targets[mask == 0] = -1
-        # todo mask
+        detection_outputs[mask != 1] = -1
+        detection_outputs[detection_outputs >= self.args.error_threshold] = 1
+        detection_outputs[(detection_outputs < self.args.error_threshold) & (detection_outputs >= 0)] = 0
 
-        d_tp, d_fp, d_tn, d_fn = 0, 0, 0, 0
-        c_tp, c_fp, c_tn, c_fn = 0, 0, 0, 0
+        # todo replace 101 and 102
 
         d_tp = (detection_outputs[detection_targets == 1] == 1).sum().item()
         d_fp = (detection_targets[detection_outputs == 1] != 1).sum().item()
@@ -144,6 +146,9 @@ class Train(object):
         parser.add_argument('--seed', type=int, default=0, help='The random seed.')
         parser.add_argument('--lr', type=float, default=2e-5, help='Learning rate.')
         parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
+        parser.add_argument('--error-threshold', type=float, default=0.5,
+                            help='When detection logit greater than {error_threshold}, '
+                                 'the token will be treated as error.')
 
         args = parser.parse_known_args()[0]
         print(args)

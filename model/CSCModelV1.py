@@ -85,7 +85,7 @@ class CSCModel(CSCBaseModel):
             bert_outputs = self.bert(**inputs).last_hidden_state
 
         detection_outputs = self.detection_model(inputs, bert_outputs)
-        outputs = self.correction_model(inputs, detection_outputs, bert_outputs)
+        outputs = self.correction_model(inputs, detection_outputs.clone().detach(), bert_outputs)
         return outputs, detection_outputs
 
     def compute_loss(self, outputs, targets, detection_outputs, detection_targets):
