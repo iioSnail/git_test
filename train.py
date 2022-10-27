@@ -1,4 +1,5 @@
 import argparse
+import os
 import pickle
 import signal
 from pathlib import Path
@@ -30,9 +31,8 @@ class Train(object):
 
     def train_epoch(self):
         self.model = self.model.train()
-        # progress = tqdm(self.train_loader, desc="Training")
-        for inputs, targets, detection_targets in self.train_loader:
-            print(2)
+        progress = tqdm(self.train_loader, desc="Training")
+        for inputs, targets, detection_targets in progress:
             inputs, targets, detection_targets = inputs.to(self.args.device), \
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
@@ -56,16 +56,16 @@ class Train(object):
             detection_matrix = Train.compute_matrix(*matrix[0])
             correction_matrix = Train.compute_matrix(*matrix[1])
 
-            # progress.set_postfix({
-            #     'd_loss': d_loss.item(),
-            #     'c_loss': c_loss.item(),
-            #     'd_precision': detection_matrix[0],
-            #     'd_recall': detection_matrix[1],
-            #     'd_f1_score': detection_matrix[2],
-            #     'c_precision': correction_matrix[0],
-            #     'c_recall': correction_matrix[1],
-            #     'c_f1_score': correction_matrix[2],
-            # })
+            progress.set_postfix({
+                'd_loss': d_loss.item(),
+                'c_loss': c_loss.item(),
+                'd_precision': detection_matrix[0],
+                'd_recall': detection_matrix[1],
+                'd_f1_score': detection_matrix[2],
+                'c_precision': correction_matrix[0],
+                'c_recall': correction_matrix[1],
+                'c_f1_score': correction_matrix[2],
+            })
 
             self.writer.add_scalar(tag="detection/d_loss", scalar_value=d_loss.item(),
                                    global_step=self.total_step)
@@ -90,15 +90,35 @@ class Train(object):
             try:
                 self.train_epoch()
                 self.validate()
-            except KeyboardInterrupt as e:
-                print("save_model")
+            except KeyboardInterrupt:
+                # This error can't be raised on the windows platform, but I don't know why.
+                print("Received Ctrl-C command, training is about to terminal. Save model state to",
+                      self.args.output_path)
+                self.save_model_state(epoch)
+                exit()
 
-            torch.save({
-                'model': self.model.state_dict(),
-                'd_optimizer': self.detection_optimizer.state_dict(),
-                'c_optimizer': self.correction_optimizer.state_dict(),
-                'epoch': epoch + 1,
-            }, self.args.output_path / 'csc-model.pt')
+            # Save model at the end of every epoch.
+            self.save_model_state(epoch + 1)
+
+    def save_model_state(self, epoch):
+        torch.save({
+            'model': self.model.state_dict(),
+            'd_optimizer': self.detection_optimizer.state_dict(),
+            'c_optimizer': self.correction_optimizer.state_dict(),
+            'epoch': epoch,
+            'total_step': self.total_step
+        }, self.args.model_state_path)
+
+    def resume(self):
+        # Resume model training.
+        if not os.path.exists(self.args.model_state_path):
+            print("There is no model file in %s, so it can't resume training. "
+                  "Training will start at the beginning." % self.args.output_path)
+            return
+
+        # toDO
+        # torch.load()
+
 
     def validate(self):
         self.model = self.model.eval()
@@ -141,8 +161,6 @@ class Train(object):
         detection_outputs[detection_outputs >= self.args.error_threshold] = 1
         detection_outputs[(detection_outputs < self.args.error_threshold) & (detection_outputs >= 0)] = 0
 
-        # todo replace 101 and 102
-
         d_tp = (detection_outputs[detection_targets == 1] == 1).sum().item()
         d_fp = (detection_targets[detection_outputs == 1] != 1).sum().item()
         d_tn = (detection_outputs[detection_targets == 0] == 0).sum().item()
@@ -162,7 +180,6 @@ class Train(object):
         recall = tp / (tp + fn + 1e-9)
         f1_score = 2 * (precision * recall) / (precision + recall + 1e-9)
         return precision, recall, f1_score
-
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
@@ -185,6 +202,7 @@ class Train(object):
         parser.add_argument('--output-path', type=str, default='./output',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
+        parser.add_argument('--resume', type=bool, default=True, help='Resume training.')
 
         args = parser.parse_known_args()[0]
         print(args)
@@ -199,17 +217,11 @@ class Train(object):
         setup_seed(args.seed)
         mkdir(args.output_path)
         args.output_path = Path(args.output_path)
+        args.model_state_path = str(args.output_path / 'csc-model.pt')
 
         return args
 
-def save_model_before_exit(signum, frame):
-    print("save_model")
-    exit()
 
 if __name__ == '__main__':
-    print("2")
-    signal.signal(signal.SIGINT, save_model_before_exit)
-    signal.signal(signal.SIGTERM, save_model_before_exit)
-
     train = Train()
     train.train()
