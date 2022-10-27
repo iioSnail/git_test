@@ -1,13 +1,16 @@
 import argparse
 import pickle
+import signal
+from pathlib import Path
 
 import numpy as np
 import torch
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from model.CSCModelV1 import CSCModel
 from utils.dataloader import create_dataloader
-from utils.utils import setup_seed
+from utils.utils import setup_seed, mkdir
 
 
 class Train(object):
@@ -17,13 +20,19 @@ class Train(object):
         self.train_loader, self.valid_loader = create_dataloader(self.args)
         self.model = CSCModel().train().to(self.args.device)
 
-        self.detection_optimizer = torch.optim.Adam(self.model.detection_model.get_optimized_params(), lr=self.args.lr)
+        self.detection_optimizer = torch.optim.Adam(self.model.detection_model.get_optimized_params(),
+                                                    lr=self.args.d_lr)
         self.correction_optimizer = torch.optim.Adam(self.model.correction_model.get_optimized_params(),
-                                                     lr=self.args.lr)
+                                                     lr=self.args.c_lr)
+
+        self.writer = SummaryWriter(log_dir=self.args.output_path / 'runs' / 'csc_model')
+        self.total_step = 0
 
     def train_epoch(self):
-        progress = tqdm(self.train_loader, desc="Training")
-        for inputs, targets, detection_targets in progress:
+        self.model = self.model.train()
+        # progress = tqdm(self.train_loader, desc="Training")
+        for inputs, targets, detection_targets in self.train_loader:
+            print(2)
             inputs, targets, detection_targets = inputs.to(self.args.device), \
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
@@ -37,39 +46,63 @@ class Train(object):
             self.detection_optimizer.step()
             self.correction_optimizer.step()
 
+            self.total_step += 1
+
             outputs = outputs.argmax(dim=2)
             matrix = self.character_level_confusion_matrix(outputs, targets,
-                                                            detection_outputs, detection_targets,
-                                                            inputs.attention_mask)
+                                                           detection_outputs, detection_targets,
+                                                           inputs.attention_mask)
 
             detection_matrix = Train.compute_matrix(*matrix[0])
             correction_matrix = Train.compute_matrix(*matrix[1])
 
-            progress.set_postfix({
-                'd_loss': d_loss.item(),
-                'c_loss': c_loss.item(),
-                'd_precision': detection_matrix[0],
-                'd_recall': detection_matrix[1],
-                'd_f1_score': detection_matrix[2],
-                'c_precision': correction_matrix[0],
-                'c_recall': correction_matrix[1],
-                'c_f1_score': correction_matrix[2],
-            })
+            # progress.set_postfix({
+            #     'd_loss': d_loss.item(),
+            #     'c_loss': c_loss.item(),
+            #     'd_precision': detection_matrix[0],
+            #     'd_recall': detection_matrix[1],
+            #     'd_f1_score': detection_matrix[2],
+            #     'c_precision': correction_matrix[0],
+            #     'c_recall': correction_matrix[1],
+            #     'c_f1_score': correction_matrix[2],
+            # })
+
+            self.writer.add_scalar(tag="detection/d_loss", scalar_value=d_loss.item(),
+                                   global_step=self.total_step)
+            self.writer.add_scalar(tag="detection/d_precision", scalar_value=detection_matrix[0],
+                                   global_step=self.total_step)
+            self.writer.add_scalar(tag="detection/d_recall", scalar_value=detection_matrix[1],
+                                   global_step=self.total_step)
+            self.writer.add_scalar(tag="detection/d_f1_score", scalar_value=detection_matrix[2],
+                                   global_step=self.total_step)
+
+            self.writer.add_scalar(tag="correction/c_loss", scalar_value=c_loss.item(),
+                                   global_step=self.total_step)
+            self.writer.add_scalar(tag="correction/c_precision", scalar_value=correction_matrix[0],
+                                   global_step=self.total_step)
+            self.writer.add_scalar(tag="correction/c_recall", scalar_value=correction_matrix[1],
+                                   global_step=self.total_step)
+            self.writer.add_scalar(tag="correction/c_f1_score", scalar_value=correction_matrix[2],
+                                   global_step=self.total_step)
 
     def train(self):
         for epoch in range(self.args.epochs):
-            self.train_epoch()
-
-            self.validate()
+            try:
+                self.train_epoch()
+                self.validate()
+            except KeyboardInterrupt as e:
+                print("save_model")
 
             torch.save({
                 'model': self.model.state_dict(),
                 'd_optimizer': self.detection_optimizer.state_dict(),
                 'c_optimizer': self.correction_optimizer.state_dict(),
                 'epoch': epoch + 1,
-            }, self.args.model_path)
+            }, self.args.output_path / 'csc-model.pt')
 
     def validate(self):
+        self.model = self.model.eval()
+
         matrix = np.zeros([2, 4])
 
         progress = tqdm(self.valid_loader, desc="Validation")
@@ -82,8 +115,8 @@ class Train(object):
             outputs = outputs.argmax(dim=2)
 
             matrix += self.character_level_confusion_matrix(outputs, targets,
-                                                             detection_outputs, detection_targets,
-                                                             inputs.attention_mask)
+                                                            detection_outputs, detection_targets,
+                                                            inputs.attention_mask)
 
             detection_matrix = Train.compute_matrix(*matrix[0])
             correction_matrix = Train.compute_matrix(*matrix[1])
@@ -130,6 +163,7 @@ class Train(object):
         f1_score = 2 * (precision * recall) / (precision + recall + 1e-9)
         return precision, recall, f1_score
 
+
     def parse_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
@@ -137,18 +171,20 @@ class Train(object):
                             help='The file path of training data.')
         parser.add_argument('--valid-ratio', type=float, default=0.2,
                             help='The ratio of splitting validation set.')
-        parser.add_argument('--model-path', type=str, default='./output/models/csc-model.pt',
-                            help='The save path of the model.')
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for training. auto, cpu or cuda')
         parser.add_argument('--log-interval', type=int, default='20',
                             help='Print training info every {log_interval} steps.')
         parser.add_argument('--seed', type=int, default=0, help='The random seed.')
-        parser.add_argument('--lr', type=float, default=2e-5, help='Learning rate.')
+        parser.add_argument('--d-lr', type=float, default=2e-5, help='The learning rate of Detection Network.')
+        parser.add_argument('--c-lr', type=float, default=1e-4, help='The learning rate of Correction Network.')
         parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
         parser.add_argument('--error-threshold', type=float, default=0.5,
                             help='When detection logit greater than {error_threshold}, '
                                  'the token will be treated as error.')
+        parser.add_argument('--output-path', type=str, default='./output',
+                            help='The path of output files while running, '
+                                 'including model state file, tensorboard files, etc.')
 
         args = parser.parse_known_args()[0]
         print(args)
@@ -158,10 +194,22 @@ class Train(object):
         else:
             args.device = torch.device(args.device)
 
+        print("Device:", args.device)
+
         setup_seed(args.seed)
+        mkdir(args.output_path)
+        args.output_path = Path(args.output_path)
+
         return args
 
+def save_model_before_exit(signum, frame):
+    print("save_model")
+    exit()
 
 if __name__ == '__main__':
+    print("2")
+    signal.signal(signal.SIGINT, save_model_before_exit)
+    signal.signal(signal.SIGTERM, save_model_before_exit)
+
     train = Train()
     train.train()

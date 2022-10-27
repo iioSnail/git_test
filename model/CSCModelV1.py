@@ -68,6 +68,7 @@ class CorrectionModel(nn.Module):
     def get_optimized_params(self):
         return list(set(self.parameters()) - set(self.bert.parameters()))
 
+
 class CSCModel(CSCBaseModel):
 
     def __init__(self):
