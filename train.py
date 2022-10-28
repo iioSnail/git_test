@@ -131,12 +131,6 @@ class Train(object):
 
         checkpoint = torch.load(self.args.checkpoint_path)
         self.model.load_state_dict(checkpoint['model'])
-
-        self.detection_optimizer = torch.optim.Adam(self.model.detection_model.get_optimized_params(),
-                                                    lr=self.args.d_lr)
-        self.correction_optimizer = torch.optim.Adam(self.model.correction_model.get_optimized_params(),
-                                                     lr=self.args.c_lr)
-
         self.detection_optimizer.load_state_dict(checkpoint['d_optimizer'])
         self.correction_optimizer.load_state_dict(checkpoint['c_optimizer'])
         self.total_step = checkpoint['total_step']

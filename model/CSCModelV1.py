@@ -47,7 +47,12 @@ class DetectionModel(nn.Module):
         return self.output_layer(outputs).squeeze(2) * inputs['attention_mask']
 
     def get_optimized_params(self):
-        return list(set(self.parameters()) - set(self.bert.parameters()))
+        params = []
+        for key, value in self.named_parameters():
+            if not key.startswith("bert."):
+                params.append(value)
+
+        return params
 
 
 class CorrectionModel(nn.Module):
@@ -66,7 +71,12 @@ class CorrectionModel(nn.Module):
         return self.predict_layer(outputs)
 
     def get_optimized_params(self):
-        return list(set(self.parameters()) - set(self.bert.parameters()))
+        params = []
+        for key, value in self.named_parameters():
+            if not key.startswith("bert."):
+                params.append(value)
+
+        return params
 
 
 class CSCModel(CSCBaseModel):
