@@ -28,11 +28,19 @@ class Train(object):
 
         self.writer = SummaryWriter(log_dir=self.args.output_path / 'runs' / 'csc_model')
         self.total_step = 0
+        self.current_epoch = 0
 
     def train_epoch(self):
         self.model = self.model.train()
-        progress = tqdm(self.train_loader, desc="Training")
-        for inputs, targets, detection_targets in progress:
+        progress = tqdm(self.train_loader, desc="Epoch {} Training".format(self.current_epoch))
+        for i, (inputs, targets, detection_targets) in enumerate(progress):
+
+            if self.args.resume and self.total_step < self.current_epoch * len(self.train_loader) + i:
+                # Resume the progress of training loader.
+                continue
+            else:
+                self.args.resume = False
+
             inputs, targets, detection_targets = inputs.to(self.args.device), \
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
@@ -86,10 +94,15 @@ class Train(object):
                                    global_step=self.total_step)
 
     def train(self):
+        if self.args.resume:
+            self.resume()
+
         for epoch in range(self.args.epochs):
             try:
                 self.train_epoch()
                 self.validate()
+
+                self.current_epoch += 1
             except KeyboardInterrupt:
                 # This error can't be raised on the windows platform, but I don't know why.
                 print("Received Ctrl-C command, training is about to terminal. Save model state to",
@@ -107,25 +120,27 @@ class Train(object):
             'c_optimizer': self.correction_optimizer.state_dict(),
             'epoch': epoch,
             'total_step': self.total_step
-        }, self.args.model_state_path)
+        }, self.args.checkpoint_path)
 
     def resume(self):
         # Resume model training.
-        if not os.path.exists(self.args.model_state_path):
+        if not os.path.exists(self.args.checkpoint_path):
             print("There is no model file in %s, so it can't resume training. "
                   "Training will start at the beginning." % self.args.output_path)
-            return
 
-        # toDO
-        # torch.load()
-
+        checkpoint = torch.load(self.args.checkpoint_path)
+        self.model.load_state_dict(checkpoint['model'])
+        self.detection_optimizer.load_state_dict(checkpoint['d_optimizer'])
+        self.correction_optimizer.load_state_dict(checkpoint['c_optimizer'])
+        self.total_step = checkpoint['total_step']
+        self.current_epoch = checkpoint['epoch']
 
     def validate(self):
         self.model = self.model.eval()
 
         matrix = np.zeros([2, 4])
 
-        progress = tqdm(self.valid_loader, desc="Validation")
+        progress = tqdm(self.valid_loader, desc="Epoch {} Validation".format(self.current_epoch))
         for inputs, targets, detection_targets in progress:
             inputs, targets, detection_targets = inputs.to(self.args.device), \
                                                  targets.to(self.args.device), \
@@ -217,7 +232,7 @@ class Train(object):
         setup_seed(args.seed)
         mkdir(args.output_path)
         args.output_path = Path(args.output_path)
-        args.model_state_path = str(args.output_path / 'csc-model.pt')
+        args.checkpoint_path = str(args.output_path / 'csc-model.pt')
 
         return args
 
