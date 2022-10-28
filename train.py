@@ -127,6 +127,7 @@ class Train(object):
         if not os.path.exists(self.args.checkpoint_path):
             print("There is no model file in %s, so it can't resume training. "
                   "Training will start at the beginning." % self.args.output_path)
+            return
 
         checkpoint = torch.load(self.args.checkpoint_path)
         self.model.load_state_dict(checkpoint['model'])
@@ -134,6 +135,8 @@ class Train(object):
         self.correction_optimizer.load_state_dict(checkpoint['c_optimizer'])
         self.total_step = checkpoint['total_step']
         self.current_epoch = checkpoint['epoch']
+
+        print("Resume Training. Epoch: {}. Total Step: {}.".format(self.current_epoch, self.total_step))
 
     def validate(self):
         self.model = self.model.eval()
