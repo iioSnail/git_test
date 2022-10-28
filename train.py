@@ -1,7 +1,6 @@
 import argparse
+import collections
 import os
-import pickle
-import signal
 from pathlib import Path
 
 import numpy as np
@@ -29,6 +28,14 @@ class Train(object):
         self.writer = SummaryWriter(log_dir=self.args.output_path / 'runs' / 'csc_model')
         self.total_step = 0
         self.current_epoch = 0
+
+        self.recent_detection_f1_score = collections.deque(maxlen=5)
+        self.recent_correction_f1_score = collections.deque(maxlen=5)
+        self.detection_best_f1_score = 0
+        self.correction_best_f1_score = 0
+
+        self.detection_stop_training = False
+        self.correction_stop_training = False
 
     def train_epoch(self):
         self.model = self.model.train()
@@ -109,9 +116,24 @@ class Train(object):
                       self.args.output_path)
                 self.save_model_state(epoch)
                 exit()
+            except BaseException as e:
+                print(e)
+                print("Unexpected exception happened. The program is about to exit. Save model state to",
+                      self.args.output_pathh)
+                exit()
 
             # Save model at the end of every epoch.
             self.save_model_state(epoch + 1)
+
+            if not self.detection_stop_training and self.recent_detection_f1_score[-1] > self.detection_best_f1_score:
+                self.detection_best_f1_score = self.recent_detection_f1_score[-1]
+                self.save_model()
+
+            if not self.detection_stop_training \
+                    and len(self.recent_detection_f1_score) == self.recent_detection_f1_score.maxlen \
+                    and self.detection_best_f1_score > max(self.recent_detection_f1_score):
+                self.detection_stop_training = True
+                self.load_model()
 
     def save_model_state(self, epoch):
         torch.save({
@@ -121,6 +143,12 @@ class Train(object):
             'epoch': epoch,
             'total_step': self.total_step
         }, self.args.checkpoint_path)
+
+    def save_model(self):
+        torch.save(self.model.state_dict(), self.args.model_path)
+
+    def load_model(self):
+        self.model = torch.load(self.args.model_path)
 
     def resume(self):
         # Resume model training.
@@ -167,10 +195,14 @@ class Train(object):
                 'c_f1_score': correction_matrix[2],
             })
 
-        print("Detection Precision: {}, Recall: {}, F1-Score: {}".format(
-            *self.character_level_confusion_matrix(*matrix[0])))
-        print("Correction Precision: {}, Recall: {}, F1-Score: {}".format(
-            *self.character_level_confusion_matrix(*matrix[1])))
+        d_p, d_r, d_f1 = self.character_level_confusion_matrix(*matrix[0])
+        print("Detection Precision: {}, Recall: {}, F1-Score: {}".format(d_p, d_r, d_f1))
+
+        c_p, c_r, c_f1 = self.character_level_confusion_matrix(*matrix[1])
+        print("Correction Precision: {}, Recall: {}, F1-Score: {}".format(c_p, c_r, c_f1))
+
+        self.recent_detection_f1_score.append(d_f1)
+        self.recent_correction_f1_score.append(c_f1)
 
     def character_level_confusion_matrix(self, outputs, targets,
                                          detection_outputs, detection_targets, mask):
@@ -236,6 +268,7 @@ class Train(object):
         mkdir(args.output_path)
         args.output_path = Path(args.output_path)
         args.checkpoint_path = str(args.output_path / 'csc-model.pt')
+        args.model_path = str(args.output_path / 'csc-best-model.pt')
 
         return args
 
