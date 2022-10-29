@@ -35,7 +35,6 @@ class Train(object):
         self.correction_best_f1_score = 0
 
         self.detection_stop_training = False
-        self.correction_stop_training = False
 
     def train_epoch(self):
         self.model = self.model.train()
@@ -134,6 +133,19 @@ class Train(object):
                     and self.detection_best_f1_score > max(self.recent_detection_f1_score):
                 self.detection_stop_training = True
                 self.load_model()
+                self.recent_correction_f1_score.clear()
+
+            if self.detection_stop_training and self.recent_correction_f1_score[-1] > self.correction_best_f1_score:
+                self.correction_best_f1_score = self.recent_correction_f1_score[-1]
+                self.save_model()
+
+            if self.detection_stop_training \
+                    and len(self.recent_correction_f1_score) == self.recent_correction_f1_score.maxlen \
+                    and self.correction_best_f1_score > max(self.recent_correction_f1_score):
+                print("Early stop Training. The best model is saved to", self.args.model_path)
+                break
+
+        print("Finish Training. The best model is saved to", self.args.model_path)
 
     def save_model_state(self, epoch):
         torch.save({
@@ -148,7 +160,7 @@ class Train(object):
         torch.save(self.model.state_dict(), self.args.model_path)
 
     def load_model(self):
-        self.model = torch.load(self.args.model_path)
+        self.model.load_state_dict(torch.load(self.args.model_path))
 
     def resume(self):
         # Resume model training.
