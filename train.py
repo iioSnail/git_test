@@ -55,9 +55,11 @@ class Train(object):
 
             outputs, detection_outputs = self.model(inputs)
             d_loss, c_loss = self.model.compute_loss(outputs, targets, detection_outputs, detection_targets)
-            d_loss.backward()
+            if not self.detection_stop_training:
+                d_loss.backward()
+                self.detection_optimizer.step()
+
             c_loss.backward()
-            self.detection_optimizer.step()
             self.correction_optimizer.step()
 
             self.total_step += 1
@@ -118,7 +120,7 @@ class Train(object):
             except BaseException as e:
                 print(e)
                 print("Unexpected exception happened. The program is about to exit. Save model state to",
-                      self.args.output_pathh)
+                      self.args.output_path)
                 exit()
 
             # Save model at the end of every epoch.
@@ -134,6 +136,7 @@ class Train(object):
                 self.detection_stop_training = True
                 self.load_model()
                 self.recent_correction_f1_score.clear()
+                continue
 
             if self.detection_stop_training and self.recent_correction_f1_score[-1] > self.correction_best_f1_score:
                 self.correction_best_f1_score = self.recent_correction_f1_score[-1]
@@ -207,10 +210,10 @@ class Train(object):
                 'c_f1_score': correction_matrix[2],
             })
 
-        d_p, d_r, d_f1 = self.character_level_confusion_matrix(*matrix[0])
+        d_p, d_r, d_f1 = Train.compute_matrix(*matrix[0])
         print("Detection Precision: {}, Recall: {}, F1-Score: {}".format(d_p, d_r, d_f1))
 
-        c_p, c_r, c_f1 = self.character_level_confusion_matrix(*matrix[1])
+        c_p, c_r, c_f1 = Train.compute_matrix(*matrix[1])
         print("Correction Precision: {}, Recall: {}, F1-Score: {}".format(c_p, c_r, c_f1))
 
         self.recent_detection_f1_score.append(d_f1)
@@ -252,8 +255,6 @@ class Train(object):
                             help='The ratio of splitting validation set.')
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for training. auto, cpu or cuda')
-        parser.add_argument('--log-interval', type=int, default='20',
-                            help='Print training info every {log_interval} steps.')
         parser.add_argument('--seed', type=int, default=0, help='The random seed.')
         parser.add_argument('--d-lr', type=float, default=2e-5, help='The learning rate of Detection Network.')
         parser.add_argument('--c-lr', type=float, default=1e-4, help='The learning rate of Correction Network.')
@@ -265,6 +266,9 @@ class Train(object):
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
         parser.add_argument('--resume', type=bool, default=True, help='Resume training.')
+        parser.add_argument('--limit-data-size', type=int, default=-1,
+                            help='Limit the data size of the Wang271K for quickly testing if your model works.'
+                                 '-1 means that there\'s no limit.')
 
         args = parser.parse_known_args()[0]
         print(args)

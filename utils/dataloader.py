@@ -21,7 +21,7 @@ def create_dataloader(args):
     with open(args.train_data, mode='br') as f:
         train_data = pickle.load(f)
 
-    dataset = CSCDataset(train_data)
+    dataset = CSCDataset(train_data, args)
 
     valid_size = int(len(dataset) * args.valid_ratio)
     train_size = len(dataset) - valid_size

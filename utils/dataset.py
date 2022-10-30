@@ -3,9 +3,10 @@ from torch.utils.data import Dataset
 
 class CSCDataset(Dataset):
 
-    def __init__(self, dataset):
+    def __init__(self, dataset, args):
         super(CSCDataset, self).__init__()
         self.dataset = dataset
+        self.args = args
 
     def __getitem__(self, index):
         src = self.dataset[index]['src']
@@ -13,4 +14,7 @@ class CSCDataset(Dataset):
         return src, tgt
 
     def __len__(self):
-        return len(self.dataset)
+        if self.args.limit_data_size > 0:
+            return self.args.limit_data_size
+        else:
+            return len(self.dataset)
