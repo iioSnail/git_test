@@ -105,7 +105,7 @@ class Train(object):
         if self.args.resume:
             self.resume()
 
-        for epoch in range(self.args.epochs):
+        for epoch in range(self.current_epoch, self.args.epochs):
             try:
                 self.train_epoch()
                 self.validate()
@@ -156,7 +156,12 @@ class Train(object):
             'd_optimizer': self.detection_optimizer.state_dict(),
             'c_optimizer': self.correction_optimizer.state_dict(),
             'epoch': epoch,
-            'total_step': self.total_step
+            'total_step': self.total_step,
+            'recent_detection_f1_score': self.recent_detection_f1_score,
+            'recent_correction_f1_score': self.recent_correction_f1_score,
+            'detection_best_f1_score': self.detection_best_f1_score,
+            'correction_best_f1_score': self.correction_best_f1_score,
+            'detection_stop_training': self.detection_stop_training
         }, self.args.checkpoint_path)
 
     def save_model(self):
@@ -178,6 +183,11 @@ class Train(object):
         self.correction_optimizer.load_state_dict(checkpoint['c_optimizer'])
         self.total_step = checkpoint['total_step']
         self.current_epoch = checkpoint['epoch']
+        self.recent_detection_f1_score = checkpoint['recent_detection_f1_score']
+        self.recent_correction_f1_score = checkpoint['recent_correction_f1_score']
+        self.detection_best_f1_score = checkpoint['detection_best_f1_score']
+        self.correction_best_f1_score = checkpoint['correction_best_f1_score']
+        self.detection_stop_training = checkpoint['detection_stop_training']
 
         print("Resume Training. Epoch: {}. Total Step: {}.".format(self.current_epoch, self.total_step))
 
