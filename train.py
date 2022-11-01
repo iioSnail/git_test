@@ -275,7 +275,8 @@ class Train(object):
         parser.add_argument('--output-path', type=str, default='./output',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
-        parser.add_argument('--no-resume', type=bool, default=False, help='Resume training.')
+        parser.add_argument('--resume', action='store_true', help='Resume training.')
+        parser.add_argument('--no-resume', dest='resume', action='store_false', help='Not Resume training.')
         parser.add_argument('--limit-data-size', type=int, default=-1,
                             help='Limit the data size of the Wang271K for quickly testing if your model works.'
                                  '-1 means that there\'s no limit.')
@@ -295,9 +296,7 @@ class Train(object):
         args.output_path = Path(args.output_path)
         args.checkpoint_path = str(args.output_path / 'csc-model.pt')
         args.model_path = str(args.output_path / 'csc-best-model.pt')
-
-        if not args.no_resume:
-            args.resume = True
+        parser.set_defaults(resume=True)
 
         return args
 
