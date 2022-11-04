@@ -106,3 +106,24 @@ class CSCModel(CSCBaseModel):
         correction_loss = self.correction_criteria(outputs, targets)
 
         return detection_loss, correction_loss
+
+    def predict(self, text):
+        tokenizer = BERT.get_tokenizer()
+        inputs = tokenizer(text, return_tensors='pt')
+        outputs, detection_outputs = self.forward(inputs)
+        outputs, detection_outputs = outputs.squeeze(0).argmax(1)[1:-1], detection_outputs.squeeze(0)[1:-1]
+        outputs = ''.join(tokenizer.convert_ids_to_tokens(outputs))
+
+        detection_outputs = detection_outputs >= 0.5
+        src_char_list = tokenizer.convert_ids_to_tokens(inputs['input_ids'][0])[1:-1]
+
+        for i in range(len(detection_outputs)):
+            if detection_outputs[i]:
+                src_char_list[i] = "\033[31m" + src_char_list[i] + "\033[0m"
+
+        detection_outputs = ''.join(src_char_list)
+        return outputs, detection_outputs
+
+
+
+
