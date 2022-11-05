@@ -242,9 +242,9 @@ class Train(object):
         d_fn = (detection_targets[detection_outputs == 0] != 0).sum().item()
 
         c_tp = (outputs[detection_targets == 1] == targets[detection_targets == 1]).sum().item()
-        c_fp = (outputs != targets)[detection_targets == 0].sum().item()
-        c_tn = (outputs == targets)[detection_targets == 0].sum().item()
-        c_fn = (outputs[detection_targets == 1] != targets[detection_targets == 1]).sum().item()
+        c_fp = (outputs != targets)[detection_targets == 0].sum().item()  # FIXME
+        c_tn = (outputs == targets)[detection_targets == 0].sum().item()  # FIXME
+        c_fn = (outputs[detection_targets == 1] != targets[detection_targets == 1]).sum().item()  # FIXME
 
         return np.array([[d_tp, d_fp, d_tn, d_fn],
                          [c_tp, c_fp, c_tn, c_fn]])
