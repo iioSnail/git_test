@@ -16,11 +16,11 @@ class Inference(object):
 
     def inference(self):
         text = self.args.text
-        outputs, detection_outputs = self.model.predict(text)
+        _, outputs, detection_outputs = self.model.predict(text)
 
-        print("原文内容:", text)
-        print("检测结果:", detection_outputs)
-        print("修改结果:", outputs)
+        print("Source:", text)
+        print("Detect:", detection_outputs)
+        print("Correct:", outputs)
 
     def parse_args(self):
         parser = argparse.ArgumentParser()

@@ -3,6 +3,7 @@ from torch import nn
 
 from model.base import CSCBaseModel
 from model.common import BERT, LayerNorm
+from utils.utils import render_color_for_text, restore_special_tokens
 
 
 class DetectionModel(nn.Module):
@@ -91,6 +92,8 @@ class CSCModel(CSCBaseModel):
         self.detection_criteria = nn.BCELoss()
         self.correction_criteria = nn.CrossEntropyLoss()
 
+        # self.ignored_tokens =
+
     def forward(self, inputs):
         with torch.no_grad():
             bert_outputs = self.bert(**inputs).last_hidden_state
@@ -112,18 +115,14 @@ class CSCModel(CSCBaseModel):
         inputs = tokenizer(text, return_tensors='pt')
         outputs, detection_outputs = self.forward(inputs)
         outputs, detection_outputs = outputs.squeeze(0).argmax(1)[1:-1], detection_outputs.squeeze(0)[1:-1]
-        outputs = ''.join(tokenizer.convert_ids_to_tokens(outputs))
+
+        correct_indices = outputs != inputs['input_ids'][0][1:-1]
+        outputs = tokenizer.convert_ids_to_tokens(outputs)
+        outputs = restore_special_tokens(text, outputs)
+        outputs = ''.join(outputs)
+        outputs_rendered = render_color_for_text(outputs, correct_indices, 'green')
 
         detection_outputs = detection_outputs >= 0.5
         src_char_list = tokenizer.convert_ids_to_tokens(inputs['input_ids'][0])[1:-1]
-
-        for i in range(len(detection_outputs)):
-            if detection_outputs[i]:
-                src_char_list[i] = "\033[31m" + src_char_list[i] + "\033[0m"
-
-        detection_outputs = ''.join(src_char_list)
-        return outputs, detection_outputs
-
-
-
-
+        detection_rendered = render_color_for_text(src_char_list, detection_outputs, 'red')
+        return outputs, outputs_rendered, detection_rendered
