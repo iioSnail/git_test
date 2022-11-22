@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -57,9 +58,11 @@ class Train(object):
             d_loss, c_loss = self.model.compute_loss(outputs, targets, detection_outputs, detection_targets)
             if not self.detection_stop_training:
                 d_loss.backward()
+                nn.utils.clip_grad_norm_(self.model.detection_model.get_optimized_params(), max_norm=5)
                 self.detection_optimizer.step()
 
             c_loss.backward()
+            nn.utils.clip_grad_norm_(self.model.correction_model.get_optimized_params(), max_norm=5)
             self.correction_optimizer.step()
 
             self.total_step += 1
