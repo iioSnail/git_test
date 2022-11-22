@@ -18,22 +18,25 @@ class DetectionModel(nn.Module):
         self.transformer_blocks = self.bert.encoder.layer[:2]
 
         self.fusion_layer = nn.Sequential(
+            nn.Dropout(p=0.1),
             nn.Linear(768 * 3, 768),
-            nn.Sigmoid()  # TODO 这里应该用什么激活函数好？
+            nn.Tanh(),
+
         )
 
         self.output_layer = nn.Sequential(
+            nn.Dropout(p=0.1),
             nn.Linear(768, 1),
             nn.Sigmoid()
         )
 
         self.norm = LayerNorm(768)
 
-    def forward(self, inputs, bert_outputs):
+    def forward(self, inputs, hidden_states, pooler_output):
         token_num = inputs['input_ids'].size(1)
-        outputs = bert_outputs
+        outputs = hidden_states
         word_embeddings = self.word_embeddings(inputs['input_ids'])
-        cls_outputs = outputs[:, 0:1, :].repeat(1, token_num, 1)
+        cls_outputs = pooler_output.repeat(1, token_num, 1)
         outputs = torch.concat([outputs, word_embeddings, cls_outputs], dim=2)
         fusion_outputs = self.fusion_layer(outputs)
 
@@ -63,7 +66,12 @@ class CorrectionModel(nn.Module):
 
         self.bert = bert
         self.word_embeddings = self.bert.get_input_embeddings()
-        self.predict_layer = nn.Linear(768, len(BERT.get_tokenizer()))
+        self.predict_layer = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(768, 2048),
+            nn.ReLU(),
+            nn.Linear(2048, len(BERT.get_tokenizer()))
+        )
 
     def forward(self, inputs, detection_outputs, bert_outputs):
         outputs = bert_outputs
@@ -96,9 +104,10 @@ class CSCModel(CSCBaseModel):
 
     def forward(self, inputs):
         with torch.no_grad():
-            bert_outputs = self.bert(**inputs).last_hidden_state
+            bert_outputs = self.bert(**inputs)
+            hidden_states, pooler_output = bert_outputs.last_hidden_state, bert_outputs.pooler_output
 
-        detection_outputs = self.detection_model(inputs, bert_outputs)
+        detection_outputs = self.detection_model(inputs, hidden_states, pooler_output)
         outputs = self.correction_model(inputs, detection_outputs.clone().detach(), bert_outputs)
         return outputs, detection_outputs
 
