@@ -15,7 +15,7 @@ class DetectionModel(nn.Module):
         self.word_embeddings = self.bert.get_input_embeddings()
 
         # 使用bert的transformer_encoder来初始化transformer
-        self.transformer_blocks = self.bert.encoder.layer[:2]
+        self.transformer_blocks = self.bert.encoder.layer[:1]
 
         self.fusion_layer = nn.Sequential(
             nn.Dropout(p=0.1),
@@ -31,6 +31,12 @@ class DetectionModel(nn.Module):
         )
 
         self.norm = LayerNorm(768)
+
+        self.init_fusion_layer()
+
+    def init_fusion_layer(self):
+        for param in self.fusion_layer.parameters():
+            param.data = torch.full_like(param.data, 1/3)
 
     def forward(self, inputs, hidden_states, pooler_output):
         token_num = inputs['input_ids'].size(1)
@@ -108,7 +114,7 @@ class CSCModel(CSCBaseModel):
             hidden_states, pooler_output = bert_outputs.last_hidden_state, bert_outputs.pooler_output
 
         detection_outputs = self.detection_model(inputs, hidden_states, pooler_output)
-        outputs = self.correction_model(inputs, detection_outputs.clone().detach(), bert_outputs)
+        outputs = self.correction_model(inputs, detection_outputs.clone().detach(), hidden_states)
         return outputs, detection_outputs
 
     def compute_loss(self, outputs, targets, detection_outputs, detection_targets):

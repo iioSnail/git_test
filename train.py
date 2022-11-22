@@ -1,6 +1,7 @@
 import argparse
 import collections
 import os
+import traceback
 from pathlib import Path
 
 import numpy as np
@@ -121,7 +122,7 @@ class Train(object):
                 self.save_model_state(epoch)
                 exit()
             except BaseException as e:
-                print(e)
+                traceback.print_exc()
                 print("Unexpected exception happened. The program is about to exit. Save model state to",
                       self.args.output_path)
                 exit()
