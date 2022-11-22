@@ -42,7 +42,7 @@ class DetectionModel(nn.Module):
         token_num = inputs['input_ids'].size(1)
         outputs = hidden_states
         word_embeddings = self.word_embeddings(inputs['input_ids'])
-        cls_outputs = pooler_output.repeat(1, token_num, 1)
+        cls_outputs = pooler_output.unsqueeze(1).repeat(1, token_num, 1)
         outputs = torch.concat([outputs, word_embeddings, cls_outputs], dim=2)
         fusion_outputs = self.fusion_layer(outputs)
 
