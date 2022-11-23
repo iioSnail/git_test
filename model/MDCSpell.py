@@ -67,19 +67,6 @@ class CorrectionNetwork(nn.Module):
         # 3. 最终使用全连接层进行token预测
         return self.dense_layer(hidden_states)
 
-    def get_inputs_and_word_embeddings(self, sequences, max_length=128):
-        """
-        对中文序列进行分词和word embeddings处理
-        :param sequences: 中文文本序列。例如: ["鸡你太美", "哎呦，你干嘛！"]
-        :param max_length: 文本的最大长度，不足则进行填充，超出进行裁剪。
-        :return: tokenizer的输出和word embeddings.
-        """
-        inputs = self.tokenizer(sequences, padding='max_length', max_length=max_length, return_tensors='pt',
-                                truncation=True).to(self.args.device)
-        # 使用BERT的work embeddings对token进行embedding，这里得到的embedding并不包含position embedding和segment embedding
-        word_embeddings = self.word_embedding_table(inputs['input_ids'])
-        return inputs, word_embeddings
-
 
 class DetectionNetwork(nn.Module):
 
@@ -121,6 +108,7 @@ class MDCSpellModel(nn.Module):
 
     def __init__(self, args):
         super(MDCSpellModel, self).__init__()
+        self.args = args
         # 构造Correction Network
         self.correction_network = CorrectionNetwork(args)
         self._init_correction_dense_layer()
@@ -158,3 +146,10 @@ class MDCSpellModel(nn.Module):
 
     def compute_loss(self, correction_outputs, correction_targets, detection_outputs, detection_targets):
         return self.criteria(correction_outputs, correction_targets, detection_outputs, detection_targets)
+
+    def predict(self, sentence):
+        tokenizer = self.correction_network.tokenizer
+        inputs = tokenizer(sentence, padding=True, return_tensors='pt').to(self.args.device)
+        c_outputs, _ = self.forward(inputs)
+        c_output = c_outputs.argmax(2).squeeze()[1:-1]
+        return tokenizer.decode(c_output).replace(" ", "")

@@ -4,12 +4,15 @@ import random
 
 import numpy as np
 import torch
+from sympy.polys.rootisolation import Q2
+
+from utils.str_utils import Q2B
 
 special_tokens = set("`1234567890-=~!！@#$%^&*()_+（）qwertyuiop"
                      "asddfghjklzxcvbnmQWERTYUIOPASDFGHHJKLZXCVBNM"
                      "[]\\;'./{}|:\"<>?，。、？’‘“”；：ＡＢＣＤＥＦＧＨＩ"
                      "ＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ０１２３４５６７８９"
-                     "「」＂")
+                     "「」＂…")
 
 
 def setup_seed(seed):
@@ -88,3 +91,13 @@ def restore_special_tokens(src, output):
             output[i] = src[i]
 
     return ''.join(output)
+
+
+def preprocess_text(sentence):
+    sentence = sentence.replace(" ", "")
+
+    char_list = list(sentence)
+    for i, char in enumerate(char_list):
+        char_list[i] = Q2B(char) # 全角转半角
+
+    return ''.join(char_list)

@@ -3,6 +3,7 @@ import pickle
 from torch.utils.data import Dataset
 
 from model.common import BERT
+from utils.utils import preprocess_text
 
 
 class CSCDataset(Dataset):
@@ -34,7 +35,8 @@ class CSCTestDataset(Dataset):
     def __getitem__(self, index):
         src = self.dataset[index]['src']
         tgt = self.dataset[index]['tgt']
-
+        src = preprocess_text(src)
+        tgt = preprocess_text(tgt)
         return src, tgt
 
     def __len__(self):

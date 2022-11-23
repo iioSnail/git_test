@@ -46,7 +46,7 @@ if __name__ == '__main__':
         [0, 1, 0, 1, 0, 0, 0, 0],
     ])
 
-    d_model.compute_loss(d_outputs, d_targets, sim, last_hidden_state, pooler_output)
+    d_model.compute_loss(d_outputs, d_targets)
 
     # 让pooler_output和正确的token求相似度，错字为负样本。
     # 预测的时候也用token与pooler_output的相似度去预测。
