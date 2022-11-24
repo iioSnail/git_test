@@ -7,8 +7,9 @@ from model.common import BERT
 
 class DetectionCLModel(nn.Module):
 
-    def __init__(self):
+    def __init__(self, args):
         super(DetectionCLModel, self).__init__()
+        self.args = args
 
         self.bert = BERT().bert
 
@@ -34,6 +35,16 @@ class DetectionCLModel(nn.Module):
 
     def compute_loss(self, d_outputs, d_targets):
         return self.d_criteria(d_outputs, d_targets.float())
+
+    def predict(self, src, tgt):
+        tokenizer = BERT.get_tokenizer()
+        inputs = tokenizer(src, return_tensors='pt').to(self.args.device)
+        d_outputs = self.forward(inputs)
+        d_output = (d_outputs.squeeze()[1:-1] >= 0.5).int()
+
+        target = tokenizer(tgt, return_tensors='pt').to(self.args.device)['input_ids'].squeeze()[1:-1]
+        d_target = (inputs['input_ids'].squeeze()[1:-1] != target).int()
+        return d_output, d_target
 
 
 if __name__ == '__main__':
