@@ -7,7 +7,7 @@ from model.common import BERT
 from utils.dataset import CSCDataset
 
 
-def create_dataloader(args):
+def create_dataloader(args, collate_fn=None):
     with open(args.train_data, mode='br') as f:
         train_data = pickle.load(f)
 
@@ -17,7 +17,7 @@ def create_dataloader(args):
     train_size = len(dataset) - valid_size
     train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
 
-    def collate_fn(batch):
+    def default_collate_fn(batch):
         src, tgt = zip(*batch)
         src, tgt = list(src), list(tgt)
 
@@ -25,6 +25,9 @@ def create_dataloader(args):
         tgt = BERT.get_bert_inputs(tgt)
 
         return src, tgt['input_ids'], (src['input_ids'] != tgt['input_ids']).float()
+
+    if collate_fn is None:
+        collate_fn = default_collate_fn
 
     train_loader = DataLoader(train_dataset,
                               batch_size=args.batch_size,

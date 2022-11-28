@@ -18,6 +18,7 @@ from pypinyin import pinyin, Style
 from tokenizers import BertWordPieceTokenizer
 
 
+
 class BertDataset(object):
 
     def __init__(self, bert_path, max_length: int = 512):
@@ -84,10 +85,18 @@ class BertDataset(object):
 
         return pinyin_ids
 
-    def decode(self, ids):
+    def decode(self, ids, src_ids):
         tokens = []
-        for id in ids:
-            tokens.append(self.tokenizer.id_to_token(id))
+        for i in range(len(ids)):
+            src_token = self.tokenizer.id_to_token(src_ids[i])
+            if '\u4e00' <= src_token <= '\u9fff':
+                tokens.append(self.tokenizer.id_to_token(ids[i]))
+            else:
+                if src_token.startswith("##"):
+                    src_token = src_token[2:]
+                if src_token.endswith("##"):
+                    src_token = src_token[:-2]
+                tokens.append(src_token)
 
         return ''.join(tokens)
 

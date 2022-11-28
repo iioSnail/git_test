@@ -5,6 +5,7 @@ import torch
 from tqdm import tqdm
 
 from model.CSCModelV1 import CSCModel
+from model.ChineseBertModel import ChineseBertModel
 from model.MDCSpell import MDCSpellModel
 from utils.dataset import CSCTestDataset
 
@@ -20,15 +21,18 @@ class Evaluation(object):
 
         if self.args.model == 'MDCSpell':
             self.model = MDCSpellModel(self.args).eval()
+        elif self.args.model == 'ChineseBertModel':
+            self.model = ChineseBertModel(self.args)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
-        self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        # self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
         self.model.to(self.args.device)
 
         self.error_sentences = []
 
     def evaluate(self):
+        self.character_level_metrics()
         self.sentence_level_metrics()
         # save_obj(self.error_sentences, self.args.output_path / self.args.test_data.name.replace(".pkl", ".result.pkl"))
         # self.print_error_sentences()
@@ -250,7 +254,7 @@ class Evaluation(object):
                             help='The file path of test data.')
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for test. auto, cpu or cuda')
-        parser.add_argument('--model', type=str, default='MDCSpell',
+        parser.add_argument('--model', type=str, default='ChineseBertModel',
                             help='The model name you want to evaluate.')
         parser.add_argument('--model-path', type=str, default='./output/csc-best-model.pt',
                             help='The model file path. e.g. "./output/csc-best-model.pt"')
