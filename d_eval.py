@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from model.CLModel import DetectionCLModel
 from model.CSCModelV1 import CSCModel
+from model.KNNModel import DetectionKNNModel
 from utils.dataset import CSCTestDataset
 
 from train import Train
@@ -21,20 +22,18 @@ class Evaluation(object):
 
         if self.args.model == "CL":
             self.model = DetectionCLModel(self.args).eval()
+        elif self.args.model == "KNN":
+            self.model = DetectionKNNModel(self.args, k=1).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
-        self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        # self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
         self.model.to(self.args.device)
 
         self.error_sentences = []
 
     def evaluate(self):
         self.character_level_metrics()
-
-        save_obj(self.error_sentences, self.args.output_path / self.args.test_data.name.replace(".pkl", ".result.pkl"))
-
-        self.print_error_sentences()
 
     def character_level_metrics(self):
         d_tp, d_fp, d_tn, d_fn = 0, 0, 0, 0
@@ -68,7 +67,7 @@ class Evaluation(object):
                             help='The file path of test data.')
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for test. auto, cpu or cuda')
-        parser.add_argument('--model', type=str, default='CL',
+        parser.add_argument('--model', type=str, default='KNN',
                             help='The model name you want to evaluate.')
         parser.add_argument('--model-path', type=str, default='./output/csc-best-model.pt',
                             help='The model file path. e.g. "./output/csc-best-model.pt"')
