@@ -84,12 +84,10 @@ class BertDataset(object):
 
         return pinyin_ids
 
+    def decode(self, ids):
+        tokens = []
+        for id in ids:
+            tokens.append(self.tokenizer.id_to_token(id))
 
-if __name__ == '__main__':
-    vocab_file = "/data/nfsdata2/sunzijun/glyce/glyce/bert_chinese_base_large_vocab/vocab.txt"
-    config_path = "/data/nfsdata2/sunzijun/glyce/glyce/config"
-    sentence = "我喜欢猫。"
-    tokenizer = BertMaskDataset(vocab_file, config_path)
-    input_ids, pinyin_ids = tokenizer.mask_sentence(sentence, 1)
-    print(pinyin_ids)
-    print(input_ids)
+        return ''.join(tokens)
+
