@@ -98,6 +98,25 @@ def preprocess_text(sentence):
 
     char_list = list(sentence)
     for i, char in enumerate(char_list):
-        char_list[i] = Q2B(char) # 全角转半角
+        char_list[i] = Q2B(char)  # 全角转半角
 
     return ''.join(char_list)
+
+
+def mask_ids(ids, mask_id=130, hard_level=1):
+    mask_id = int(mask_id)
+
+    def mask_level_1(length):
+        """难度1：对句子中的某一个token进行mask"""
+        mask_index = [random.randint(1, length)]
+        return mask_index
+
+    for sequence_tokens in ids:
+        length = torch.argwhere(sequence_tokens == 102).squeeze().item()
+        mask = []
+        if hard_level == 1:
+            mask = mask_level_1(length)
+
+        sequence_tokens[mask] = int(mask_id)
+
+    return ids

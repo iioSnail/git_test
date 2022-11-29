@@ -65,6 +65,7 @@ class GlyceBertModel(BertModel):
             self,
             input_ids=None,
             pinyin_ids=None,
+            glyph_embeddings=None,
             attention_mask=None,
             token_type_ids=None,
             position_ids=None,
@@ -133,7 +134,7 @@ class GlyceBertModel(BertModel):
         head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
 
         embedding_output = self.embeddings(
-            input_ids=input_ids, pinyin_ids=pinyin_ids, position_ids=position_ids, token_type_ids=token_type_ids,
+            input_ids=input_ids, pinyin_ids=pinyin_ids, glyph_embeddings=glyph_embeddings, position_ids=position_ids, token_type_ids=token_type_ids,
             inputs_embeds=inputs_embeds
         )
         encoder_outputs = self.encoder(
@@ -176,6 +177,7 @@ class GlyceBertForMaskedLM(BertPreTrainedModel):
             self,
             input_ids=None,
             pinyin_ids=None,
+            glyph_embeddings=None,
             attention_mask=None,
             token_type_ids=None,
             position_ids=None,
@@ -212,6 +214,7 @@ class GlyceBertForMaskedLM(BertPreTrainedModel):
         outputs = self.bert(
             input_ids,
             pinyin_ids,
+            glyph_embeddings=glyph_embeddings,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             position_ids=position_ids,

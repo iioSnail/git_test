@@ -46,7 +46,8 @@ class FusionBertEmbeddings(nn.Module):
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.register_buffer("position_ids", torch.arange(config.max_position_embeddings).expand((1, -1)))
 
-    def forward(self, input_ids=None, pinyin_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None):
+    def forward(self, input_ids=None, pinyin_ids=None, glyph_embeddings=None, token_type_ids=None, position_ids=None,
+                inputs_embeds=None):
         if input_ids is not None:
             input_shape = input_ids.size()
         else:
@@ -66,7 +67,9 @@ class FusionBertEmbeddings(nn.Module):
         # get char embedding, pinyin embedding and glyph embedding
         word_embeddings = inputs_embeds  # [bs,l,hidden_size]
         pinyin_embeddings = self.pinyin_embeddings(pinyin_ids)  # [bs,l,hidden_size]
-        glyph_embeddings = self.glyph_map(self.glyph_embeddings(input_ids))  # [bs,l,hidden_size]
+        if glyph_embeddings is None:
+            glyph_embeddings = self.glyph_embeddings(input_ids)
+        glyph_embeddings = self.glyph_map(glyph_embeddings)  # [bs,l,hidden_size]
         # fusion layer
         concat_embeddings = torch.cat((word_embeddings, pinyin_embeddings, glyph_embeddings), 2)
         inputs_embeds = self.map_fc(concat_embeddings)
