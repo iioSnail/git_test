@@ -37,6 +37,11 @@ class ChineseBertModel(nn.Module):
 
         self.loss_function = nn.CrossEntropyLoss(ignore_index=0)
 
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
+
+    def get_optimizer(self):
+        return self.optimizer
+
     @staticmethod
     def get_tokenizer():
         if ChineseBertModel.tokenizer is None:
@@ -84,11 +89,15 @@ class ChineseBertModel(nn.Module):
 
                 for i in range(len(input_ids_list)):
                     length = input_ids_list[i].size(0)
-                    input_ids_list[i] = torch.concat([input_ids_list[i], torch.zeros(max_length - length)])
-                    pinyin_ids_list[i] = torch.concat([pinyin_ids_list[i], torch.zeros(max_length - length, 8)], dim=0)
+                    if length >= max_length:
+                        input_ids_list[i] = input_ids_list[i][:max_length]
+                        pinyin_ids_list[i] = pinyin_ids_list[i][:max_length]
+                    else:
+                        input_ids_list[i] = torch.concat([input_ids_list[i], torch.zeros(max_length - length)])
+                        pinyin_ids_list[i] = torch.concat([pinyin_ids_list[i], torch.zeros(max_length - length, 8)], dim=0)
 
-                input_ids = torch.vstack(input_ids_list).long()
-                pinyin_ids = torch.vstack(pinyin_ids_list).view(batch_size, max_length, 8).long()
+                input_ids = torch.vstack(input_ids_list).long().to(self.args.device)
+                pinyin_ids = torch.vstack(pinyin_ids_list).view(batch_size, max_length, 8).long().to(self.args.device)
                 glyph_embeddings = self.glyph_embeddings(input_ids)
 
                 attention_mask = (input_ids != 0).int()

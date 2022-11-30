@@ -112,7 +112,7 @@ def mask_ids(ids, mask_id=130, hard_level=1):
         return mask_index
 
     for sequence_tokens in ids:
-        length = torch.argwhere(sequence_tokens == 102).squeeze().item()
+        length = torch.argwhere(sequence_tokens != 0)[-1].item()
         mask = []
         if hard_level == 1:
             mask = mask_level_1(length)

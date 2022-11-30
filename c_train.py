@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -60,6 +61,7 @@ class C_Train(object):
             outputs = self.model(inputs)
             loss = self.model.compute_loss(outputs, targets)
             loss.backward()
+            nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5)
             self.optimizer.step()
 
             self.total_step += 1
