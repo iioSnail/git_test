@@ -118,17 +118,11 @@ class C_Train(object):
             # Save model at the end of every epoch.
             self.save_model_state(epoch + 1)
 
-            if self.recent_detection_f1_score[-1] > self.detection_best_f1_score:
-                self.detection_best_f1_score = self.recent_detection_f1_score[-1]
-                self.save_model()
-
             if self.recent_correction_f1_score[-1] > self.correction_best_f1_score:
                 self.correction_best_f1_score = self.recent_correction_f1_score[-1]
                 self.save_model()
 
-            if len(self.recent_detection_f1_score) == self.recent_detection_f1_score.maxlen \
-                    and self.detection_best_f1_score > max(self.recent_detection_f1_score) \
-                    and len(self.recent_correction_f1_score) == self.recent_correction_f1_score.maxlen \
+            if len(self.recent_correction_f1_score) == self.recent_correction_f1_score.maxlen \
                     and self.correction_best_f1_score > max(self.recent_correction_f1_score):
                 print("Early stop Training. The best model is saved to", self.args.model_path)
                 break
@@ -138,12 +132,10 @@ class C_Train(object):
     def save_model_state(self, epoch):
         torch.save({
             'model': self.model.state_dict(),
-            'd_optimizer': self.optimizer.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
             'epoch': epoch,
             'total_step': self.total_step,
-            'recent_detection_f1_score': self.recent_detection_f1_score,
             'recent_correction_f1_score': self.recent_correction_f1_score,
-            'detection_best_f1_score': self.detection_best_f1_score,
             'correction_best_f1_score': self.correction_best_f1_score
         }, self.args.checkpoint_path)
 
@@ -173,7 +165,7 @@ class C_Train(object):
     def validate(self):
         self.model = self.model.eval()
 
-        matrix = np.zeros([2, 4])
+        matrix = np.zeros([4])
 
         progress = tqdm(self.valid_loader, desc="Epoch {} Validation".format(self.current_epoch))
         for inputs, targets, detection_targets in progress:
@@ -181,7 +173,7 @@ class C_Train(object):
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
 
-            outputs, detection_outputs = self.model(inputs)
+            outputs = self.model(inputs)
             outputs = outputs.argmax(dim=2)
 
             matrix += self.character_level_confusion_matrix(outputs, targets, detection_targets, inputs.attention_mask)
@@ -258,6 +250,7 @@ class C_Train(object):
         args.model_path = str(args.output_path / 'csc-best-model.pt')
 
         return args
+
 
 if __name__ == '__main__':
     train = C_Train()
