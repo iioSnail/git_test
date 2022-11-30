@@ -118,11 +118,22 @@ class ChineseBertModel(nn.Module):
 
     def predict(self, sentence):
         input_ids, pinyin_ids = self.tokenizer.tokenize_sentence(sentence)
-        length = input_ids.shape[0]
-        input_ids = input_ids.view(1, length).to(self.args.device)
-        pinyin_ids = pinyin_ids.view(1, length, 8).to(self.args.device)
-        output_hidden = self.chinese_bert.forward(input_ids, pinyin_ids)[0]
-        return self.tokenizer.decode(output_hidden.argmax(2).squeeze()[1:-1], input_ids.squeeze()[1:-1])
+        input_ids = input_ids.broadcast_to(9, 11)
+        mask = torch.concat([torch.zeros(9, 1), (torch.eye(9) * 103).long(), torch.zeros(9, 1)], dim=1).long()
+
+        pinyin_ids = pinyin_ids.view(-1, 8).unsqueeze(0)
+        glyph_embeddings = self.glyph_embeddings(input_ids)
+        attention_mask = (input_ids != 0).int()
+        inputs = {
+            "input_ids": input_ids,
+            "pinyin_ids": pinyin_ids,
+            "glyph_embeddings": glyph_embeddings,
+            "attention_mask": attention_mask,
+        }
+        inputs = ChineseBertModelInput(inputs)
+
+        output_hidden = self.forward(inputs)[0]
+        return self.tokenizer.decode(output_hidden.argmax(1).squeeze()[1:-1], input_ids.squeeze()[1:-1])
 
 
 if __name__ == '__main__':

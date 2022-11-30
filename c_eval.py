@@ -4,7 +4,6 @@ from pathlib import Path
 import torch
 from tqdm import tqdm
 
-from model.CSCModelV1 import CSCModel
 from model.ChineseBertModel import ChineseBertModel
 from model.MDCSpell import MDCSpellModel
 from utils.dataset import CSCTestDataset
@@ -26,7 +25,7 @@ class Evaluation(object):
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
-        # self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
         self.model.to(self.args.device)
 
         self.error_sentences = []
@@ -256,7 +255,7 @@ class Evaluation(object):
                             help='The device for test. auto, cpu or cuda')
         parser.add_argument('--model', type=str, default='ChineseBertModel',
                             help='The model name you want to evaluate.')
-        parser.add_argument('--model-path', type=str, default='./output/csc-best-model.pt',
+        parser.add_argument('--model-path', type=str, default='./c_output/csc-best-model.pt',
                             help='The model file path. e.g. "./output/csc-best-model.pt"')
         parser.add_argument('--output-path', type=str, default='./output',
                             help='The model file path. e.g. "./output')
