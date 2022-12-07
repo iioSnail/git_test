@@ -5,6 +5,10 @@ from ChineseBert.datasets.bert_dataset import BertDataset
 from ChineseBert.models.modeling_glycebert import GlyceBertForMaskedLM
 from utils.utils import mask_tokens, mock_args, mask_sentence
 
+"""
+实验结论：work的不是很好，即使一个句子一个confusion set构成的错字。测试集f1也只有0.5。
+"""
+
 # torch.autograd.set_detect_anomaly(True)
 mask_id = 103
 
