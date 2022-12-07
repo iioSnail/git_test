@@ -16,7 +16,7 @@ class CSCDataset(Dataset):
     def __getitem__(self, index):
         src = self.dataset[index]['src']
         tgt = self.dataset[index]['tgt']
-        return src, tgt
+        return " ".join(src), " ".join(tgt)
 
     def __len__(self):
         if self.args.limit_data_size and self.args.limit_data_size > 0:
@@ -37,7 +37,7 @@ class CSCTestDataset(Dataset):
         tgt = self.dataset[index]['tgt']
         src = preprocess_text(src)
         tgt = preprocess_text(tgt)
-        return src, tgt
+        return " ".join(src), " ".join(tgt)
 
     def __len__(self):
         return len(self.dataset)

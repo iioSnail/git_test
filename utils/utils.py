@@ -4,8 +4,8 @@ import random
 
 import numpy as np
 import torch
-from sympy.polys.rootisolation import Q2
 
+from utils.confusions import confuse_char
 from utils.str_utils import Q2B
 
 special_tokens = set("`1234567890-=~!！@#$%^&*()_+（）qwertyuiop"
@@ -103,7 +103,7 @@ def preprocess_text(sentence):
     return ''.join(char_list)
 
 
-def mask_ids(ids, mask_id=130, hard_level=1):
+def mask_tokens(ids, mask_id=130, hard_level=1):
     mask_id = int(mask_id)
 
     def mask_level_1(length):
@@ -120,3 +120,36 @@ def mask_ids(ids, mask_id=130, hard_level=1):
         sequence_tokens[mask] = int(mask_id)
 
     return ids
+
+
+def mask_level_1(length):
+    """难度1：对句子中的某一个token进行mask"""
+    mask_index = [random.randint(0, length-1)]
+    return mask_index
+
+
+def mask_sentence(sentence, hard_level=1):
+    confuse_chars = list(sentence.replace(" ", ""))
+    mask_chars = confuse_chars.copy()
+
+    masks = []
+    if hard_level == 1:
+        masks = mask_level_1(len(confuse_chars))
+
+    for mask in masks:
+        confuse_chars[mask] = confuse_char(confuse_chars[mask])
+        mask_chars[mask] = '[MASK]'
+
+    return ' '.join(confuse_chars), masks
+
+
+def mock_args(**kwargs):
+    class MockArgs(dict):
+        __setattr__ = dict.__setitem__
+        __getattr__ = dict.__getitem__
+
+    args = MockArgs()
+    for key, value in kwargs.items():
+        args[key] = value
+
+    return args
