@@ -56,7 +56,7 @@ def confuse_char(char: str, type='random'):
 
     confusion_list = confusion_set[char]
 
-    rand_i = random.randint(0, len(confusion_list))
+    rand_i = random.randint(0, len(confusion_list)-1)
     return confusion_list[rand_i]
 
 
