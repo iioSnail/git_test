@@ -69,4 +69,4 @@ def init_confusion_set():
     same_glyph_confusion_set = load_confusion(ROOT / "confusion/same_stroke.txt")
 
 
-init_confusion_set()
+# init_confusion_set()

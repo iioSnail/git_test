@@ -49,6 +49,9 @@ class BERT(nn.Module):
         super(BERT, self).__init__()
         self.bert = AutoModel.from_pretrained(model_path)
 
+    def forward(self, inputs):
+        return self.bert(**inputs)
+
     @staticmethod
     def get_tokenizer(model_path="hfl/chinese-roberta-wwm-ext"):
         if BERT.tokenizer is None:
@@ -57,7 +60,7 @@ class BERT(nn.Module):
         return BERT.tokenizer
 
     @staticmethod
-    def get_bert_inputs(sentences, max_length=128, model_path="hfl/chinese-roberta-wwm-ext"):
+    def get_bert_inputs(sentences, max_length=256, model_path="hfl/chinese-roberta-wwm-ext"):
         """
         The model instance of Hugging Face takes in special input parameters. Therefore,
         we need to construct the input parameters in the function.
@@ -68,7 +71,7 @@ class BERT(nn.Module):
         tokenizer = BERT.get_tokenizer()
 
         inputs = tokenizer(sentences,
-                           padding='max_length',
+                           padding=True,
                            max_length=max_length,
                            return_tensors='pt',
                            truncation=True)

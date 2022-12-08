@@ -6,15 +6,17 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from model.BertDetectionModel import BertDetectionModel
+from train_base import TrainBase
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
 
 
-class TrainBase(object):
+class D_Train(object):
 
     def __init__(self):
         self.args = self.parse_args()
@@ -42,7 +44,7 @@ class TrainBase(object):
     def train_epoch(self):
         self.model = self.model.train()
         progress = tqdm(self.train_loader, desc="Epoch {} Training".format(self.current_epoch))
-        for i, (inputs, targets, d_targets) in enumerate(progress):
+        for i, (inputs, _, d_targets) in enumerate(progress):
 
             if self.args.resume and self.total_step > self.current_epoch * len(self.train_loader) + i:
                 # Resume the progress of training loader.
@@ -50,43 +52,34 @@ class TrainBase(object):
             else:
                 self.args.resume = False
 
-            inputs, targets, d_targets = inputs.to(self.args.device), \
-                                                 targets.to(self.args.device), \
-                                                 d_targets.to(self.args.device)
+            inputs, d_targets = inputs.to(self.args.device), \
+                                d_targets.to(self.args.device)
             self.optimizer.zero_grad()
 
             d_outputs = self.model(inputs)
             loss = self.model.compute_loss(d_outputs, d_targets)
             loss.backward()
+            nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5)
             self.optimizer.step()
 
             self.total_step += 1
 
-            outputs = outputs.argmax(dim=2)
-            matrix = self.character_level_confusion_matrix(outputs, targets,
-                                                           d_outputs, d_targets,
-                                                           inputs.attention_mask)
+            matrix = self.character_level_confusion_matrix(d_outputs, d_targets, inputs.attention_mask)
 
-            detection_matrix = TrainBase.compute_matrix(*matrix[0])
-            correction_matrix = TrainBase.compute_matrix(*matrix[1])
+            d_matrix = TrainBase.compute_matrix(*matrix)
 
             self.set_progress_postfix(progress, loss=loss,
-                                      detection_matrix=detection_matrix,
-                                      correction_matrix=correction_matrix)
+                                      detection_matrix=d_matrix)
 
             self.write_scalar(loss=loss,
-                              detection_matrix=detection_matrix,
-                              correction_matrix=correction_matrix)
+                              detection_matrix=d_matrix)
 
     def set_progress_postfix(self, progress, **kwargs):
         progress.set_postfix({
             'loss': kwargs['loss'].item(),
             'd_precision': kwargs['detection_matrix'][0],
             'd_recall': kwargs['detection_matrix'][1],
-            'd_f1_score': kwargs['detection_matrix'][2],
-            'c_precision': kwargs['correction_matrix'][0],
-            'c_recall': kwargs['correction_matrix'][1],
-            'c_f1_score': kwargs['correction_matrix'][2],
+            'd_f1_score': kwargs['detection_matrix'][2]
         })
 
     def write_scalar(self, **kwargs):
@@ -97,13 +90,6 @@ class TrainBase(object):
         self.writer.add_scalar(tag="detection/d_recall", scalar_value=kwargs['detection_matrix'][1],
                                global_step=self.total_step)
         self.writer.add_scalar(tag="detection/d_f1_score", scalar_value=kwargs['detection_matrix'][2],
-                               global_step=self.total_step)
-
-        self.writer.add_scalar(tag="correction/c_precision", scalar_value=kwargs['correction_matrix'][0],
-                               global_step=self.total_step)
-        self.writer.add_scalar(tag="correction/c_recall", scalar_value=kwargs['correction_matrix'][1],
-                               global_step=self.total_step)
-        self.writer.add_scalar(tag="correction/c_f1_score", scalar_value=kwargs['correction_matrix'][2],
                                global_step=self.total_step)
 
     def train(self):
@@ -135,14 +121,8 @@ class TrainBase(object):
                 self.detection_best_f1_score = self.recent_detection_f1_score[-1]
                 self.save_model()
 
-            if self.recent_correction_f1_score[-1] > self.correction_best_f1_score:
-                self.correction_best_f1_score = self.recent_correction_f1_score[-1]
-                self.save_model()
-
             if len(self.recent_detection_f1_score) == self.recent_detection_f1_score.maxlen \
-                    and self.detection_best_f1_score > max(self.recent_detection_f1_score) \
-                    and len(self.recent_correction_f1_score) == self.recent_correction_f1_score.maxlen \
-                    and self.correction_best_f1_score > max(self.recent_correction_f1_score):
+                    and self.detection_best_f1_score > max(self.recent_detection_f1_score):
                 print("Early stop Training. The best model is saved to", self.args.model_path)
                 break
 
@@ -151,13 +131,11 @@ class TrainBase(object):
     def save_model_state(self, epoch):
         torch.save({
             'model': self.model.state_dict(),
-            'd_optimizer': self.optimizer.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
             'epoch': epoch,
             'total_step': self.total_step,
             'recent_detection_f1_score': self.recent_detection_f1_score,
-            'recent_correction_f1_score': self.recent_correction_f1_score,
             'detection_best_f1_score': self.detection_best_f1_score,
-            'correction_best_f1_score': self.correction_best_f1_score
         }, self.args.checkpoint_path)
 
     def save_model(self):
@@ -179,9 +157,7 @@ class TrainBase(object):
         self.total_step = checkpoint['total_step']
         self.current_epoch = checkpoint['epoch']
         self.recent_detection_f1_score = checkpoint['recent_detection_f1_score']
-        self.recent_correction_f1_score = checkpoint['recent_correction_f1_score']
         self.detection_best_f1_score = checkpoint['detection_best_f1_score']
-        self.correction_best_f1_score = checkpoint['correction_best_f1_score']
 
         print("Resume Training. Epoch: {}. Total Step: {}.".format(self.current_epoch, self.total_step))
 
@@ -191,57 +167,38 @@ class TrainBase(object):
         matrix = np.zeros([2, 4])
 
         progress = tqdm(self.valid_loader, desc="Epoch {} Validation".format(self.current_epoch))
-        for inputs, targets, detection_targets in progress:
-            inputs, targets, detection_targets = inputs.to(self.args.device), \
-                                                 targets.to(self.args.device), \
-                                                 detection_targets.to(self.args.device)
+        for inputs, _, d_targets in progress:
+            inputs, d_targets = inputs.to(self.args.device), \
+                                d_targets.to(self.args.device)
 
-            outputs, detection_outputs = self.model(inputs)
-            outputs = outputs.argmax(dim=2)
+            d_outputs = self.model(inputs)
 
-            matrix += self.character_level_confusion_matrix(outputs, targets,
-                                                            detection_outputs, detection_targets,
-                                                            inputs.attention_mask)
+            matrix += self.character_level_confusion_matrix(d_outputs, d_targets, inputs.attention_mask)
 
             detection_matrix = TrainBase.compute_matrix(*matrix[0])
-            correction_matrix = TrainBase.compute_matrix(*matrix[1])
             progress.set_postfix({
                 'd_precision': detection_matrix[0],
                 'd_recall': detection_matrix[1],
                 'd_f1_score': detection_matrix[2],
-                'c_precision': correction_matrix[0],
-                'c_recall': correction_matrix[1],
-                'c_f1_score': correction_matrix[2],
             })
 
         d_p, d_r, d_f1 = TrainBase.compute_matrix(*matrix[0])
         print("Detection Precision: {}, Recall: {}, F1-Score: {}".format(d_p, d_r, d_f1))
 
-        c_p, c_r, c_f1 = TrainBase.compute_matrix(*matrix[1])
-        print("Correction Precision: {}, Recall: {}, F1-Score: {}".format(c_p, c_r, c_f1))
-
         self.recent_detection_f1_score.append(d_f1)
-        self.recent_correction_f1_score.append(c_f1)
 
-    def character_level_confusion_matrix(self, outputs, targets,
-                                         detection_outputs, detection_targets, mask):
-        detection_targets[mask == 0] = -1
-        detection_outputs[mask != 1] = -1
-        detection_outputs[detection_outputs >= self.args.error_threshold] = 1
-        detection_outputs[(detection_outputs < self.args.error_threshold) & (detection_outputs >= 0)] = 0
+    def character_level_confusion_matrix(self, d_outputs, d_targets, mask):
+        d_targets[mask == 0] = -1
+        d_outputs[mask != 1] = -1
+        d_outputs[d_outputs >= self.args.error_threshold] = 1
+        d_outputs[(d_outputs < self.args.error_threshold) & (d_outputs >= 0)] = 0
 
-        d_tp = (detection_outputs[detection_targets == 1] == 1).sum().item()
-        d_fp = (detection_targets[detection_outputs == 1] != 1).sum().item()
-        d_tn = (detection_outputs[detection_targets == 0] == 0).sum().item()
-        d_fn = (detection_targets[detection_outputs == 0] != 0).sum().item()
+        d_tp = (d_outputs[d_targets == 1] == 1).sum().item()
+        d_fp = (d_targets[d_outputs == 1] != 1).sum().item()
+        d_tn = (d_outputs[d_targets == 0] == 0).sum().item()
+        d_fn = (d_targets[d_outputs == 0] != 0).sum().item()
 
-        c_tp = (outputs[detection_targets == 1] == targets[detection_targets == 1]).sum().item()
-        c_fp = (outputs != targets)[detection_targets == 0].sum().item()  # FIXME
-        c_tn = (outputs == targets)[detection_targets == 0].sum().item()  # FIXME
-        c_fn = (outputs[detection_targets == 1] != targets[detection_targets == 1]).sum().item()  # FIXME
-
-        return np.array([[d_tp, d_fp, d_tn, d_fn],
-                         [c_tp, c_fp, c_tn, c_fn]])
+        return np.array([d_tp, d_fp, d_tn, d_fn])
 
     @staticmethod
     def compute_matrix(tp, fp, tn, fn):
@@ -252,6 +209,8 @@ class TrainBase(object):
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
+        parser.add_argument('--model', type=str, default='BertDetectionModel',
+                            help='The model name you want to evaluate.')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
         parser.add_argument('--train-data', type=str, default="./data/Wang271K_processed.pkl",
                             help='The file path of training data.')
@@ -291,3 +250,7 @@ class TrainBase(object):
         args.model_path = str(args.output_path / 'csc-best-model.pt')
 
         return args
+
+if __name__ == '__main__':
+    train = D_Train()
+    train.train()

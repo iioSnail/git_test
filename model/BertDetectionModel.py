@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from model.common import LayerNorm, BERT
+from model.common import BERT
 
 
 class BertDetectionModel(nn.Module):
@@ -10,8 +10,20 @@ class BertDetectionModel(nn.Module):
         super(BertDetectionModel, self).__init__()
         self.args = args
         self.bert = BERT()
+        self.cls = nn.Sequential(
+            nn.Linear(768, 1),
+            nn.Sigmoid()
+        )
 
-    def forward(self):
-        pass
+        self.criteria = nn.BCELoss()
+
+    def forward(self, inputs):
+        outputs = self.bert(inputs).last_hidden_state
+        d_outputs = self.cls(outputs).squeeze()
+        return d_outputs * inputs.attention_mask
+
+    def compute_loss(self, d_outputs, d_targets):
+        return self.criteria(d_outputs, d_targets)
+
 
 
