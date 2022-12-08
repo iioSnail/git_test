@@ -150,7 +150,8 @@ class D_Train(object):
         torch.save(self.model.state_dict(), self.args.model_path)
 
     def load_model(self):
-        self.model.load_state_dict(torch.load(self.args.model_path))
+        self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        self.model.to(self.args.device)
 
     def resume(self):
         # Resume model training.

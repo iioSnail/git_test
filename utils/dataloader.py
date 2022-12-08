@@ -4,14 +4,17 @@ import torch
 from torch.utils.data import DataLoader
 
 from model.common import BERT
-from utils.dataset import CSCDataset
+from utils.dataset import CSCDataset, SighanTrainDataset
 
 
 def create_dataloader(args, collate_fn=None):
-    with open(args.train_data, mode='br') as f:
-        train_data = pickle.load(f)
+    if args.train_data == 'sighan':
+        dataset = SighanTrainDataset()
+    else:
+        with open(args.train_data, mode='br') as f:
+            train_data = pickle.load(f)
 
-    dataset = CSCDataset(train_data, args)
+        dataset = CSCDataset(train_data, args)
 
     valid_size = int(len(dataset) * args.valid_ratio)
     train_size = len(dataset) - valid_size
