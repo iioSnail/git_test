@@ -47,9 +47,7 @@ class BERT(nn.Module):
 
     def __init__(self, model_path="hfl/chinese-roberta-wwm-ext", dropout=0.1):
         super(BERT, self).__init__()
-        config = BertConfig(hidden_dropout_prob=dropout,
-                            attention_probs_dropout_prob=dropout)
-        self.bert = AutoModel.from_pretrained(model_path, config=config)
+        self.bert = AutoModel.from_pretrained(model_path)
 
     def forward(self, inputs):
         return self.bert(**inputs)
