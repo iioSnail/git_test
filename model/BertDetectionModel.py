@@ -17,6 +17,8 @@ class BertDetectionModel(nn.Module):
 
         self.criteria = nn.BCELoss()
 
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
+
     def forward(self, inputs):
         outputs = self.bert(inputs).last_hidden_state
         d_outputs = self.cls(outputs).squeeze()
@@ -24,6 +26,9 @@ class BertDetectionModel(nn.Module):
 
     def compute_loss(self, d_outputs, d_targets):
         return self.criteria(d_outputs, d_targets)
+
+    def get_optimizer(self):
+        return self.optimizer
 
 
 

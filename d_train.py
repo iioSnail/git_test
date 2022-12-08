@@ -25,8 +25,8 @@ class D_Train(object):
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
-        collate_fn = self.model.get_collate_fn() if 'get_collate_fn' in dir(self.model) else None
-        self.train_loader, self.valid_loader = create_dataloader(self.args)
+        self.collate_fn = self.model.get_collate_fn() if 'get_collate_fn' in dir(self.model) else None
+        self.train_loader, self.valid_loader = create_dataloader(self.args, self.collate_fn)
 
         if 'get_optimizer' in dir(self.model):
             self.optimizer = self.model.get_optimizer()
@@ -128,6 +128,14 @@ class D_Train(object):
 
         print("Finish Training. The best model is saved to", self.args.model_path)
 
+    def simple_eval(self):
+        setup_seed(self.args.seed + 1)
+        _, self.valid_loader = create_dataloader(self.args, self.collate_fn)
+        print("Eval Training Result: ")
+        self.load_model()
+        self.validate()
+
+
     def save_model_state(self, epoch):
         torch.save({
             'model': self.model.state_dict(),
@@ -164,7 +172,7 @@ class D_Train(object):
     def validate(self):
         self.model = self.model.eval()
 
-        matrix = np.zeros([2, 4])
+        matrix = np.zeros([4])
 
         progress = tqdm(self.valid_loader, desc="Epoch {} Validation".format(self.current_epoch))
         for inputs, _, d_targets in progress:
@@ -175,14 +183,14 @@ class D_Train(object):
 
             matrix += self.character_level_confusion_matrix(d_outputs, d_targets, inputs.attention_mask)
 
-            detection_matrix = TrainBase.compute_matrix(*matrix[0])
+            d_matrix = TrainBase.compute_matrix(*matrix)
             progress.set_postfix({
-                'd_precision': detection_matrix[0],
-                'd_recall': detection_matrix[1],
-                'd_f1_score': detection_matrix[2],
+                'd_precision': d_matrix[0],
+                'd_recall': d_matrix[1],
+                'd_f1_score': d_matrix[2]
             })
 
-        d_p, d_r, d_f1 = TrainBase.compute_matrix(*matrix[0])
+        d_p, d_r, d_f1 = TrainBase.compute_matrix(*matrix)
         print("Detection Precision: {}, Recall: {}, F1-Score: {}".format(d_p, d_r, d_f1))
 
         self.recent_detection_f1_score.append(d_f1)
@@ -251,6 +259,8 @@ class D_Train(object):
 
         return args
 
+
 if __name__ == '__main__':
     train = D_Train()
     train.train()
+    train.simple_eval()
