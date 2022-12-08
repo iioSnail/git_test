@@ -3,7 +3,7 @@
 """
 import torch
 from torch import nn
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModel, AutoTokenizer, BertConfig
 
 
 class LayerNorm(nn.Module):
@@ -45,9 +45,11 @@ class LayerNorm(nn.Module):
 class BERT(nn.Module):
     tokenizer = None
 
-    def __init__(self, model_path="hfl/chinese-roberta-wwm-ext"):
+    def __init__(self, model_path="hfl/chinese-roberta-wwm-ext", dropout=0.1):
         super(BERT, self).__init__()
-        self.bert = AutoModel.from_pretrained(model_path)
+        config = BertConfig(hidden_dropout_prob=dropout,
+                            attention_probs_dropout_prob=dropout)
+        self.bert = AutoModel.from_pretrained(model_path, config=config)
 
     def forward(self, inputs):
         return self.bert(**inputs)

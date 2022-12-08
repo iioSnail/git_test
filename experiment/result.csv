@@ -1,1 +1,3 @@
-模型,d_precision,d_recall,d_f1,c_precision,c_recall,c_f1,实验描述
+模型,d_precision,d_recall,d_f1,c_precision,c_recall,c_f1,实验结果描述,实验描述
+纯bert,0.986,0.981,0.983,0,0,0,训练了20多个Epoch，效果也是越来越好,纯bert，Adam2e-5的学习率，5000个训练数据，就一层linear层，bert用的是hfl/chinese-roberta-wwm-ext，没有刻意设置dropout
+
