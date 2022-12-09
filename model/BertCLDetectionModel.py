@@ -26,7 +26,7 @@ class BertCLDetectionModel(nn.Module):
     def forward(self, inputs):
         hidden_states = self.bert(inputs).last_hidden_state
         d_outputs = self.cls(hidden_states).squeeze()
-        return d_outputs * inputs.attention_mask, hidden_states
+        return d_outputs * inputs.attention_mask
 
     def forward_and_computer_loss(self, inputs, targets, d_targets):
         inputs_hidden_states = self.bert(inputs).last_hidden_state
