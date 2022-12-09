@@ -18,7 +18,8 @@ class BertCLDetectionModel(nn.Module):
             nn.Sigmoid()
         )
 
-        self.criteria = nn.BCELoss()
+        self.bce_loss_func = nn.BCELoss()
+        self.mse_lose_func = nn.MSELoss()
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
 
@@ -28,19 +29,27 @@ class BertCLDetectionModel(nn.Module):
         return d_outputs * inputs.attention_mask, hidden_states
 
     def forward_and_computer_loss(self, inputs, targets, d_targets):
-        d_outputs, inputs_hidden_states = self.forward(inputs)
-        cls_loss = self.criteria(d_outputs, d_targets)
+        inputs_hidden_states = self.bert(inputs).last_hidden_state
+        d_outputs = self.cls(inputs_hidden_states).squeeze()
+        d_outputs = d_outputs * inputs.attention_mask
+
+        cls_loss = self.bce_loss_func(d_outputs, d_targets)
 
         # 计算Cl loss，相同的token越近越好，相反的token越远越好
         targets_hidden_states = self.bert(inputs).last_hidden_state
-        inputs_hidden_states = inputs_hidden_states * inputs.attention_mask
-        targets_hidden_states = targets_hidden_states * targets.attention_mask
+        inputs_hidden_states = inputs_hidden_states * torch.broadcast_to(inputs.attention_mask.unsqueeze(2),
+                                                                         inputs_hidden_states.shape)
+        targets_hidden_states = targets_hidden_states * torch.broadcast_to(targets.attention_mask.unsqueeze(2),
+                                                                           targets_hidden_states.shape)
 
-        sims = torch.cosine_similarity(inputs_hidden_states, targets_hidden_states)
-        print(sims)
+        sims = torch.cosine_similarity(inputs_hidden_states, targets_hidden_states, dim=2)
 
-        return cls_loss
+        cl_labels = targets.attention_mask.clone().float()
+        cl_labels[d_targets.bool()] = -1
 
+        cl_loss = self.mse_lose_func(sims, cl_labels)
+
+        return d_outputs, 0.8 * cls_loss + 0.2 * cl_loss
 
     def get_optimizer(self):
         return self.optimizer
