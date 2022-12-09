@@ -6,14 +6,11 @@ from model.common import BERT
 """
 实验结果：
 
-1. 验证集：0.986,0.981,0.983,0,0,0,
-2. 实验过程：使用5000*0.8个句子，训练了20多个Epoch，效果也是越来越好，到最后阶段，训练集基本已经到100%了,
-3. 模型情况：纯bert，Adam2e-5的学习率，5000个训练数据，就一层linear层，bert用的是hfl/chinese-roberta-wwm-ext，没有刻意设置dropout
-4. 测试集效果： Precision 0.42264477095901243, Recall 0.694602272726286, F1_Score 0.5255239114043971
-5. 总结：该模型再Wang271K上的表现可以很轻松的拿到高分，但再Sighan上就不行了。
-
-猜测：可能是因为Sighan和Wang271K的模型分布区别太大了？
+1. 实验结果：P:0.952, R:0.9527, F1:952。 测试集（Sighan15） P:0.611, R:0.703, f1:0.654.
+2. 实验过程：使用SIGHAN所有训练集，大概4800个句子，8:2拆分验证集，按f1进行early-stop，训练了17个Epoch，效果也是越来越好，到最后阶段，训练集基本已经到100%了, 但是验证集的表现一直不稳定。
+3. 模型情况：纯bert，Adam2e-5的学习率，就一层linear层，bert用的是hfl/chinese-roberta-wwm-ext
 """
+
 
 class BertDetectionModel(nn.Module):
 
@@ -42,8 +39,8 @@ class BertDetectionModel(nn.Module):
         return self.optimizer
 
     def predict(self, src, tgt):
-        inputs = self.bert.get_bert_inputs(src)
-        tgt_ids = self.bert.get_bert_inputs(tgt).input_ids
+        inputs = self.bert.get_bert_inputs(src).to(self.args.device)
+        tgt_ids = self.bert.get_bert_inputs(tgt).input_ids.to(self.args.device)
 
         d_outputs = self.forward(inputs) >= self.args.error_threshold
         d_outputs = d_outputs.int().squeeze()[1:-1]
