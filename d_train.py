@@ -10,6 +10,7 @@ from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+from model.BertCLDetectionModel import BertCLDetectionModel
 from model.BertDetectionModel import BertDetectionModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
@@ -22,6 +23,8 @@ class D_Train(object):
         self.args = self.parse_args()
         if self.args.model == "BertDetectionModel":
             self.model = BertDetectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == "BertCLDetectionModel":
+            self.model = BertCLDetectionModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -44,7 +47,7 @@ class D_Train(object):
     def train_epoch(self):
         self.model = self.model.train()
         progress = tqdm(self.train_loader, desc="Epoch {} Training".format(self.current_epoch))
-        for i, (inputs, _, d_targets) in enumerate(progress):
+        for i, (inputs, targets, d_targets) in enumerate(progress):
 
             if self.args.resume and self.total_step > self.current_epoch * len(self.train_loader) + i:
                 # Resume the progress of training loader.
@@ -52,12 +55,16 @@ class D_Train(object):
             else:
                 self.args.resume = False
 
-            inputs, d_targets = inputs.to(self.args.device), \
-                                d_targets.to(self.args.device)
+            inputs, targets, d_targets = inputs.to(self.args.device), \
+                                         targets.to(self.args.device), \
+                                         d_targets.to(self.args.device)
             self.optimizer.zero_grad()
 
-            d_outputs = self.model(inputs)
-            loss = self.model.compute_loss(d_outputs, d_targets)
+            if 'forward_and_computer_loss' in dir(self.model):
+                d_outputs, loss = self.model.forward_and_computer_loss(inputs, targets, d_targets)
+            else:
+                d_outputs = self.model(inputs)
+                loss = self.model.compute_loss(d_outputs, d_targets)
             loss.backward()
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5)
             self.optimizer.step()
@@ -134,7 +141,6 @@ class D_Train(object):
         print("Eval Training Result: ")
         self.load_model()
         self.validate()
-
 
     def save_model_state(self, epoch):
         torch.save({
@@ -218,7 +224,7 @@ class D_Train(object):
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--model', type=str, default='BertDetectionModel',
+        parser.add_argument('--model', type=str, default='BertCLDetectionModel',
                             help='The model name you want to evaluate.')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
         parser.add_argument('--train-data', type=str, default="./data/Wang271K_processed.pkl",

@@ -27,7 +27,7 @@ def create_dataloader(args, collate_fn=None):
         src = BERT.get_bert_inputs(src)
         tgt = BERT.get_bert_inputs(tgt)
 
-        return src, tgt['input_ids'], (src['input_ids'] != tgt['input_ids']).float()
+        return src, tgt, (src['input_ids'] != tgt['input_ids']).float()
 
     if collate_fn is None:
         collate_fn = default_collate_fn
