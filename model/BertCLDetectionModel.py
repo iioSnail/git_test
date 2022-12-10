@@ -1,7 +1,10 @@
+from pathlib import Path
+
 import torch
 from torch import nn
 
 from model.common import BERT
+from utils import utils
 
 """
 """
@@ -54,12 +57,29 @@ class BertCLDetectionModel(nn.Module):
     def get_optimizer(self):
         return self.optimizer
 
-    def predict(self, src, tgt):
+    def predict(self, src, tgt=None):
         inputs = self.bert.get_bert_inputs(src).to(self.args.device)
-        tgt_ids = self.bert.get_bert_inputs(tgt).input_ids.to(self.args.device)
-
         d_outputs = self.forward(inputs) >= self.args.error_threshold
         d_outputs = d_outputs.int().squeeze()[1:-1]
-        d_targets = (inputs.input_ids != tgt_ids).int().squeeze()[1:-1]
 
-        return d_outputs, d_targets
+        if tgt is not None:
+            tgt_ids = self.bert.get_bert_inputs(tgt).input_ids.to(self.args.device)
+            d_targets = (inputs.input_ids != tgt_ids).int().squeeze()[1:-1]
+            return d_outputs, d_targets
+
+        return d_outputs
+
+
+if __name__ == '__main__':
+    FILE = Path(__file__).resolve()
+    ROOT = FILE.parents[1]
+    model = BertCLDetectionModel(utils.mock_args(device='cpu', error_threshold=0.5))
+    sentence = " ".join("前天我吃了一大个火聋果")
+
+    d_outputs = model.predict(sentence)
+    print(utils.render_color_for_text(sentence, d_outputs))
+
+    inputs = model.bert.get_bert_inputs(sentence)
+    embeddings = model.bert(inputs).last_hidden_state
+    embeddings = embeddings.squeeze()[1:-1]
+    utils.token_embeddings_visualise(embeddings, sentence)

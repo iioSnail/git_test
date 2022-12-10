@@ -1,7 +1,10 @@
+from pathlib import Path
+
 import torch
 from torch import nn
 
 from model.common import BERT
+from utils import utils
 
 """
 实验结果：
@@ -38,12 +41,34 @@ class BertDetectionModel(nn.Module):
     def get_optimizer(self):
         return self.optimizer
 
-    def predict(self, src, tgt):
+    def predict(self, src, tgt=None):
         inputs = self.bert.get_bert_inputs(src).to(self.args.device)
-        tgt_ids = self.bert.get_bert_inputs(tgt).input_ids.to(self.args.device)
-
         d_outputs = self.forward(inputs) >= self.args.error_threshold
         d_outputs = d_outputs.int().squeeze()[1:-1]
-        d_targets = (inputs.input_ids != tgt_ids).int().squeeze()[1:-1]
 
-        return d_outputs, d_targets
+        if tgt is not None:
+            tgt_ids = self.bert.get_bert_inputs(tgt).input_ids.to(self.args.device)
+            d_targets = (inputs.input_ids != tgt_ids).int().squeeze()[1:-1]
+            return d_outputs, d_targets
+
+        return d_outputs
+
+
+if __name__ == '__main__':
+    FILE = Path(__file__).resolve()
+    ROOT = FILE.parents[1]
+    model = BertDetectionModel(utils.mock_args(device='cpu', error_threshold=0.5))
+    model.load_state_dict(torch.load(ROOT / 'output/csc-best-model.pt', map_location='cpu'))
+
+    sentence = " ".join("我起床的时候，他在吃早菜。")
+
+    d_outputs = model.predict(sentence)
+    print(utils.render_color_for_text(sentence, d_outputs))
+
+    inputs = model.bert.get_bert_inputs(sentence)
+    outputs = model.bert(inputs)
+    embeddings, pooler_output = outputs.last_hidden_state, outputs.pooler_output
+    embeddings = embeddings.squeeze()[1:-1]
+    utils.token_embeddings_visualise(embeddings, sentence)
+
+

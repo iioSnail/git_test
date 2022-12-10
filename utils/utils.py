@@ -4,6 +4,12 @@ import random
 
 import numpy as np
 import torch
+from matplotlib import pyplot as plt
+
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+
+from sklearn.decomposition import PCA
 
 from utils.confusions import confuse_char
 from utils.str_utils import Q2B
@@ -124,7 +130,7 @@ def mask_tokens(ids, mask_id=130, hard_level=1):
 
 def mask_level_1(length):
     """难度1：对句子中的某一个token进行mask"""
-    mask_index = [random.randint(0, length-1)]
+    mask_index = [random.randint(0, length - 1)]
     return mask_index
 
 
@@ -153,3 +159,33 @@ def mock_args(**kwargs):
         args[key] = value
 
     return args
+
+
+def token_embeddings_visualise(embeddings, text):
+    """
+    将汉字文本embedding绘制成图像
+    :param embeddings: 文本embedding后的向量，例如Shape为(55, 768)为55个token，每个token维度为768。
+                       不要包含bos、eos和pad。embedding需要是numpy类型的
+    :param text: 汉字文本，例如 “张 三 是 法 外 狂 徒”。text的长度需要和上面的token数一致
+    """
+    text = text.split(" ")
+    assert embeddings.shape[0] == len(text), "embedding的token数与text不一致"
+
+    if type(embeddings) == torch.Tensor:
+        embeddings = embeddings.detach().numpy()
+
+    assert type(embeddings) is np.ndarray, "embedding参数必须是numpy.ndarray类型或tensor类型"
+
+    # 1. 将词向量降维到2维度
+    pca = PCA(n_components=2)
+    embeddings = pca.fit_transform(embeddings)
+    # 2. 创建一个16x9大小的维度图像
+    plt.figure(figsize=(16, 9))
+    # 3. 循环绘制文字
+    for i in range(len(embeddings)):
+        plt.text(embeddings[i][0], embeddings[i][1], text[i])
+
+    # 4. 设置坐标边界
+    plt.xlim(embeddings[:, 0].min() - 0.5, embeddings[:, 0].max() + 0.5)
+    plt.ylim(embeddings[:, 1].min() - 0.5, embeddings[:, 1].max() + 0.5)
+    plt.show()
