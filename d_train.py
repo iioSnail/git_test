@@ -10,7 +10,6 @@ from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from model.BertCLDetectionModel import BertCLDetectionModel
 from model.BertDetectionModel import BertDetectionModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
@@ -24,6 +23,10 @@ class D_Train(object):
         if self.args.model == "BertDetectionModel":
             self.model = BertDetectionModel(self.args).train().to(self.args.device)
         elif self.args.model == "BertCLDetectionModel":
+            from model.BertCLDetectionModel import BertCLDetectionModel
+            self.model = BertCLDetectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == "BertCLDetectionModel2":
+            from model.BertCLDetectionModel2 import BertCLDetectionModel
             self.model = BertCLDetectionModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
