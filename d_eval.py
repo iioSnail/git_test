@@ -27,6 +27,12 @@ class Evaluation(object):
             self.model = DetectionKNNModel(self.args, k=1).eval()
         elif self.args.model == "BertDetectionModel":
             self.model = BertDetectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == "BertCLDetectionModel":
+            from model.BertCLDetectionModel import BertCLDetectionModel
+            self.model = BertCLDetectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == "BertCLDetectionModel2":
+            from model.BertCLDetectionModel2 import BertCLDetectionModel
+            self.model = BertCLDetectionModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
