@@ -44,7 +44,7 @@ class BertCLDetectionModel(nn.Module):
         cls_loss = self.bce_loss_func(d_outputs, d_targets)
 
         # 计算Cl loss，相同的token越近越好，相反的token越远越好
-        targets_hidden_states = self.bert(inputs).last_hidden_state
+        targets_hidden_states = self.bert(targets).last_hidden_state
         inputs_hidden_states = inputs_hidden_states * torch.broadcast_to(inputs.attention_mask.unsqueeze(2),
                                                                          inputs_hidden_states.shape)
         targets_hidden_states = targets_hidden_states * torch.broadcast_to(targets.attention_mask.unsqueeze(2),
