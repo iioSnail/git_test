@@ -40,15 +40,9 @@ class BertCorrectionModel(nn.Module):
 
     def predict(self, src, tgt=None):
         inputs = self.bert.get_bert_inputs(src).to(self.args.device)
-        d_outputs = self.forward(inputs) >= self.args.error_threshold
-        d_outputs = d_outputs.int().squeeze()[1:-1]
-
-        if tgt is not None:
-            tgt_ids = self.bert.get_bert_inputs(tgt).input_ids.to(self.args.device)
-            d_targets = (inputs.input_ids != tgt_ids).int().squeeze()[1:-1]
-            return d_outputs, d_targets
-
-        return d_outputs
+        outputs = self.forward(inputs)
+        outputs = outputs.argmax(-1)
+        return self.tokenizer.decode(outputs[0][1:-1]).replace(" ", "")
 
 
 if __name__ == '__main__':
