@@ -13,6 +13,11 @@ src: 鸡因你太美  tgt: 只因你太美
 
 使用bert求出src和tgt的token embeddings。（tgt的不求梯度）
 然后用tgt的token embedding求一个中心，让src中的正确字距离这个中心点越近越好，但是他们相互之间要越远越好。而错字距离中心点越远越好。
+
+实验结果：
+1. SIGHAN15: P:0.61548, R:0.667, F1:0.64。 （让正确字距离中心点的cos-sim为0.8，错误字cos-sim为-1）
+2. 训练过程快了很多，7个epoch就完了，说明还是有提升的，只是样本不够。
+
 """
 
 
@@ -84,7 +89,10 @@ if __name__ == '__main__':
     FILE = Path(__file__).resolve()
     ROOT = FILE.parents[1]
     model = BertCLDetectionModel(utils.mock_args(device='cpu', error_threshold=0.5))
-    sentence = " ".join("前天我吃了一大个火聋果")
+    model.load_state_dict(torch.load(ROOT / 'output_cl/csc-best-model.pt', map_location='cpu'))
+    model = model.eval()
+
+    sentence = " ".join("我跟我的同学学数学。我们对号码有兴趣")
 
     d_outputs = model.predict(sentence)
     print(utils.render_color_for_text(sentence, d_outputs))
