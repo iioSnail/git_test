@@ -26,7 +26,7 @@ class ConfusionMask(object):
 
     def get_confusion_mask(self, sentence):
         # 将句子中间增加空格
-        sentence = ' '.join(sentence.replace(" ", ""))
+        sentence = ' '.join(sentence.replace(" ", "")[:self.args.max_length])
         # 有几个字就构建几个相同的句子
         sentences = [sentence] * len(sentence.replace(" ", ""))
         inputs = self.tokenizer(sentences, return_tensors='pt')
@@ -77,6 +77,7 @@ class ConfusionMask(object):
         parser.add_argument('--file', type=str, default="sentences.txt")
         parser.add_argument('--output', type=str, default='sentences.csv')
         parser.add_argument('--start-row', type=int, default=-1)
+        parser.add_argument('--max-length', type=int, default=128)
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for test. auto, cpu or cuda')
 
