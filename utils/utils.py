@@ -61,8 +61,8 @@ def render_color_for_text(text, indices, color='red'):
 
 
 def compare_text(src: str, tgt: str):
-    src_char_list = list(src)
-    tgt_char_list = list(tgt)
+    src_char_list = list(src.replace(" ", ""))
+    tgt_char_list = list(tgt.replace(" ", ""))
 
     result = [False] * max(len(src_char_list), len(tgt_char_list))
 

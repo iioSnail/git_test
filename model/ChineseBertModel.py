@@ -126,6 +126,7 @@ class ChineseBertModel(nn.Module):
 
     def predict(self, sentence):
         input_ids, pinyin_ids = self.tokenizer.tokenize_sentence(sentence)
+        input_ids, pinyin_ids = input_ids.to(self.args.device), pinyin_ids.to(self.args.device)
         src_ids = input_ids.squeeze()[1:-1].clone()
         length = len(input_ids) - 2
         input_ids = input_ids.broadcast_to(length, length+2)
@@ -135,8 +136,8 @@ class ChineseBertModel(nn.Module):
         glyph_embeddings = self.glyph_embeddings(input_ids)
         attention_mask = (input_ids != 0).int()
 
-        mask = torch.concat([torch.zeros(length, 1), (torch.eye(length)).long(), torch.zeros(length, 1)], dim=1).long()
-        input_ids = input_ids.masked_fill(mask, mask_id)
+        mask = torch.concat([torch.zeros(length, 1), (torch.eye(length)).long(), torch.zeros(length, 1)], dim=1).long().to(self.args.device)
+        input_ids = input_ids.masked_fill(mask.bool(), mask_id)
         inputs = {
             "input_ids": input_ids,
             "pinyin_ids": pinyin_ids,

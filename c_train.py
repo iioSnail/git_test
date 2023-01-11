@@ -11,7 +11,6 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from model.BertCorrectionModel import BertCorrectionModel
-from model.ChineseBertModel import ChineseBertModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
@@ -23,6 +22,7 @@ class C_Train(object):
         super(C_Train, self).__init__()
         self.args = self.parse_args()
         if self.args.model == "ChineseBertModel":
+            from model.ChineseBertModel import ChineseBertModel
             self.model = ChineseBertModel(self.args).train().to(self.args.device)
         elif self.args.model == "Bert":
             self.model = BertCorrectionModel(self.args).train().to(self.args.device)
@@ -179,7 +179,7 @@ class C_Train(object):
             outputs = self.model(inputs)
             outputs = outputs.argmax(dim=2)
 
-            matrix += self.character_level_confusion_matrix(outputs, targets, detection_targets, inputs.attention_mask)
+            matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets, inputs.attention_mask)
 
             correction_matrix = TrainBase.compute_matrix(*matrix)
             progress.set_postfix({

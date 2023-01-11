@@ -4,10 +4,9 @@ from pathlib import Path
 import torch
 from tqdm import tqdm
 
-from model.ChineseBertModel import ChineseBertModel
+from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from utils.dataset import CSCTestDataset
-
 from train import Train
 from utils.utils import save_obj, render_color_for_text, compare_text, restore_special_tokens
 
@@ -21,7 +20,10 @@ class Evaluation(object):
         if self.args.model == 'MDCSpell':
             self.model = MDCSpellModel(self.args).eval()
         elif self.args.model == 'ChineseBertModel':
-            self.model = ChineseBertModel(self.args)
+            from model.ChineseBertModel import ChineseBertModel
+            self.model = ChineseBertModel(self.args).eval()
+        elif self.args.model == 'Bert':
+            self.model = BertCorrectionModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -249,7 +251,7 @@ class Evaluation(object):
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--test-data', type=str, default="./data/sighan/Test/sighan15_test_set_simplified.pkl",
+        parser.add_argument('--test-data', type=str, default="./datasets/sighan_2015_test.csv",
                             help='The file path of test data.')
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for test. auto, cpu or cuda')
