@@ -10,6 +10,7 @@ from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+from model.BertCorrectionModel import BertCorrectionModel
 from model.ChineseBertModel import ChineseBertModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
@@ -23,6 +24,8 @@ class C_Train(object):
         self.args = self.parse_args()
         if self.args.model == "ChineseBertModel":
             self.model = ChineseBertModel(self.args).train().to(self.args.device)
+        elif self.args.model == "Bert":
+            self.model = BertCorrectionModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -67,7 +70,7 @@ class C_Train(object):
             self.total_step += 1
 
             outputs = outputs.argmax(dim=2)
-            matrix = self.character_level_confusion_matrix(outputs, targets, detection_targets, inputs.attention_mask)
+            matrix = self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets, inputs.attention_mask)
 
             correction_matrix = TrainBase.compute_matrix(*matrix)
 
@@ -209,7 +212,7 @@ class C_Train(object):
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--model', type=str, default='ChineseBertModel',
+        parser.add_argument('--model', type=str, default='Bert',
                             help='The model name you want to evaluate.')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
         parser.add_argument('--train-data', type=str, default="./data/Wang271K_processed.pkl",
