@@ -27,7 +27,7 @@ class Evaluation(object):
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
-        self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        # self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
         self.model.to(self.args.device)
 
         self.error_sentences = []
@@ -255,7 +255,7 @@ class Evaluation(object):
                             help='The file path of test data.')
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for test. auto, cpu or cuda')
-        parser.add_argument('--model', type=str, default='ChineseBertModel',
+        parser.add_argument('--model', type=str, default='Bert',
                             help='The model name you want to evaluate.')
         parser.add_argument('--model-path', type=str, default='./c_output/csc-best-model.pt',
                             help='The model file path. e.g. "./output/csc-best-model.pt"')

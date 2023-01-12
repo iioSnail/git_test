@@ -42,7 +42,10 @@ class BertCorrectionModel(nn.Module):
         inputs = self.bert.get_bert_inputs(src).to(self.args.device)
         outputs = self.forward(inputs)
         outputs = outputs.argmax(-1)
-        return self.tokenizer.decode(outputs[0][1:-1]).replace(" ", "")
+        outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
+        inputs = self.tokenizer.convert_ids_to_tokens(inputs['input_ids'][0][1:-1])
+        outputs = [outputs[i] if len(outputs[i]) == 1 else inputs[i] for i in range(len(outputs))]
+        return ''.join(outputs)
 
 
 if __name__ == '__main__':
