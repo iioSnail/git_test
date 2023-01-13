@@ -75,7 +75,8 @@ class ConfusionMaskDataset(Dataset):
 
     def __init__(self, args):
         self.args = args
-        self.dataset = pd.read_csv(self.args.train_data)
+        self.dataset = pd.read_csv(self.args.train_data, header=None)
+        self.dataset.columns = ['sentence', 'indexes']
 
     def __getitem__(self, index):
         row = self.dataset.iloc[index]
