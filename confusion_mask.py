@@ -61,13 +61,14 @@ class ConfusionMask(object):
                         if row < self.args.start_row:
                             continue
 
+                        line = line.replace('"', "").replace(",", "")
                         line = line.strip()
                         if line == "":
                             continue
 
                         confusion_mask_result = self.get_confusion_mask(line)
                         confusion_mask_result = '%s' % ','.join(map(str, confusion_mask_result))
-                        fw.write('"%s","%s"\n' % (line, confusion_mask_result))
+                        fw.write('%s,"%s"\n' % (line, confusion_mask_result))
         except KeyboardInterrupt:
             print("Program exits. Number of rows processed: %d" % (row-1))
 
