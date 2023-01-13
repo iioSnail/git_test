@@ -1,9 +1,11 @@
 import pickle
+import random
 
 import pandas as pd
 from torch.utils.data import Dataset
 
 from model.common import BERT
+from utils.confusions import confuse_char
 from utils.utils import preprocess_text
 from pathlib import Path
 
@@ -25,7 +27,7 @@ class CSCDataset(Dataset):
 
     def __len__(self):
         if self.args.limit_data_size and self.args.limit_data_size > 0:
-            return self.args.limit_data_size
+            return max(self.args.limit_data_size, len(self.dataset))
         else:
             return len(self.dataset)
 
@@ -66,4 +68,36 @@ class CSCTestDataset(Dataset):
         return " ".join(src), " ".join(tgt)
 
     def __len__(self):
+        return len(self.dataset)
+
+
+class ConfusionMaskDataset(Dataset):
+
+    def __init__(self, args):
+        self.args = args
+        self.dataset = pd.read_csv(self.args.train_data)
+
+    def __getitem__(self, index):
+        row = self.dataset.iloc[index]
+        sentence = row['sentence']
+        indexes = row['indexes']
+        src = ' '.join(sentence)
+        tgt = self.mask_sentence(sentence, indexes)
+        return src, tgt
+
+    def mask_sentence(self, sentence, indexes):
+        sentence = list(sentence)
+        mask_len = max(len(sentence) // 10, 1)
+        indexes = list(map(int, indexes.split(",")))
+        if mask_len > len(indexes):
+            mask_len = len(indexes)
+        indexes = random.sample(indexes, mask_len)
+        for i in indexes:
+            sentence[i] = confuse_char(sentence[i])
+
+        return ' '.join(sentence)
+
+    def __len__(self):
+        if self.args.limit_data_size and self.args.limit_data_size > 0:
+            return max(self.args.limit_data_size, len(self.dataset))
         return len(self.dataset)

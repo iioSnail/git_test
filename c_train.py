@@ -215,6 +215,8 @@ class C_Train(object):
         parser.add_argument('--model', type=str, default='Bert',
                             help='The model name you want to evaluate.')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
+        parser.add_argument('--data-type', type=str, default="confusion_mask",
+                            help='The type of training data.')
         parser.add_argument('--train-data', type=str, default="./data/Wang271K_processed.pkl",
                             help='The file path of training data.')
         parser.add_argument('--valid-ratio', type=float, default=0.2,
