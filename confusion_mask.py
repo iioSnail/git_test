@@ -66,8 +66,8 @@ class ConfusionMask(object):
                             continue
 
                         confusion_mask_result = self.get_confusion_mask(line)
-                        confusion_mask_result = '"%s"' % ','.join(map(str, confusion_mask_result))
-                        fw.write("%s,%s\n" % (line, confusion_mask_result))
+                        confusion_mask_result = '%s' % ','.join(map(str, confusion_mask_result))
+                        fw.write('"%s","%s"\n' % (line, confusion_mask_result))
         except KeyboardInterrupt:
             print("Program exits. Number of rows processed: %d" % (row-1))
 
