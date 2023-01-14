@@ -96,7 +96,7 @@ class ConfusionMaskDataset(Dataset):
             mask_len = len(indexes)
         indexes = random.sample(indexes, mask_len)
         for i in indexes:
-            sentence[i] = confuse_char(sentence[i])
+            sentence[i] = confuse_char(sentence[i], type='same_pinyin')
 
         return ' '.join(sentence)
 
