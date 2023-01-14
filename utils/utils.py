@@ -12,7 +12,7 @@ plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 from sklearn.decomposition import PCA
 
 from utils.confusions import confuse_char
-from utils.str_utils import Q2B
+from utils.str_utils import Q2B, is_chinese
 
 special_tokens = set("`1234567890-=~!！@#$%^&*()_+（）qwertyuiop"
                      "asddfghjklzxcvbnmQWERTYUIOPASDFGHHJKLZXCVBNM"
@@ -93,7 +93,7 @@ def restore_special_tokens(src, output):
     src = list(src)
     output = list(output)
     for i in range(len(src)):
-        if src[i] in special_tokens or output[i] in special_tokens:
+        if not is_chinese(src[i]) or not is_chinese(output[i]):
             output[i] = src[i]
 
     return ''.join(output)
