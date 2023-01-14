@@ -27,7 +27,7 @@ class Evaluation(object):
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
-        self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        # self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
         self.model.to(self.args.device)
 
         self.error_sentences = []
@@ -92,6 +92,7 @@ class Evaluation(object):
         progress = tqdm(range(len(self.test_set)), desc='Evaluation')
         for i in progress:
             src, tgt = self.test_set.__getitem__(i)
+            src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
             c_output = self.model.predict(src)
             c_output = restore_special_tokens(src, c_output)
 
