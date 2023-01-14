@@ -75,7 +75,7 @@ class ConfusionMaskDataset(Dataset):
 
     def __init__(self, args):
         self.args = args
-        self.dataset = pd.read_csv(self.args.train_data, header=None)
+        self.dataset = pd.read_csv(self.args.train_data, header=None, dtype=str)
         self.dataset.columns = ['sentence', 'indexes']
 
     def __getitem__(self, index):
@@ -89,6 +89,8 @@ class ConfusionMaskDataset(Dataset):
     def mask_sentence(self, sentence, indexes):
         sentence = list(sentence)
         mask_len = max(len(sentence) // 10, 1)
+        if pd.isnull(indexes):
+            indexes = ','.join(list(map(str, range(len(sentence)))))
         indexes = list(map(int, indexes.split(",")))
         if mask_len > len(indexes):
             mask_len = len(indexes)
