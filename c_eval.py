@@ -27,7 +27,7 @@ class Evaluation(object):
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
-        # self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
         self.model.to(self.args.device)
 
         self.error_sentences = []
