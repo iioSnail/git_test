@@ -82,8 +82,8 @@ class ConfusionMaskDataset(Dataset):
         row = self.dataset.iloc[index]
         sentence = row['sentence']
         indexes = row['indexes']
-        src = ' '.join(sentence)
-        tgt = self.mask_sentence(sentence, indexes)
+        tgt = ' '.join(sentence)
+        src = self.mask_sentence(sentence, indexes)
         return src, tgt
 
     def mask_sentence(self, sentence, indexes):
