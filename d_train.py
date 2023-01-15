@@ -120,6 +120,7 @@ class D_Train(object):
                 exit()
             except BaseException as e:
                 traceback.print_exc()
+                self.save_model_state(epoch)
                 print("Unexpected exception happened. The program is about to exit. Save model state to",
                       self.args.output_path)
                 exit()

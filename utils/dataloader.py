@@ -4,14 +4,16 @@ import torch
 from torch.utils.data import DataLoader
 
 from model.common import BERT
-from utils.dataset import CSCDataset, SighanTrainDataset, ConfusionMaskDataset
+from utils.dataset import CSCDataset, SighanTrainDataset, ConfusionMaskDataset, PhoneticProbeDataset
 
 
 def create_dataloader(args, collate_fn=None):
-    if args.train_data == 'sighan':
+    if args.data_type == 'sighan':
         dataset = SighanTrainDataset()
     elif args.data_type == 'confusion_mask':
         dataset = ConfusionMaskDataset(args)
+    elif args.data_type == 'phonetic':
+        dataset = PhoneticProbeDataset()
     else:
         with open(args.train_data, mode='br') as f:
             train_data = pickle.load(f)

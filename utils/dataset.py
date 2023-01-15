@@ -1,11 +1,14 @@
 import pickle
 import random
 
+import opencc
 import pandas as pd
+import pypinyin
 from torch.utils.data import Dataset
 
 from model.common import BERT
 from utils.confusions import confuse_char
+from utils.str_utils import is_chinese
 from utils.utils import preprocess_text
 from pathlib import Path
 
@@ -104,3 +107,55 @@ class ConfusionMaskDataset(Dataset):
         if self.args.limit_data_size and self.args.limit_data_size > 0:
             return max(self.args.limit_data_size, len(self.dataset))
         return len(self.dataset)
+
+
+class PhoneticProbeDataset(Dataset):
+
+    def __init__(self):
+        super(PhoneticProbeDataset, self).__init__()
+        tokenizer = BERT.get_tokenizer()
+
+        # Get all chinese characters.
+        tw2zh = opencc.OpenCC('t2s.json')
+        chinese_chars = set()
+        for token in tokenizer.get_vocab().keys():
+            if is_chinese(token):
+                chinese_chars.add(tw2zh.convert(token))
+        chinese_chars = list(chinese_chars)
+
+        # Create chinese pinyin list of chinese characters.
+        chinese_chars_pinyin = []
+        for char_ in chinese_chars:
+            chinese_chars_pinyin.append(pypinyin.pinyin(char_, style=pypinyin.NORMAL)[0])
+
+        # Create Positive samples.
+        positive_samples = []
+        for i in range(len(chinese_chars)):
+            pinyin_i = chinese_chars_pinyin[i]
+            for j in range(i + 1, len(chinese_chars)):
+                pinyin_j = chinese_chars_pinyin[j]
+                if pinyin_i == pinyin_j:
+                    positive_samples.append(((chinese_chars[i], chinese_chars[j]), 1))
+
+        # Create negative samples.
+        negative_samples = []
+        while True:
+            i = random.randint(0, len(chinese_chars) - 1)
+            j = random.randint(0, len(chinese_chars) - 1)
+            if chinese_chars_pinyin[i] != chinese_chars_pinyin[j]:
+                negative_samples.append(((chinese_chars[i], chinese_chars[j]), 0))
+
+            if len(negative_samples) == len(positive_samples):
+                break
+
+        # Merge positive samples and negative samples and then shuffle them.
+        dataset = positive_samples + negative_samples
+        random.shuffle(dataset)
+        self.dataset = dataset
+
+    def __getitem__(self, index):
+        return self.dataset[index]
+
+    def __len__(self):
+        return len(self.dataset)
+

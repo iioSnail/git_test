@@ -22,6 +22,9 @@ special_tokens = set("`1234567890-=~!！@#$%^&*()_+（）qwertyuiop"
 
 
 def setup_seed(seed):
+    if seed < 0:
+        return
+
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
