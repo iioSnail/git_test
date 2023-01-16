@@ -21,13 +21,9 @@ class PhoneticBertModel(nn.Module):
             nn.Sigmoid()
         )
 
-        # self.bert_embeddings = self.bert.get_input_embeddings()
-        # self.bert_embeddings = nn.Embedding(21128, 768)
-
-        def bert_embeddings_func(ids):
-            ids = torch.LongTensor(ids).to(self.args.device).unsqueeze(1)
-            return self.bert(input_ids=ids).last_hidden_state.squeeze()
-        self.bert_embeddings = bert_embeddings_func
+    def bert_embeddings(self, ids):
+        input_ids = ids.unsqueeze(1)
+        return self.bert(input_ids=input_ids).last_hidden_state.squeeze()
 
     def forward(self, inputs):
         pair_i = self.tokenizer.convert_tokens_to_ids(inputs[0])

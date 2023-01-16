@@ -183,7 +183,7 @@ class GlyphPhoneticProbeTrain(object):
         parser.add_argument('--model', type=str, default='PhoneticBertModel',
                             help='The model name you want to evaluate.')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
-        parser.add_argument('--data-type', type=str, default="phonetic",
+        parser.add_argument('--data-type', type=str, default="glyph",
                             help='The type of training data.')
         parser.add_argument('--valid-ratio', type=float, default=0.2,
                             help='The ratio of splitting validation set.')

@@ -4,7 +4,9 @@ import random
 import opencc
 import pandas as pd
 import pypinyin
+from hanzi_chaizi import HanziChaizi
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from model.common import BERT
 from utils.confusions import confuse_char
@@ -147,6 +149,65 @@ class PhoneticProbeDataset(Dataset):
 
             if len(negative_samples) == len(positive_samples):
                 break
+
+        # Merge positive samples and negative samples and then shuffle them.
+        dataset = positive_samples + negative_samples
+        random.shuffle(dataset)
+        self.dataset = dataset
+
+    def __getitem__(self, index):
+        return self.dataset[index]
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+class GlyphProbeDataset(Dataset):
+
+    def __init__(self):
+        super(GlyphProbeDataset, self).__init__()
+        tokenizer = BERT.get_tokenizer()
+
+        # Get all chinese characters.
+        tw2zh = opencc.OpenCC('t2s.json')
+        chinese_chars = set()
+        for token in tokenizer.get_vocab().keys():
+            if is_chinese(token):
+                chinese_chars.add(tw2zh.convert(token))
+        chinese_chars = list(chinese_chars)
+
+        chaizi = HanziChaizi()
+        chinese_chars_components = set()
+        for values in chaizi.data.values():
+            for value in values:
+                for component in value:
+                    chinese_chars_components.add(component)
+
+        chinese_chars_components = list(chinese_chars_components)
+
+        positive_samples = set()
+        for u in tqdm(chinese_chars_components, desc="Init Glyph Dataset"):
+            for w in chinese_chars:
+                if w not in chaizi.data:
+                    continue
+
+                w_components = chaizi.query(w)
+                if u in w_components:
+                    positive_samples.add((u, w))
+
+        negative_samples = set()
+        while True:
+            u = chinese_chars_components[random.randint(0, len(chinese_chars_components)-1)]
+            w = chinese_chars[random.randint(0, len(chinese_chars)-1)]
+
+            if (u, w) not in positive_samples:
+                negative_samples.add((u, w))
+
+            if len(negative_samples) == len(positive_samples):
+                break
+
+        positive_samples = [(item, 1) for item in positive_samples]
+        negative_samples = [(item, 0) for item in negative_samples]
 
         # Merge positive samples and negative samples and then shuffle them.
         dataset = positive_samples + negative_samples
