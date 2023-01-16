@@ -11,10 +11,24 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from model.BertCorrectionModel import BertCorrectionModel
+from model.MultiModalBert import MultiModalBertModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
 
+"""
+本地测试参数：
+--batch-size 4 \
+--limit-data-size 30000 \
+--data-type confusion_mask \
+--train-data data/sentences_small.csv \
+--model MultiModalBert \
+--batch-size 4 \
+--limit-data-size 30000 \
+--data-type confusion_mask \
+--train-data data/sentences_small.csv \
+--no-resume
+"""
 
 class C_Train(object):
 
@@ -26,6 +40,8 @@ class C_Train(object):
             self.model = ChineseBertModel(self.args).train().to(self.args.device)
         elif self.args.model == "Bert":
             self.model = BertCorrectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'MultiModalBert':
+            self.model = MultiModalBertModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 

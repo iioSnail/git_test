@@ -8,7 +8,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from model.PhoneticBert import PhoneticBertModel
+from model.GlyphPhoneticBert import GlyphPhoneticBertModel
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
 
@@ -18,8 +18,8 @@ class GlyphPhoneticProbeTrain(object):
     def __init__(self):
         super(GlyphPhoneticProbeTrain, self).__init__()
         self.args = self.parse_args()
-        if self.args.model == "PhoneticBertModel":
-            self.model = PhoneticBertModel(self.args).train().to(self.args.device)
+        if self.args.model == "bert":
+            self.model = GlyphPhoneticBertModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -180,10 +180,10 @@ class GlyphPhoneticProbeTrain(object):
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--model', type=str, default='PhoneticBertModel',
+        parser.add_argument('--model', type=str, default='bert',
                             help='The model name you want to evaluate.')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
-        parser.add_argument('--data-type', type=str, default="glyph",
+        parser.add_argument('--data-type', type=str, default="phonetic",
                             help='The type of training data.')
         parser.add_argument('--valid-ratio', type=float, default=0.2,
                             help='The ratio of splitting validation set.')
