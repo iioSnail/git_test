@@ -1,4 +1,5 @@
 import torch
+import transformers
 from torch import nn
 
 from model.common import BERT
@@ -10,12 +11,9 @@ class PhoneticBertModel(nn.Module):
         super(PhoneticBertModel, self).__init__()
         self.args = args
         self.bert = BERT().bert
-        self.bert_embeddings = self.bert.get_input_embeddings()
         self.tokenizer = BERT.get_tokenizer()
         self.cls = nn.Sequential(
             nn.Linear(768 * 2, 768),
-            nn.ReLU(),
-            nn.Linear(768, 768),
             nn.ReLU(),
             nn.Linear(768, 256),
             nn.ReLU(),
@@ -23,7 +21,13 @@ class PhoneticBertModel(nn.Module):
             nn.Sigmoid()
         )
 
-        self.bert_embeddings = nn.Embedding(21128, 768)
+        # self.bert_embeddings = self.bert.get_input_embeddings()
+        # self.bert_embeddings = nn.Embedding(21128, 768)
+
+        def bert_embeddings_func(ids):
+            ids = torch.LongTensor(ids).to(self.args.device).unsqueeze(1)
+            return self.bert(input_ids=ids).last_hidden_state.squeeze()
+        self.bert_embeddings = bert_embeddings_func
 
     def forward(self, inputs):
         pair_i = self.tokenizer.convert_tokens_to_ids(inputs[0])

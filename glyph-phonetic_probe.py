@@ -4,15 +4,11 @@ import os
 import traceback
 from pathlib import Path
 
-import numpy as np
 import torch
 from torch import nn
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from model.BertCorrectionModel import BertCorrectionModel
 from model.PhoneticBert import PhoneticBertModel
-from train_base import TrainBase
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
 
