@@ -39,7 +39,7 @@ class MultiModalBertModel(nn.Module):
             else:
                 raise Exception("难道还有超过6个字母的拼音？")
 
-        input_pinyins = torch.stack(input_pinyins)
+        input_pinyins = torch.stack(input_pinyins).to(self.args.device)
         pinyin_embeddings = self.pinyin_embeddings(input_pinyins.view(-1, 6, 26).float())[1][-1]
         pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
 
