@@ -164,6 +164,8 @@ class PhoneticProbeDataset(Dataset):
 
 class GlyphProbeDataset(Dataset):
 
+    chinese_chars_components = None
+
     def __init__(self):
         super(GlyphProbeDataset, self).__init__()
         tokenizer = BERT.get_tokenizer()
@@ -177,13 +179,7 @@ class GlyphProbeDataset(Dataset):
         chinese_chars = list(chinese_chars)
 
         chaizi = HanziChaizi()
-        chinese_chars_components = set()
-        for values in chaizi.data.values():
-            for value in values:
-                for component in value:
-                    chinese_chars_components.add(component)
-
-        chinese_chars_components = list(chinese_chars_components)
+        chinese_chars_components = GlyphProbeDataset.get_chinese_chars_components()
 
         positive_samples = set()
         for u in tqdm(chinese_chars_components, desc="Init Glyph Dataset"):
@@ -213,6 +209,21 @@ class GlyphProbeDataset(Dataset):
         dataset = positive_samples + negative_samples
         random.shuffle(dataset)
         self.dataset = dataset
+
+    @staticmethod
+    def get_chinese_chars_components():
+        if GlyphProbeDataset.chinese_chars_components is not None:
+            return GlyphProbeDataset.chinese_chars_components
+
+        chaizi = HanziChaizi()
+        chinese_chars_components = set()
+        for values in chaizi.data.values():
+            for value in values:
+                for component in value:
+                    chinese_chars_components.add(component)
+
+        GlyphProbeDataset.chinese_chars_components = list(chinese_chars_components)
+        return GlyphProbeDataset.chinese_chars_components
 
     def __getitem__(self, index):
         return self.dataset[index]

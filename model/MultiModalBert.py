@@ -1,10 +1,21 @@
 import pypinyin
 import torch
+from PIL import ImageFont
 from torch import nn
 from torch.nn import functional as F
 
 from model.common import BERT
 from utils.str_utils import is_chinese
+
+
+class GlyphEmbedding(nn.Module):
+
+    def __init__(self):
+        pass
+
+    def forward(self, character):
+        # ImageFont("")
+        pass
 
 
 class MultiModalBertModel(nn.Module):
@@ -15,9 +26,8 @@ class MultiModalBertModel(nn.Module):
         self.bert = BERT().bert
         self.tokenizer = BERT.get_tokenizer()
         self.pinyin_feature_size = 8
-        self.pinyin_embeddings = nn.GRU(input_size=26, hidden_size=self.pinyin_feature_size, num_layers=2, bias=True, batch_first=True,
-                                        dropout=0.15)
-        # self.pinyin_embeddings = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=), num_layers=2)
+        self.pinyin_embeddings = nn.GRU(input_size=26, hidden_size=self.pinyin_feature_size, num_layers=2, bias=True,
+                                        batch_first=True, dropout=0.15)
 
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None):
         batch_size = input_ids.size(0)
@@ -34,7 +44,7 @@ class MultiModalBertModel(nn.Module):
             embeddings = F.one_hot(torch.tensor([ord(letter) - 97 for letter in pinyin]), 26)
 
             if embeddings.size(0) <= 6:
-                embeddings = torch.concat([embeddings, torch.zeros(6-embeddings.size(0), 26, dtype=torch.long)])
+                embeddings = torch.concat([embeddings, torch.zeros(6 - embeddings.size(0), 26, dtype=torch.long)])
                 input_pinyins.append(embeddings)
             else:
                 raise Exception("难道还有超过6个字母的拼音？")
