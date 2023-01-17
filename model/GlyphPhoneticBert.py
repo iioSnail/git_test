@@ -17,7 +17,7 @@ class GlyphPhoneticBertModel(nn.Module):
 
         self.tokenizer = BERT.get_tokenizer()
         self.cls = nn.Sequential(
-            nn.Linear(776 * 2, 768),
+            nn.Linear(832 * 2, 768),
             nn.ReLU(),
             nn.Linear(768, 256),
             nn.ReLU(),

@@ -1,3 +1,4 @@
+import numpy as np
 import pypinyin
 import torch
 from PIL import ImageFont
@@ -9,13 +10,43 @@ from utils.str_utils import is_chinese
 
 
 class GlyphEmbedding(nn.Module):
+    font = None
 
     def __init__(self):
-        pass
+        super(GlyphEmbedding, self).__init__()
+        self.font_size = 32
+        self.embeddings = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(32 * 32, 512),
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 56)
+        )
 
-    def forward(self, character):
-        # ImageFont("")
-        pass
+    @staticmethod
+    def convert_char_to_image(character, font_size=32):
+        if GlyphEmbedding.font is None:
+            GlyphEmbedding.font = ImageFont.truetype("./assets/font/ms_yahei.ttf", size=font_size)
+
+        image = GlyphEmbedding.font.getmask(character)
+        image = np.asarray(image).astype(np.float32).reshape(image.size[::-1])
+
+        image = image[:font_size, :font_size]
+
+        if image.size != (font_size, font_size):
+            back_image = np.zeros((font_size, font_size)).astype(np.float32)
+            offset0 = (font_size - image.shape[0]) // 2
+            offset1 = (font_size - image.shape[1]) // 2
+            back_image[offset0:offset0 + image.shape[0], offset1:offset1 + image.shape[1]] = image
+            image = back_image
+
+        return torch.tensor(image)
+
+    def forward(self, characters):
+        images = [GlyphEmbedding.convert_char_to_image(char_, self.font_size) for char_ in characters]
+        images = torch.stack(images)
+        return self.embeddings(images)
 
 
 class MultiModalBertModel(nn.Module):
@@ -28,6 +59,7 @@ class MultiModalBertModel(nn.Module):
         self.pinyin_feature_size = 8
         self.pinyin_embeddings = nn.GRU(input_size=26, hidden_size=self.pinyin_feature_size, num_layers=2, bias=True,
                                         batch_first=True, dropout=0.15)
+        self.glyph_embeddings = GlyphEmbedding()
 
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None):
         batch_size = input_ids.size(0)
@@ -52,8 +84,14 @@ class MultiModalBertModel(nn.Module):
         input_pinyins = torch.stack(input_pinyins).to(self.args.device)
         pinyin_embeddings = self.pinyin_embeddings(input_pinyins.view(-1, 6, 26).float())[1][-1]
         pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
+        glyph_embeddings = self.glyph_embeddings(input_tokens)
+        glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
 
-        bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state, pinyin_embeddings], dim=-1)
-        bert_outputs.pooler_output = torch.concat([bert_outputs.pooler_output, pinyin_embeddings.sum(dim=1)], dim=-1)
+        bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
+                                                       pinyin_embeddings,
+                                                       glyph_embeddings], dim=-1)
+        bert_outputs.pooler_output = torch.concat([bert_outputs.pooler_output,
+                                                   pinyin_embeddings.sum(dim=1),
+                                                   glyph_embeddings.sum(dim=1)], dim=-1)
 
         return bert_outputs
