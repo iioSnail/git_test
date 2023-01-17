@@ -17,16 +17,6 @@ class GlyphEmbedding(nn.Module):
         super(GlyphEmbedding, self).__init__()
         self.args = args
         self.font_size = 32
-        # self.embeddings = nn.Sequential(
-        #     nn.Flatten(),
-        #     # nn.Linear(32 * 32, 512),
-        #     # nn.ReLU(),
-        #     # nn.Dropout(0.15),
-        #     # nn.Linear(512, 256),
-        #     # nn.ReLU(),
-        #     # nn.Dropout(0.15),
-        #     # nn.Linear(256, 56)
-        # )
         self.embeddings = CharResNet()
 
     @staticmethod
