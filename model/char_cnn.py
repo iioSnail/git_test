@@ -40,7 +40,7 @@ class CharResNet(torch.nn.Module):
         self.res_block1 = BasicBlock(in_channels, 64, stride=2)     # channels: 64, size: 16x16
         self.res_block2 = BasicBlock(64, 128, stride=2)   # channels: 128, size: 8x8
         self.res_block3 = BasicBlock(128, 256, stride=2)  # channels: 256, size: 4x4
-        self.res_block5 = BasicBlock(256, 56, stride=2)  # channels: 768, size: 1x1
+        self.res_block4 = BasicBlock(256, 56, stride=2)  # channels: 768, size: 1x1
         
     def forward(self, x):
         # input_shape: bxcx32x32, output_image: bx768
@@ -49,7 +49,6 @@ class CharResNet(torch.nn.Module):
         h = self.res_block2(h)
         h = self.res_block3(h)
         h = self.res_block4(h)
-        h = self.res_block5(h)
         h = h.squeeze(-1).squeeze(-1)
         return h
 
