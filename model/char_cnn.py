@@ -37,7 +37,7 @@ class CharResNet(torch.nn.Module):
     def __init__(self, in_channels=1):
         super().__init__()
         # input_image: bxcx32x32, output_image: bx768x1x1
-        self.res_block1 = BasicBlock(in_channels, 64, stride=2)     # channels: 64, size: 16x16
+        self.res_block1 = BasicBlock(in_channels, 64, stride=4)     # channels: 64, size: 16x16
         self.res_block2 = BasicBlock(64, 128, stride=2)   # channels: 128, size: 8x8
         self.res_block3 = BasicBlock(128, 256, stride=2)  # channels: 256, size: 4x4
         self.res_block4 = BasicBlock(256, 56, stride=2)  # channels: 768, size: 1x1
