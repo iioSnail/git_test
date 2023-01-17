@@ -12,8 +12,9 @@ from utils.str_utils import is_chinese
 class GlyphEmbedding(nn.Module):
     font = None
 
-    def __init__(self):
+    def __init__(self, args):
         super(GlyphEmbedding, self).__init__()
+        self.args = args
         self.font_size = 32
         self.embeddings = nn.Sequential(
             nn.Flatten(),
@@ -45,7 +46,7 @@ class GlyphEmbedding(nn.Module):
 
     def forward(self, characters):
         images = [GlyphEmbedding.convert_char_to_image(char_, self.font_size) for char_ in characters]
-        images = torch.stack(images)
+        images = torch.stack(images).to(self.args.device)
         return self.embeddings(images)
 
 
@@ -59,7 +60,7 @@ class MultiModalBertModel(nn.Module):
         self.pinyin_feature_size = 8
         self.pinyin_embeddings = nn.GRU(input_size=26, hidden_size=self.pinyin_feature_size, num_layers=2, bias=True,
                                         batch_first=True, dropout=0.15)
-        self.glyph_embeddings = GlyphEmbedding()
+        self.glyph_embeddings = GlyphEmbedding(args)
 
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None):
         batch_size = input_ids.size(0)
