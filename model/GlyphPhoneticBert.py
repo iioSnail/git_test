@@ -25,6 +25,10 @@ class GlyphPhoneticBertModel(nn.Module):
             nn.Sigmoid()
         )
 
+        if self.args.train_type == 'cls':
+            self.load_glyph_param()
+            self.load_phonetic_param()
+
     def bert_embeddings(self, ids):
         input_ids = ids.unsqueeze(1)
         return self.bert(input_ids=input_ids).last_hidden_state.squeeze()
@@ -41,6 +45,16 @@ class GlyphPhoneticBertModel(nn.Module):
 
         outputs = self.cls(torch.concat([embeddings_i, embeddings_j], dim=1))
         return outputs.squeeze()
+
+    def load_glyph_param(self):
+        model_state = torch.load(self.args.glyph_model_path, map_location='cpu')
+        for name, param in self.bert.glyph_embeddings.named_parameters():
+            param.data = model_state['bert.glyph_embeddings.' + name]
+
+    def load_phonetic_param(self):
+        model_state = torch.load(self.args.phonetic_model_path, map_location='cpu')
+        for name, param in self.bert.pinyin_embeddings.named_parameters():
+            param.data = model_state['bert.pinyin_embeddings.' + name]
 
     def parameters(self, recurse: bool = True):
         if self.args.train_type == 'glyph':

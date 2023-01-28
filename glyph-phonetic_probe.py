@@ -195,6 +195,8 @@ class GlyphPhoneticProbeTrain(object):
         parser.add_argument('--output-path', type=str, default='./phonetic',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
+        parser.add_argument('--glyph-model-path', type=str, default='./drive/MyDrive/glyph/probe-best-model.pt')
+        parser.add_argument('--phonetic-model-path', type=str, default='./drive/MyDrive/phonetic/probe-best-model.pt')
         parser.add_argument('--resume', action='store_true', help='Resume training.')
         parser.add_argument('--no-resume', dest='resume', action='store_false', help='Not Resume training.')
         parser.set_defaults(resume=True)
