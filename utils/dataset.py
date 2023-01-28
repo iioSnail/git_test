@@ -32,7 +32,7 @@ class CSCDataset(Dataset):
 
     def __len__(self):
         if self.args.limit_data_size and self.args.limit_data_size > 0:
-            return max(self.args.limit_data_size, len(self.dataset))
+            return min(self.args.limit_data_size, len(self.dataset))
         else:
             return len(self.dataset)
 
@@ -107,7 +107,7 @@ class ConfusionMaskDataset(Dataset):
 
     def __len__(self):
         if self.args.limit_data_size and self.args.limit_data_size > 0:
-            return max(self.args.limit_data_size, len(self.dataset))
+            return min(self.args.limit_data_size, len(self.dataset))
         return len(self.dataset)
 
 
