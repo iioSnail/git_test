@@ -11,7 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from model.BertCorrectionModel import BertCorrectionModel
-from model.MultiModalBert import MultiModalBertModel
+from model.MultiModalBert import MultiModalBertModel, MultiModalBertCorrectionModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
@@ -41,7 +41,7 @@ class C_Train(object):
         elif self.args.model == "Bert":
             self.model = BertCorrectionModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MultiModalBert':
-            self.model = MultiModalBertModel(self.args).train().to(self.args.device)
+            self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -231,6 +231,7 @@ class C_Train(object):
         parser = argparse.ArgumentParser()
         parser.add_argument('--model', type=str, default='Bert',
                             help='The model name you want to evaluate.')
+        parser.add_argument('--bert-path', type=str, default='./drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
         parser.add_argument('--data-type', type=str, default="none",
                             help='The type of training data.')

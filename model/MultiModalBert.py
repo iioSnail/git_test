@@ -7,6 +7,7 @@ from PIL import ImageFont
 from torch import nn
 from torch.nn import functional as F
 
+from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT
 from utils.str_utils import is_chinese
@@ -100,6 +101,41 @@ class MultiModalBertModel(nn.Module):
         print("Load MultiModalBert From %s" % model_path)
         self.load_state_dict(torch.load(model_path))
 
+
+class MultiModalBertCorrectionModel(nn.Module):
+
+    def __init__(self, args):
+        super(MultiModalBertCorrectionModel, self).__init__()
+        self.args = args
+        self.bert = MultiModalBertModel(args)
+        self.tokenizer = BERT.get_tokenizer()
+        self.cls = nn.Sequential(
+            nn.Linear(768 + 8 + 56, len(self.tokenizer)),
+        )
+
+        self.criteria = nn.CrossEntropyLoss(ignore_index=0)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
+
+    def forward(self, inputs):
+        outputs = self.bert(**inputs).last_hidden_state
+        return self.cls(outputs)
+
+    def compute_loss(self, outputs, targets):
+        targets = targets['input_ids']
+        outputs = outputs.view(-1, outputs.size(-1))
+        targets = targets.view(-1)
+        return self.criteria(outputs, targets)
+
+    def get_optimizer(self):
+        return self.optimizer
+
+    def predict(self, src, tgt=None):
+        inputs = self.bert.get_bert_inputs(src).to(self.args.device)
+        outputs = self.forward(inputs)
+        outputs = outputs.argmax(-1)
+        outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
+        outputs = [outputs[i] if len(outputs[i]) == 1 else src[i] for i in range(len(outputs))]
+        return ''.join(outputs)
 
 
 def merge_multi_modal_bert():
