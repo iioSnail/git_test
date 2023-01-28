@@ -132,7 +132,6 @@ class GlyphPhoneticProbeTrain(object):
 
     def save_model(self):
         torch.save(self.model.state_dict(), self.args.model_path)
-        torch.save(self.model.bert, self.args.bert_path)
 
     def load_model(self):
         self.model.load_state_dict(torch.load(self.args.model_path))
@@ -183,6 +182,7 @@ class GlyphPhoneticProbeTrain(object):
         parser = argparse.ArgumentParser()
         parser.add_argument('--model', type=str, default='bert',
                             help='The model name you want to evaluate.')
+        parser.add_argument('--model-path', type=str, default='./drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
         parser.add_argument('--data-type', type=str, default="phonetic")
         parser.add_argument('--train-type', type=str, default="cls",
@@ -196,8 +196,6 @@ class GlyphPhoneticProbeTrain(object):
         parser.add_argument('--output-path', type=str, default='./phonetic',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
-        parser.add_argument('--glyph-model-path', type=str, default='./drive/MyDrive/Glyph/probe-best-model.pt')
-        parser.add_argument('--phonetic-model-path', type=str, default='./drive/MyDrive/Phonetic/probe-best-model.pt')
         parser.add_argument('--resume', action='store_true', help='Resume training.')
         parser.add_argument('--no-resume', dest='resume', action='store_false', help='Not Resume training.')
         parser.set_defaults(resume=True)
@@ -217,7 +215,6 @@ class GlyphPhoneticProbeTrain(object):
         args.output_path = Path(args.output_path)
         args.checkpoint_path = str(args.output_path / 'probe-model.pt')
         args.model_path = str(args.output_path / 'probe-best-model.pt')
-        args.bert_path = str(args.output_path / 'multi-model-bert.pt')
 
         return args
 

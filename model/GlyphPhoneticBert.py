@@ -1,9 +1,11 @@
+import argparse
+
 import torch
 from torch import nn
 
 from model.MultiModalBert import MultiModalBertModel
 from model.common import BERT
-
+from utils.utils import mock_args, mkdir
 
 
 class GlyphPhoneticBertModel(nn.Module):
@@ -24,10 +26,6 @@ class GlyphPhoneticBertModel(nn.Module):
             nn.Linear(256, 1),
             nn.Sigmoid()
         )
-
-        if self.args.train_type == 'cls':
-            self.load_glyph_param()
-            self.load_phonetic_param()
 
     def bert_embeddings(self, ids):
         input_ids = ids.unsqueeze(1)

@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 import pypinyin
 import torch
@@ -8,6 +10,7 @@ from torch.nn import functional as F
 from model.char_cnn import CharResNet
 from model.common import BERT
 from utils.str_utils import is_chinese
+from utils.utils import mock_args, mkdir
 
 
 class GlyphEmbedding(nn.Module):
@@ -90,3 +93,33 @@ class MultiModalBertModel(nn.Module):
                                                    glyph_embeddings.sum(dim=1)], dim=-1)
 
         return bert_outputs
+
+    def load_model(self, model_path):
+        self.model.load_state_dict(torch.load(model_path))
+
+
+
+def merge_multi_modal_bert():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--glyph-model-path', type=str, default='./drive/MyDrive/Glyph/probe-best-model.pt')
+    parser.add_argument('--phonetic-model-path', type=str, default='./drive/MyDrive/Phonetic/probe-best-model.pt')
+    parser.add_argument('--output-path', type=str, default='./drive/MyDrive/MultiModalBertModel/')
+    args = parser.parse_known_args()[0]
+
+    bert = MultiModalBertModel(mock_args(device='cpu'))
+
+    # Merge Glyph params and Phonetic params.
+    model_state = torch.load(args.glyph_model_path, map_location='cpu')
+    for name, param in bert.glyph_embeddings.named_parameters():
+        param.data = model_state['bert.glyph_embeddings.' + name]
+
+    model_state = torch.load(args.phonetic_model_path, map_location='cpu')
+    for name, param in bert.pinyin_embeddings.named_parameters():
+        param.data = model_state['bert.pinyin_embeddings.' + name]
+
+    mkdir(args.output_path)
+    torch.save(bert.state_dict(), args.output_path + 'multi-modal-bert.pt')
+
+
+if __name__ == '__main__':
+    merge_multi_modal_bert()
