@@ -59,6 +59,8 @@ class MultiModalBertModel(nn.Module):
                                         batch_first=True, dropout=0.15)
         self.glyph_embeddings = GlyphEmbedding(args)
 
+        self.load_model(self.args.bert_path)
+
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None):
         batch_size = input_ids.size(0)
         bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
@@ -95,7 +97,8 @@ class MultiModalBertModel(nn.Module):
         return bert_outputs
 
     def load_model(self, model_path):
-        self.model.load_state_dict(torch.load(model_path))
+        print("Load MultiModalBert From %s" % model_path)
+        self.load_state_dict(torch.load(model_path))
 
 
 
