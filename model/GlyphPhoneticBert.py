@@ -43,11 +43,13 @@ class GlyphPhoneticBertModel(nn.Module):
         return outputs.squeeze()
 
     def parameters(self, recurse: bool = True):
-        for name, param in self.bert.glyph_embeddings.named_parameters(recurse=recurse):
-            yield param
+        if self.args.train_type == 'glyph':
+            for name, param in self.bert.glyph_embeddings.named_parameters(recurse=recurse):
+                yield param
 
-        for name, param in self.bert.pinyin_embeddings.named_parameters(recurse=recurse):
-            yield param
+        if self.args.train_type in ['pinyin', 'phonetic']:
+            for name, param in self.bert.pinyin_embeddings.named_parameters(recurse=recurse):
+                yield param
 
         for name, param in self.cls.named_parameters(recurse=recurse):
             yield param
