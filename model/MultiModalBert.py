@@ -1,4 +1,5 @@
 import argparse
+import os.path
 
 import numpy as np
 import pypinyin
@@ -60,7 +61,8 @@ class MultiModalBertModel(nn.Module):
                                         batch_first=True, dropout=0.15)
         self.glyph_embeddings = GlyphEmbedding(args)
 
-        self.load_model(self.args.bert_path)
+        if 'bert_path' in dir(self.args):
+            self.load_model(self.args.bert_path)
 
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None):
         batch_size = input_ids.size(0)
@@ -98,6 +100,9 @@ class MultiModalBertModel(nn.Module):
         return bert_outputs
 
     def load_model(self, model_path):
+        if not os.path.exists(model_path):
+            print("\033[31mERROR: 找不到%s文件\033[0m" % model_path)
+            return
         print("Load MultiModalBert From %s" % model_path)
         self.load_state_dict(torch.load(model_path))
 
@@ -114,27 +119,46 @@ class MultiModalBertCorrectionModel(nn.Module):
         )
 
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
+        self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
 
     def forward(self, inputs):
         outputs = self.bert(**inputs).last_hidden_state
         return self.cls(outputs)
 
-    def compute_loss(self, outputs, targets):
+    # def compute_loss(self, outputs, targets):
+    #     targets = targets['input_ids']
+    #     outputs = outputs.view(-1, outputs.size(-1))
+    #     targets = targets.view(-1)
+    #     return self.criteria(outputs, targets)
+
+    def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
+        """
+        只计算错字的loss，正确字的loss只给一点点
+        """
         targets = targets['input_ids']
+        targets_bak = targets.clone()
+        inputs = inputs['input_ids']
         outputs = outputs.view(-1, outputs.size(-1))
+        targets[targets == inputs] = 0
         targets = targets.view(-1)
-        return self.criteria(outputs, targets)
+        targets_bak = targets_bak.view(-1)
+        loss = self.criteria(outputs, targets)
+        soft_loss = self.soft_criteria(outputs, targets_bak)
+        return 0.9 * loss + 0.1 * soft_loss
 
     def get_optimizer(self):
         return self.optimizer
 
     def predict(self, src, tgt=None):
-        inputs = self.bert.get_bert_inputs(src).to(self.args.device)
+        inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
         outputs = self.forward(inputs)
         outputs = outputs.argmax(-1)
         outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
         outputs = [outputs[i] if len(outputs[i]) == 1 else src[i] for i in range(len(outputs))]
+        # if ''.join(outputs) != tgt:
+        #     # self.tokenizer.convert_ids_to_tokens(prob[0][3].argsort(descending=True)[:5])
+        #     print()
         return ''.join(outputs)
 
 

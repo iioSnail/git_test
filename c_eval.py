@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
+from model.MultiModalBert import MultiModalBertCorrectionModel
 from utils.dataset import CSCTestDataset
 from train import Train
 from utils.utils import save_obj, render_color_for_text, compare_text, restore_special_tokens
@@ -24,6 +25,8 @@ class Evaluation(object):
             self.model = ChineseBertModel(self.args).eval()
         elif self.args.model == 'Bert':
             self.model = BertCorrectionModel(self.args).eval()
+        elif self.args.model == 'MultiModalBert':
+            self.model = MultiModalBertCorrectionModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 

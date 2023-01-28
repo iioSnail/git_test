@@ -29,7 +29,7 @@ class BertCorrectionModel(nn.Module):
         outputs = self.bert(inputs).last_hidden_state
         return self.cls(outputs)
 
-    def compute_loss(self, outputs, targets):
+    def compute_loss(self, outputs, targets, *args, **kwargs):
         targets = targets['input_ids']
         outputs = outputs.view(-1, outputs.size(-1))
         targets = targets.view(-1)

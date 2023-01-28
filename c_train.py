@@ -78,7 +78,7 @@ class C_Train(object):
             self.optimizer.zero_grad()
 
             outputs = self.model(inputs)
-            loss = self.model.compute_loss(outputs, targets)
+            loss = self.model.compute_loss(outputs, targets, inputs)
             loss.backward()
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5)
             self.optimizer.step()
