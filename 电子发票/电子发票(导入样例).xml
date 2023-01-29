@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="gbk"?>
+<business id="FPKJ" comment="发票开具">
+    <REQUEST_COMMON_FPKJ class="REQUEST_COMMON_FPKJ">
+        <COMMON_FPKJ_FPT class="COMMON_FPKJ_FPT">
+            <!--发票请求流水号-->
+            <FPQQLSH>10000001</FPQQLSH>
+            <!--开票类型(0-蓝字发票；1-红字发票)-->
+            <KPLX>0</KPLX>
+            <!--编码表版本号-->
+            <BMB_BBH>42.0</BMB_BBH>
+            <!--销售方纳税人识别号-->
+            <XSF_NSRSBH>62100001</XSF_NSRSBH>
+            <!--销售方名称-->
+            <XSF_MC>张思睿</XSF_MC>
+            <!--销售方地址、电话-->
+            <XSF_DZDH>上海浦东 1785423111</XSF_DZDH>
+            <!--销售方银行账号-->
+            <XSF_YHZH>12345678</XSF_YHZH>
+            <!--购买方纳税人识别号-->
+            <GMF_NSRSBH>622000001</GMF_NSRSBH>
+            <!--购买方名称-->
+            <GMF_MC>赵潇潇</GMF_MC>
+            <!--购买方地址、电话-->
+            <GMF_DZDH>河南郑州 1520000</GMF_DZDH>
+            <!--购买方银行账号-->
+            <GMF_YHZH>4210003</GMF_YHZH>
+            <!--开票人-->
+            <KPR>周杰伦</KPR>
+            <!--收款人-->
+            <SKR>林俊杰</SKR>
+            <!--复核人-->
+            <FHR>宋小宝</FHR>
+            <!--原发票代码（红字发票时必须）-->
+            <YFP_DM></YFP_DM>
+            <!--原发票号码（红字发票时必须）-->
+            <YFP_HM></YFP_HM>
+            <!--价税合计（单位：元（2位小数））-->
+            <JSHJ>45.20</JSHJ>
+            <!--合计金额（不含税，单位：元（2位小数））-->
+            <HJJE>40.00</HJJE>
+            <!--合计税额（单位：元（2位小数））-->
+            <HJSE>5.20</HJSE>
+            <!--含税标志（0为普通征收 1为减按征收 2为差额征收）-->
+            <HSBZ>0</HSBZ>
+            <!--备注-->
+            <BZ>扶贫</BZ>
+        </COMMON_FPKJ_FPT>
+        <!--明细-->
+        <COMMON_FPKJ_XMXXS class="COMMON_FPKJ_XMXX" size="2">
+            <COMMON_FPKJ_XMXX>
+                <!--发票行性质（0正常行、1折扣行、2被折扣行）-->
+                <FPHXZ>0</FPHXZ>
+                <!--商品编码-->
+                <SPBM>1060105020000000000</SPBM>
+                <!--自行编码（0：不使用，1：使用）-->
+                <ZXBM></ZXBM>
+                <!--优惠政策标识-->
+                <YHZCBS>0</YHZCBS>
+                <!--零税率标识（空：非零税率， 1：免税，2：不征收，3普通零税率）-->
+                <LSLBS></LSLBS>
+                <!--增值税特殊管理-->
+                <ZZSTSGL></ZZSTSGL>
+                <!--项目名称-->
+                <XMMC>包子</XMMC>
+                <!--规格型号-->
+                <GGXH>6个/屉</GGXH>
+                <!--单位-->
+                <DW>个</DW>
+                <!--项目数量(小数点后6位)-->
+                <XMSL>10</XMSL>
+                <!--项目单价(小数点后6位 不含税)-->
+                <XMDJ>2.00</XMDJ>
+                <!--项目金额(不含税，单位：元（2位小数）)-->
+                <XMJE>20.00</XMJE>
+                <!--税率(6位小数，例1%为0.01减按计征税率为0.015)-->
+                <SL>0.13</SL>
+                <!--税额(单位：元（2位小数）)-->
+                <SE>2.60</SE>
+                <!--扣除额-->
+                <KCE></KCE>
+            </COMMON_FPKJ_XMXX>
+            <COMMON_FPKJ_XMXX>
+                <!--发票行性质（0正常行、1折扣行、2被折扣行）-->
+                <FPHXZ>0</FPHXZ>
+                <!--商品编码-->
+                <SPBM>1060105020000000000</SPBM>
+                <!--自行编码（0：不使用，1：使用）-->
+                <ZXBM></ZXBM>
+                <!--优惠政策标识-->
+                <YHZCBS>0</YHZCBS>
+                <!--零税率标识（空：非零税率， 1：免税，2：不征收，3普通零税率）-->
+                <LSLBS></LSLBS>
+                <!--增值税特殊管理-->
+                <ZZSTSGL></ZZSTSGL>
+                <!--项目名称-->
+                <XMMC>饺子</XMMC>
+                <!--规格型号-->
+                <GGXH>6个/屉</GGXH>
+                <!--单位-->
+                <DW>个</DW>
+                <!--项目数量(小数点后6位)-->
+                <XMSL>10</XMSL>
+                <!--项目单价(小数点后6位 不含税)-->
+                <XMDJ>2.00</XMDJ>
+                <!--项目金额(不含税，单位：元（2位小数）)-->
+                <XMJE>20.00</XMJE>
+                <!--税率(6位小数，例1%为0.01减按计征税率为0.015)-->
+                <SL>0.13</SL>
+                <!--税额(单位：元（2位小数）)-->
+                <SE>2.60</SE>
+                <!--扣除额-->
+                <KCE></KCE>
+            </COMMON_FPKJ_XMXX>
+        </COMMON_FPKJ_XMXXS>
+    </REQUEST_COMMON_FPKJ>
+</business>

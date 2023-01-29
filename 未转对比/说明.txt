@@ -1,0 +1,14 @@
+未转对比说明：
+用途：对比已转数据是否正确
+
+使用方法：weizhuan1.xlsx是未改数据，weizhuan2.xlsx是已改数据，
+进行对比后会生成weizhuan_chayi.xlsx，里面是本期的已转变化
+
+未转导出说明：
+用途：将整理好的应收表格中未转部分导出，生成新的未转表。
+
+使用方法：
+1. 整理好的yingshou.xlsx
+2. 运行“未转导出startup.bat”
+3. 运行成功后会生成weizhuan.xlsx
+

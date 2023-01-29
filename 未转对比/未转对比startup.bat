@@ -1,0 +1,2 @@
+python weizhuan_diff.py
+pause

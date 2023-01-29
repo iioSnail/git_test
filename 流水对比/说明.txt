@@ -1,0 +1,16 @@
+流水对比：
+用途：流水与应收中未转的发票的匹对，找出流水中对应发票号
+
+使用方法：
+1. 整理本期收款到liushui.xlsx文件中
+2. 将整理好的未转表改为yingshou.xlsx
+3. 运行startup.bat，会生成liushui_duibi.xlsx
+4. liushui_duibi.xlsx中是本期收款对应的发票号
+
+注意事项：
+1.liushui.xlsx中的表头 记账日期\贷方\账户 名字不要改，可以调换顺序。
+2.yingshou.xlsx中不要有空白或无意义的sheet页
+3.yingshou.xlsx中的表头要在第六行，且名字要一致
+
+应收更新：
+用途：
