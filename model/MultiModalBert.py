@@ -145,7 +145,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         targets_bak = targets_bak.view(-1)
         loss = self.criteria(outputs, targets)
         soft_loss = self.soft_criteria(outputs, targets_bak)
-        return 0.9 * loss + 0.1 * soft_loss
+        return 0.7 * loss + 0.3 * soft_loss
 
     def get_optimizer(self):
         return self.optimizer
