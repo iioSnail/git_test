@@ -49,6 +49,30 @@ class GlyphEmbedding(nn.Module):
         return self.embeddings(images)
 
 
+class PinyinGRUEmbeddings(nn.Module):
+
+    def __init__(self, pinyin_feature_size=8):
+        super(PinyinGRUEmbeddings, self).__init__()
+
+        self.embeddings = nn.GRU(input_size=26, hidden_size=pinyin_feature_size, num_layers=2, bias=True,
+                                 batch_first=True, dropout=0.15)
+
+    def forward(self, inputs):
+        return self.embeddings(inputs)
+
+
+class PinyinRGRUEmbeddings(nn.Module):
+
+    def __init__(self, pinyin_feature_size=8):
+        super(PinyinRGRUEmbeddings, self).__init__()
+
+        self.embeddings = nn.GRU(input_size=26, hidden_size=pinyin_feature_size, num_layers=2, bias=True,
+                                 batch_first=True, dropout=0.15)
+
+    def forward(self, inputs):
+        return self.embeddings(inputs.flip(1))
+
+
 class MultiModalBertModel(nn.Module):
 
     def __init__(self, args):
@@ -57,8 +81,11 @@ class MultiModalBertModel(nn.Module):
         self.bert = BERT().bert
         self.tokenizer = BERT.get_tokenizer()
         self.pinyin_feature_size = 8
-        self.pinyin_embeddings = nn.GRU(input_size=26, hidden_size=self.pinyin_feature_size, num_layers=2, bias=True,
-                                        batch_first=True, dropout=0.15)
+        if self.args.pinyin_embeddings == 'gru':
+            self.pinyin_embeddings = PinyinGRUEmbeddings(self.pinyin_feature_size)
+        elif self.args.pinyin_embeddings == 'rgru':
+            self.pinyin_embeddings = PinyinRGRUEmbeddings(self.pinyin_feature_size)
+
         self.glyph_embeddings = GlyphEmbedding(args)
 
         if 'bert_path' in dir(self.args):
@@ -104,7 +131,11 @@ class MultiModalBertModel(nn.Module):
             print("\033[31mERROR: 找不到%s文件\033[0m" % model_path)
             return
         print("Load MultiModalBert From %s" % model_path)
-        self.load_state_dict(torch.load(model_path))
+        try:
+            self.load_state_dict(torch.load(model_path))
+        except Exception as e:
+            print(e)
+            print("\033[31mERROR: 加载%s文件出错\033[0m" % model_path)
 
 
 class MultiModalBertCorrectionModel(nn.Module):
@@ -126,26 +157,27 @@ class MultiModalBertCorrectionModel(nn.Module):
         outputs = self.bert(**inputs).last_hidden_state
         return self.cls(outputs)
 
-    # def compute_loss(self, outputs, targets):
-    #     targets = targets['input_ids']
-    #     outputs = outputs.view(-1, outputs.size(-1))
-    #     targets = targets.view(-1)
-    #     return self.criteria(outputs, targets)
-
-    def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
-        """
-        只计算错字的loss，正确字的loss只给一点点
-        """
+    def compute_loss(self, outputs, targets):
         targets = targets['input_ids']
-        targets_bak = targets.clone()
-        inputs = inputs['input_ids']
         outputs = outputs.view(-1, outputs.size(-1))
-        targets[targets == inputs] = 0
         targets = targets.view(-1)
-        targets_bak = targets_bak.view(-1)
-        loss = self.criteria(outputs, targets)
-        soft_loss = self.soft_criteria(outputs, targets_bak)
-        return 0.7 * loss + 0.3 * soft_loss
+        return self.criteria(outputs, targets)
+
+    # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
+    #     """
+    #     只计算错字的loss，正确字的loss只给一点点。
+    #     有潜力，但是会慢一点，最终训练的时候可以用这个
+    #     """
+    #     targets = targets['input_ids']
+    #     targets_bak = targets.clone()
+    #     inputs = inputs['input_ids']
+    #     outputs = outputs.view(-1, outputs.size(-1))
+    #     targets[targets == inputs] = 0
+    #     targets = targets.view(-1)
+    #     targets_bak = targets_bak.view(-1)
+    #     loss = self.criteria(outputs, targets)
+    #     soft_loss = self.soft_criteria(outputs, targets_bak)
+    #     return 0.7 * loss + 0.3 * soft_loss
 
     def get_optimizer(self):
         return self.optimizer
@@ -156,7 +188,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         outputs = outputs.argmax(-1)
         outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
         outputs = [outputs[i] if len(outputs[i]) == 1 else src[i] for i in range(len(outputs))]
-        # if ''.join(outputs) != tgt:
+        # if ''.join(outputs) != tgt:   # 最后配合Detector，让softmax前5，用Detector来确定用哪一个
         #     # self.tokenizer.convert_ids_to_tokens(prob[0][3].argsort(descending=True)[:5])
         #     print()
         return ''.join(outputs)
