@@ -82,7 +82,7 @@ class PinyinTransformerEmbeddings(nn.Module):
     def __init__(self, pinyin_feature_size=8):
         super(PinyinTransformerEmbeddings, self).__init__()
 
-        self.embeddings = nn.Embedding(num_embeddings=27, embedding_dim=pinyin_feature_size, padding_idx=0)
+        self.embeddings = nn.Embedding(num_embeddings=28, embedding_dim=pinyin_feature_size, padding_idx=0)
         self.transformer = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=8, nhead=1, dim_feedforward=256, batch_first=True),
             num_layers=1)
@@ -94,6 +94,7 @@ class PinyinTransformerEmbeddings(nn.Module):
 
 
     def forward(self, inputs):
+        inputs = torch.concat([torch.full((len(inputs), 1), 27), inputs], dim=1) # 最前面增加特殊token
         outputs = self.embeddings(inputs)
         outputs = self.transformer(outputs)
         return self.pooler(outputs[:, 0, :])
