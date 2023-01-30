@@ -82,12 +82,21 @@ class PinyinTransformerEmbeddings(nn.Module):
     def __init__(self, pinyin_feature_size=8):
         super(PinyinTransformerEmbeddings, self).__init__()
 
-        self.embeddings = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=26, nhead=1, dim_feedforward=256, batch_first=True),
+        self.embeddings = nn.Embedding(num_embeddings=27, embedding_dim=pinyin_feature_size, padding_idx=0)
+        self.transformer = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=8, nhead=1, dim_feedforward=256, batch_first=True),
             num_layers=1)
 
+        self.pooler = nn.Sequential(
+            nn.Linear(8, 8),
+            nn.Tanh()
+        )
+
+
     def forward(self, inputs):
-        return self.embeddings(inputs)
+        outputs = self.embeddings(inputs)
+        outputs = self.transformer(outputs)
+        return self.pooler(outputs[:, 0, :])
 
 
 class MultiModalBertModel(nn.Module):
