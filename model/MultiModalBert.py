@@ -50,6 +50,20 @@ class GlyphEmbedding(nn.Module):
         return self.embeddings(images)
 
 
+class PinyinNoEmbeddings(nn.Module):
+
+    def __init__(self, args, pinyin_feature_size=8):
+        super(PinyinNoEmbeddings, self).__init__()
+        self.args = args
+        self.pinyin_feature_size = pinyin_feature_size
+
+    def forward(self, inputs):
+        fill = self.pinyin_feature_size - inputs.size(1)
+        if fill > 0:
+            inputs = torch.concat([inputs, torch.zeros((len(inputs), fill)).to(self.args.device)], dim=1).long()
+        return inputs / 27
+
+
 class PinyinDenseEmbeddings(nn.Module):
 
     def __init__(self, args, pinyin_feature_size=8):
@@ -140,6 +154,8 @@ class MultiModalBertModel(nn.Module):
             self.pinyin_embeddings = PinyinTransformerEmbeddings(self.args, self.pinyin_feature_size)
         elif self.args.pinyin_embeddings == 'dense':
             self.pinyin_embeddings = PinyinDenseEmbeddings(self.args, self.pinyin_feature_size)
+        elif self.args.pinyin_embeddings == 'no':
+            self.pinyin_embeddings = PinyinNoEmbeddings(self.args, self.pinyin_feature_size)
 
         self.glyph_embeddings = GlyphEmbedding(args)
 
