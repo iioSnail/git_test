@@ -146,6 +146,8 @@ class MultiModalBertModel(nn.Module):
         self.bert = BERT().bert
         self.tokenizer = BERT.get_tokenizer()
         self.pinyin_feature_size = 8
+        if 'pinyin_embeddings' not in dir(self.args):
+            self.args.pinyin_embeddings = 'manual'
         if self.args.pinyin_embeddings == 'gru':
             self.pinyin_embeddings = PinyinGRUEmbeddings(self.pinyin_feature_size)
         elif self.args.pinyin_embeddings == 'rgru':
@@ -227,7 +229,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         outputs = self.bert(**inputs).last_hidden_state
         return self.cls(outputs)
 
-    def compute_loss(self, outputs, targets):
+    def compute_loss(self, outputs, targets, *args, **kwargs):
         targets = targets['input_ids']
         outputs = outputs.view(-1, outputs.size(-1))
         targets = targets.view(-1)
