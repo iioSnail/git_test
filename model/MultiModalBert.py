@@ -79,8 +79,9 @@ class PinyinRGRUEmbeddings(nn.Module):
 
 class PinyinTransformerEmbeddings(nn.Module):
 
-    def __init__(self, pinyin_feature_size=8):
+    def __init__(self, args, pinyin_feature_size=8):
         super(PinyinTransformerEmbeddings, self).__init__()
+        self.args = args
 
         self.embeddings = nn.Embedding(num_embeddings=28, embedding_dim=128, padding_idx=0)
         self.transformer = nn.TransformerEncoder(
@@ -93,7 +94,7 @@ class PinyinTransformerEmbeddings(nn.Module):
         )
 
     def forward(self, inputs):
-        inputs = torch.concat([torch.full((len(inputs), 1), 27), inputs], dim=1)  # 最前面增加特殊token
+        inputs = torch.concat([torch.full((len(inputs), 1), 27).to(self.args.device), inputs], dim=1)  # 最前面增加特殊token
         outputs = self.embeddings(inputs)
         outputs = self.transformer(outputs)
         return self.pooler(outputs[:, 0, :])
@@ -112,7 +113,7 @@ class MultiModalBertModel(nn.Module):
         elif self.args.pinyin_embeddings == 'rgru':
             self.pinyin_embeddings = PinyinRGRUEmbeddings(self.pinyin_feature_size)
         elif self.args.pinyin_embeddings == 'transformer':
-            self.pinyin_embeddings = PinyinTransformerEmbeddings(self.pinyin_feature_size)
+            self.pinyin_embeddings = PinyinTransformerEmbeddings(self.args, self.pinyin_feature_size)
 
         self.glyph_embeddings = GlyphEmbedding(args)
 
