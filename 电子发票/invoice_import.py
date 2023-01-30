@@ -7,7 +7,7 @@ import numpy
 import pandas as pd
 
 import sys
-sys.path.insert(1, os.path.abspath("../../invoice_helper"))
+sys.path.insert(1, os.path.abspath(".."))
 
 from utils import df_strip, str_to_num
 
@@ -66,7 +66,7 @@ def _build_info(info, fpkj, details):
     XSF_MC.text = "上海工惠文化传媒有限公司"
 
     XSF_DZDH = SubElement(fpt, 'XSF_DZDH')
-    XSF_DZDH.text = "虹口区中山北二路1800号海鸥大厦807室 021-65533215"
+    XSF_DZDH.text = "虹口区中山北二路1800号海鸥大厦5楼  021-65533215"
 
     XSF_YHZH = SubElement(fpt, 'XSF_YHZH')
     XSF_YHZH.text = "上海农商银行虹口支行 32403108010107786"

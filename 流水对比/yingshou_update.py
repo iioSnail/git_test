@@ -3,7 +3,7 @@
 """
 
 import sys, os
-sys.path.insert(1, os.path.abspath("../../invoice_helper"))
+sys.path.insert(1, os.path.abspath(".."))
 
 import shutil
 

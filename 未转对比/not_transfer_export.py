@@ -1,5 +1,5 @@
 import sys, os
-sys.path.insert(1, os.path.abspath("../../invoice_helper"))
+sys.path.insert(1, os.path.abspath(".."))
 
 import pandas as pd
 from utils import columns_strip, fill_merge_cells, merge_cell_and_export
