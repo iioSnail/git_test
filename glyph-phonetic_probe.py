@@ -192,7 +192,7 @@ class GlyphPhoneticProbeTrain(object):
                             help='The ratio of splitting validation set.')
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for training. auto, cpu or cuda')
-        parser.add_argument('--seed', type=int, default=-1, help='The random seed.')
+        parser.add_argument('--seed', type=int, default=0, help='The random seed.')
         parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
         parser.add_argument('--output-path', type=str, default='./phonetic',
                             help='The path of output files while running, '

@@ -7,6 +7,7 @@ import torch
 from PIL import ImageFont
 from torch import nn
 from torch.nn import functional as F
+from torch.nn.utils.rnn import pad_sequence
 
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
@@ -54,11 +55,14 @@ class PinyinGRUEmbeddings(nn.Module):
     def __init__(self, pinyin_feature_size=8):
         super(PinyinGRUEmbeddings, self).__init__()
 
-        self.embeddings = nn.GRU(input_size=26, hidden_size=pinyin_feature_size, num_layers=2, bias=True,
-                                 batch_first=True, dropout=0.15)
+        self.embeddings = nn.Sequential(
+            nn.Embedding(num_embeddings=27, embedding_dim=pinyin_feature_size, padding_idx=0),
+            nn.GRU(input_size=8, hidden_size=pinyin_feature_size, num_layers=2, bias=True,
+                   batch_first=True, dropout=0.15)
+        )
 
     def forward(self, inputs):
-        return self.embeddings(inputs)
+        return self.embeddings(inputs)[1][-1]
 
 
 class PinyinRGRUEmbeddings(nn.Module):
@@ -73,6 +77,19 @@ class PinyinRGRUEmbeddings(nn.Module):
         return self.embeddings(inputs.flip(1))
 
 
+class PinyinTransformerEmbeddings(nn.Module):
+
+    def __init__(self, pinyin_feature_size=8):
+        super(PinyinTransformerEmbeddings, self).__init__()
+
+        self.embeddings = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=26, nhead=1, dim_feedforward=256, batch_first=True),
+            num_layers=1)
+
+    def forward(self, inputs):
+        return self.embeddings(inputs)
+
+
 class MultiModalBertModel(nn.Module):
 
     def __init__(self, args):
@@ -85,6 +102,8 @@ class MultiModalBertModel(nn.Module):
             self.pinyin_embeddings = PinyinGRUEmbeddings(self.pinyin_feature_size)
         elif self.args.pinyin_embeddings == 'rgru':
             self.pinyin_embeddings = PinyinRGRUEmbeddings(self.pinyin_feature_size)
+        elif self.args.pinyin_embeddings == 'transformer':
+            self.pinyin_embeddings = PinyinTransformerEmbeddings(self.pinyin_feature_size)
 
         self.glyph_embeddings = GlyphEmbedding(args)
 
@@ -99,20 +118,19 @@ class MultiModalBertModel(nn.Module):
         input_pinyins = []
         for token in input_tokens:
             if not is_chinese(token):
-                input_pinyins.append(torch.zeros(6, 26, dtype=torch.long))
+                input_pinyins.append(torch.LongTensor([0]))
                 continue
 
             pinyin = pypinyin.pinyin(token, style=pypinyin.NORMAL)[0][0]
-            embeddings = F.one_hot(torch.tensor([ord(letter) - 97 for letter in pinyin]), 26)
+            embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])
 
             if embeddings.size(0) <= 6:
-                embeddings = torch.concat([embeddings, torch.zeros(6 - embeddings.size(0), 26, dtype=torch.long)])
                 input_pinyins.append(embeddings)
             else:
                 raise Exception("难道还有超过6个字母的拼音？")
 
-        input_pinyins = torch.stack(input_pinyins).to(self.args.device)
-        pinyin_embeddings = self.pinyin_embeddings(input_pinyins.view(-1, 6, 26).float())[1][-1]
+        input_pinyins = pad_sequence(input_pinyins, batch_first=True).to(self.args.device)
+        pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
         pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
         glyph_embeddings = self.glyph_embeddings(input_tokens)
         glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
