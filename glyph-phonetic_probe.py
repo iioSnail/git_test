@@ -182,7 +182,7 @@ class GlyphPhoneticProbeTrain(object):
         parser = argparse.ArgumentParser()
         parser.add_argument('--model', type=str, default='bert',
                             help='The model name you want to evaluate.')
-        parser.add_argument('--pinyin-embeddings', type=str, default='gru')
+        parser.add_argument('--pinyin-embeddings', type=str, default='manual')
         parser.add_argument('--bert-path', type=str, default='./drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
         parser.add_argument('--data-type', type=str, default="phonetic")
