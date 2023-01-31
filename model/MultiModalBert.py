@@ -61,8 +61,10 @@ class GlyphDenseEmbedding(nn.Module):
         self.embeddings = nn.Sequential(
             nn.Linear(1024, 512),
             nn.ReLU(),
+            nn.Dropout(0.15),
             nn.Linear(512, 256),
             nn.ReLU(),
+            nn.Dropout(0.15),
             nn.Linear(256, 56),
             nn.Tanh()
         )
