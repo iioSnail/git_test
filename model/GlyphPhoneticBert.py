@@ -27,9 +27,9 @@ class GlyphPhoneticBertModel(nn.Module):
             nn.Sigmoid()
         )
 
-    def bert_embeddings(self, ids):
+    def bert_embeddings(self, ids, characters):
         input_ids = ids.unsqueeze(1)
-        return self.bert(input_ids=input_ids).last_hidden_state.squeeze()
+        return self.bert(input_ids=input_ids, characters=characters).last_hidden_state.squeeze()
 
     def forward(self, inputs):
         pair_i = self.tokenizer.convert_tokens_to_ids(inputs[0])
@@ -38,8 +38,8 @@ class GlyphPhoneticBertModel(nn.Module):
         pair_i = torch.tensor(pair_i, device=self.args.device)
         pair_j = torch.tensor(pair_j, device=self.args.device)
 
-        embeddings_i = self.bert_embeddings(pair_i)
-        embeddings_j = self.bert_embeddings(pair_j)
+        embeddings_i = self.bert_embeddings(pair_i, inputs[0])
+        embeddings_j = self.bert_embeddings(pair_j, inputs[1])
 
         outputs = self.cls(torch.concat([embeddings_i, embeddings_j], dim=1))
         return outputs.squeeze()

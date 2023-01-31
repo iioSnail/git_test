@@ -1,3 +1,4 @@
+import os.path
 import pickle
 import random
 
@@ -11,7 +12,7 @@ from tqdm import tqdm
 from model.common import BERT
 from utils.confusions import confuse_char
 from utils.str_utils import is_chinese
-from utils.utils import preprocess_text
+from utils.utils import preprocess_text, mkdir, load_obj, save_obj
 from pathlib import Path
 
 FILE = Path(__file__).resolve()
@@ -166,8 +167,14 @@ class GlyphProbeDataset(Dataset):
 
     chinese_chars_components = None
 
-    def __init__(self):
+    def __init__(self, cache=True):
         super(GlyphProbeDataset, self).__init__()
+        cache_path = './cache/GlyphProbeDataset.pkl'
+        if cache and os.path.exists(cache_path):
+            self.dataset = load_obj(cache_path)
+            print("Load GlyphProbeDataset from cache.")
+            return
+
         tokenizer = BERT.get_tokenizer()
 
         # Get all chinese characters.
@@ -209,6 +216,9 @@ class GlyphProbeDataset(Dataset):
         dataset = positive_samples + negative_samples
         random.shuffle(dataset)
         self.dataset = dataset
+        if cache:
+            mkdir('./cache') # FIXME
+            save_obj(self.dataset, cache_path)
 
     @staticmethod
     def get_chinese_chars_components():

@@ -39,10 +39,23 @@ def convert_char_to_image(character, font_size=32):
 
 
 class GlyphResnetEmbedding(nn.Module):
-    font = None
 
     def __init__(self, args):
         super(GlyphResnetEmbedding, self).__init__()
+        self.args = args
+        self.font_size = 32
+        self.embeddings = CharResNet()
+
+    def forward(self, characters):
+        images = [convert_char_to_image(char_, self.font_size) for char_ in characters]
+        images = torch.stack(images).to(self.args.device)
+        return self.embeddings(images)
+
+
+class GlyphDenseEmbedding(nn.Module):
+
+    def __init__(self, args):
+        super(GlyphDenseEmbedding, self).__init__()
         self.args = args
         self.font_size = 32
         self.embeddings = CharResNet()
@@ -163,11 +176,13 @@ class MultiModalBertModel(nn.Module):
 
         if self.args.glyph_embeddings == 'resnet':
             self.glyph_embeddings = GlyphResnetEmbedding(args)
+        elif self.args.glyph_embeddings == 'dense':
+            self.glyph_embeddings = GlyphDenseEmbedding(args)
 
         if 'bert_path' in dir(self.args):
             self.load_model(self.args.bert_path)
 
-    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None):
+    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, characters=None):
         batch_size = input_ids.size(0)
         bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
@@ -189,7 +204,7 @@ class MultiModalBertModel(nn.Module):
         input_pinyins = pad_sequence(input_pinyins, batch_first=True).to(self.args.device)
         pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
         pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
-        glyph_embeddings = self.glyph_embeddings(input_tokens)
+        glyph_embeddings = self.glyph_embeddings(characters)
         glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
 
         bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
