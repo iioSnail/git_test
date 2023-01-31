@@ -10,3 +10,16 @@ Accuracy: 0.803125
 Accuracy: 0.83125
 Accuracy: 0.8233333333333334
 Accuracy: 0.8089583333333333
+
+模型：Dense，3层的神经网络
+执行情况：
+Accuracy: 0.7864583333333334
+Accuracy: 0.809375
+Accuracy: 0.8270833333333333
+Accuracy: 0.8416666666666667
+Accuracy: 0.848125
+Accuracy: 0.82375
+Accuracy: 0.8570833333333333
+Accuracy: 0.8575
+Accuracy: 0.8629166666666667
+Accuracy: 0.86

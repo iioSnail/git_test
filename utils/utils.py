@@ -192,3 +192,4 @@ def token_embeddings_visualise(embeddings, text):
     plt.xlim(embeddings[:, 0].min() - 0.5, embeddings[:, 0].max() + 0.5)
     plt.ylim(embeddings[:, 1].min() - 0.5, embeddings[:, 1].max() + 0.5)
     plt.show()
+

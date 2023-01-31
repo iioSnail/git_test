@@ -106,6 +106,32 @@ class GlyphConvEmbedding(nn.Module):
         return self.embeddings(images)
 
 
+class GlyphPCAEmbedding(nn.Module):
+
+    def __init__(self, args, font_size=32):
+        super(GlyphPCAEmbedding, self).__init__()
+        self.args = args
+        self.font_size = font_size
+
+    def PCA_svd(self, X, k, center=True):
+        with torch.no_grad():
+            n = X.size()[0]
+            ones = torch.ones(n).view([n, 1])
+            h = ((1 / n) * torch.mm(ones, ones.t())) if center else torch.zeros(n * n).view([n, n])
+            H = torch.eye(n) - h
+            X_center = torch.mm(H, X)
+            u, s, v = torch.svd(X_center)
+            components = v[:k].t()
+            return components
+
+    def forward(self, characters):
+        batch_size = len(characters)
+        images = [convert_char_to_image(char_, self.font_size) for char_ in characters]
+        images = torch.stack(images).to(self.args.device)
+        images = images.view(batch_size, -1) # / 255.
+        return self.PCA_svd(images, 56)
+
+
 class PinyinManualEmbeddings(nn.Module):
 
     def __init__(self, args, pinyin_feature_size=8):
@@ -220,6 +246,8 @@ class MultiModalBertModel(nn.Module):
             self.glyph_embeddings = GlyphDenseEmbedding(args)
         elif self.args.glyph_embeddings == 'conv':
             self.glyph_embeddings = GlyphConvEmbedding(args)
+        elif self.args.glyph_embeddings == 'pca':
+            self.glyph_embeddings = GlyphPCAEmbedding(args)
 
         if 'bert_path' in dir(self.args):
             self.load_model(self.args.bert_path)
