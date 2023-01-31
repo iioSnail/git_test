@@ -23,3 +23,16 @@ Accuracy: 0.8570833333333333
 Accuracy: 0.8575
 Accuracy: 0.8629166666666667
 Accuracy: 0.86
+
+模型：卷积网络
+执行情况：也许调一调说不定可以超过神经网络
+Accuracy: 0.7341666666666666
+Accuracy: 0.773125
+Accuracy: 0.7864583333333334
+Accuracy: 0.7964583333333334
+Accuracy: 0.8147916666666667
+Accuracy: 0.821875
+Accuracy: 0.8160416666666667
+Accuracy: 0.83875
+Accuracy: 0.8414583333333333
+Accuracy: 0.845

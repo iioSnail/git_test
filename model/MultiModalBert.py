@@ -84,15 +84,14 @@ class GlyphConvEmbedding(nn.Module):
         self.args = args
         self.font_size = font_size
         self.embeddings = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=48, kernel_size=4, stride=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Dropout(0.15),
-            nn.Conv2d(in_channels=48, out_channels=1, kernel_size=3, stride=1),
+            nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Dropout(0.15),
             nn.Flatten(),
-            nn.Linear(144, 56),
+            nn.Linear(2700, 512),
+            nn.ReLU(),
+            nn.Dropout(0.15),
+            nn.Linear(512, 56),
             nn.Tanh()
         )
 
@@ -237,6 +236,9 @@ class MultiModalBertModel(nn.Module):
         elif self.args.pinyin_embeddings == 'manual':
             self.pinyin_embeddings = PinyinManualEmbeddings(self.args, self.pinyin_feature_size)
 
+
+        if 'pinyin_embeddings' not in dir(self.args):
+            self.args.pinyin_embeddings = 'dense'
         if self.args.glyph_embeddings == 'resnet':
             self.glyph_embeddings = GlyphResnetEmbedding(args)
         elif self.args.glyph_embeddings == 'dense':
