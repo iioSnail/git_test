@@ -60,11 +60,9 @@ class GlyphDenseEmbedding(nn.Module):
         self.font_size = font_size
         self.embeddings = nn.Sequential(
             nn.Linear(1024, 512),
-            nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Dropout(0.15),
             nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(0.15),
             nn.Linear(256, 56),
@@ -76,6 +74,35 @@ class GlyphDenseEmbedding(nn.Module):
         images = [convert_char_to_image(char_, self.font_size) for char_ in characters]
         images = torch.stack(images).to(self.args.device)
         images = images.view(batch_size, -1) / 255.
+        return self.embeddings(images)
+
+
+class GlyphConvEmbedding(nn.Module):
+
+    def __init__(self, args, font_size=32):
+        super(GlyphConvEmbedding, self).__init__()
+        self.args = args
+        self.font_size = font_size
+        self.embeddings = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2),
+            nn.ReLU(),
+            nn.Dropout(0.15),
+            nn.Conv2d(in_channels=3, out_channels=6, kernel_size=2, stride=1),
+            nn.ReLU(),
+            nn.Dropout(0.15),
+            nn.Conv2d(in_channels=6, out_channels=1, kernel_size=2, stride=1),
+            nn.ReLU(),
+            nn.Dropout(0.15),
+            nn.Flatten(),
+            nn.Linear(169, 56),
+            nn.Tanh()
+        )
+
+    def forward(self, characters):
+        batch_size = len(characters)
+        images = [convert_char_to_image(char_, self.font_size) for char_ in characters]
+        images = torch.stack(images).to(self.args.device)
+        images = images.unsqueeze(1) / 255.
         return self.embeddings(images)
 
 
@@ -191,6 +218,8 @@ class MultiModalBertModel(nn.Module):
             self.glyph_embeddings = GlyphResnetEmbedding(args)
         elif self.args.glyph_embeddings == 'dense':
             self.glyph_embeddings = GlyphDenseEmbedding(args)
+        elif self.args.glyph_embeddings == 'conv':
+            self.glyph_embeddings = GlyphConvEmbedding(args)
 
         if 'bert_path' in dir(self.args):
             self.load_model(self.args.bert_path)
