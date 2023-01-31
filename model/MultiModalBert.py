@@ -53,10 +53,10 @@ class GlyphResnetEmbedding(nn.Module):
         return self.embeddings(images)
 
 
-class PinyinNoEmbeddings(nn.Module):
+class PinyinManualEmbeddings(nn.Module):
 
     def __init__(self, args, pinyin_feature_size=8):
-        super(PinyinNoEmbeddings, self).__init__()
+        super(PinyinManualEmbeddings, self).__init__()
         self.args = args
         self.pinyin_feature_size = pinyin_feature_size
 
@@ -64,7 +64,7 @@ class PinyinNoEmbeddings(nn.Module):
         fill = self.pinyin_feature_size - inputs.size(1)
         if fill > 0:
             inputs = torch.concat([inputs, torch.zeros((len(inputs), fill)).to(self.args.device)], dim=1).long()
-        return inputs / 27
+        return inputs.float()
 
 
 class PinyinDenseEmbeddings(nn.Module):
@@ -148,6 +148,8 @@ class MultiModalBertModel(nn.Module):
         self.bert = BERT().bert
         self.tokenizer = BERT.get_tokenizer()
         self.pinyin_feature_size = 8
+        if 'pinyin_embeddings' not in dir(self.args):
+            self.args.pinyin_embeddings = 'manual'
         if self.args.pinyin_embeddings == 'gru':
             self.pinyin_embeddings = PinyinGRUEmbeddings(self.pinyin_feature_size)
         elif self.args.pinyin_embeddings == 'rgru':
@@ -156,8 +158,8 @@ class MultiModalBertModel(nn.Module):
             self.pinyin_embeddings = PinyinTransformerEmbeddings(self.args, self.pinyin_feature_size)
         elif self.args.pinyin_embeddings == 'dense':
             self.pinyin_embeddings = PinyinDenseEmbeddings(self.args, self.pinyin_feature_size)
-        elif self.args.pinyin_embeddings == 'no':
-            self.pinyin_embeddings = PinyinNoEmbeddings(self.args, self.pinyin_feature_size)
+        elif self.args.pinyin_embeddings == 'manual':
+            self.pinyin_embeddings = PinyinManualEmbeddings(self.args, self.pinyin_feature_size)
 
         if self.args.glyph_embeddings == 'resnet':
             self.glyph_embeddings = GlyphResnetEmbedding(args)
@@ -230,7 +232,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         outputs = self.bert(**inputs).last_hidden_state
         return self.cls(outputs)
 
-    def compute_loss(self, outputs, targets):
+    def compute_loss(self, outputs, targets, *args, **kwargs):
         targets = targets['input_ids']
         outputs = outputs.view(-1, outputs.size(-1))
         targets = targets.view(-1)
@@ -272,9 +274,10 @@ def merge_multi_modal_bert():
     parser.add_argument('--glyph-model-path', type=str, default='./drive/MyDrive/Glyph/probe-best-model.pt')
     parser.add_argument('--phonetic-model-path', type=str, default='./drive/MyDrive/Phonetic/probe-best-model.pt')
     parser.add_argument('--output-path', type=str, default='./drive/MyDrive/MultiModalBertModel/')
+    parser.add_argument('--pinyin-embeddings', type=str, default='manual')
     args = parser.parse_known_args()[0]
 
-    bert = MultiModalBertModel(mock_args(device='cpu'))
+    bert = MultiModalBertModel(args)
 
     # Merge Glyph params and Phonetic params.
     model_state = torch.load(args.glyph_model_path, map_location='cpu')
