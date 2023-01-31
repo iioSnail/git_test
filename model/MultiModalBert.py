@@ -237,8 +237,8 @@ class MultiModalBertModel(nn.Module):
             self.pinyin_embeddings = PinyinManualEmbeddings(self.args, self.pinyin_feature_size)
 
 
-        if 'pinyin_embeddings' not in dir(self.args):
-            self.args.pinyin_embeddings = 'dense'
+        if 'glyph_embeddings' not in dir(self.args):
+            self.args.glyph_embeddings = 'dense'
         if self.args.glyph_embeddings == 'resnet':
             self.glyph_embeddings = GlyphResnetEmbedding(args)
         elif self.args.glyph_embeddings == 'dense':
@@ -273,6 +273,8 @@ class MultiModalBertModel(nn.Module):
         input_pinyins = pad_sequence(input_pinyins, batch_first=True).to(self.args.device)
         pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
         pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
+        if characters is None:
+            characters = input_tokens
         glyph_embeddings = self.glyph_embeddings(characters)
         glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
 
@@ -374,6 +376,7 @@ def merge_multi_modal_bert():
 
     mkdir(args.output_path)
     torch.save(bert.state_dict(), args.output_path + 'multi-modal-bert.pt')
+    print("Merge success, the model saved to " % args.output_path + 'multi-modal-bert.pt')
 
 
 if __name__ == '__main__':
