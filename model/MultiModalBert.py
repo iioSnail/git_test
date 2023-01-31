@@ -40,10 +40,10 @@ def convert_char_to_image(character, font_size=32):
 
 class GlyphResnetEmbedding(nn.Module):
 
-    def __init__(self, args):
+    def __init__(self, args, font_size=32):
         super(GlyphResnetEmbedding, self).__init__()
         self.args = args
-        self.font_size = 32
+        self.font_size = font_size
         self.embeddings = CharResNet()
 
     def forward(self, characters):
@@ -54,15 +54,24 @@ class GlyphResnetEmbedding(nn.Module):
 
 class GlyphDenseEmbedding(nn.Module):
 
-    def __init__(self, args):
+    def __init__(self, args, font_size=32):
         super(GlyphDenseEmbedding, self).__init__()
         self.args = args
-        self.font_size = 32
-        self.embeddings = CharResNet()
+        self.font_size = font_size
+        self.embeddings = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 56),
+            nn.Tanh()
+        )
 
     def forward(self, characters):
+        batch_size = len(characters)
         images = [convert_char_to_image(char_, self.font_size) for char_ in characters]
         images = torch.stack(images).to(self.args.device)
+        images = images.view(batch_size, -1) / 255.
         return self.embeddings(images)
 
 
