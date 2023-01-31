@@ -15,37 +15,40 @@ from model.common import BERT
 from utils.str_utils import is_chinese
 from utils.utils import mock_args, mkdir
 
+font = None
 
-class GlyphEmbedding(nn.Module):
+
+def convert_char_to_image(character, font_size=32):
+    global font
+    if font is None:
+        font = ImageFont.truetype("./assets/font/ms_yahei.ttf", size=font_size)
+
+    image = font.getmask(character)
+    image = np.asarray(image).astype(np.float32).reshape(image.size[::-1])
+
+    image = image[:font_size, :font_size]
+
+    if image.size != (font_size, font_size):
+        back_image = np.zeros((font_size, font_size)).astype(np.float32)
+        offset0 = (font_size - image.shape[0]) // 2
+        offset1 = (font_size - image.shape[1]) // 2
+        back_image[offset0:offset0 + image.shape[0], offset1:offset1 + image.shape[1]] = image
+        image = back_image
+
+    return torch.tensor(image)
+
+
+class GlyphResnetEmbedding(nn.Module):
     font = None
 
     def __init__(self, args):
-        super(GlyphEmbedding, self).__init__()
+        super(GlyphResnetEmbedding, self).__init__()
         self.args = args
         self.font_size = 32
         self.embeddings = CharResNet()
 
-    @staticmethod
-    def convert_char_to_image(character, font_size=32):
-        if GlyphEmbedding.font is None:
-            GlyphEmbedding.font = ImageFont.truetype("./assets/font/ms_yahei.ttf", size=font_size)
-
-        image = GlyphEmbedding.font.getmask(character)
-        image = np.asarray(image).astype(np.float32).reshape(image.size[::-1])
-
-        image = image[:font_size, :font_size]
-
-        if image.size != (font_size, font_size):
-            back_image = np.zeros((font_size, font_size)).astype(np.float32)
-            offset0 = (font_size - image.shape[0]) // 2
-            offset1 = (font_size - image.shape[1]) // 2
-            back_image[offset0:offset0 + image.shape[0], offset1:offset1 + image.shape[1]] = image
-            image = back_image
-
-        return torch.tensor(image)
-
     def forward(self, characters):
-        images = [GlyphEmbedding.convert_char_to_image(char_, self.font_size) for char_ in characters]
+        images = [convert_char_to_image(char_, self.font_size) for char_ in characters]
         images = torch.stack(images).to(self.args.device)
         return self.embeddings(images)
 
@@ -85,7 +88,6 @@ class PinyinDenseEmbeddings(nn.Module):
             return self.embeddings(inputs)
         inputs = torch.concat([inputs, torch.zeros((len(inputs), fill)).to(self.args.device)], dim=1).long()
         return self.embeddings(inputs)
-
 
 
 class PinyinGRUEmbeddings(nn.Module):
@@ -157,7 +159,8 @@ class MultiModalBertModel(nn.Module):
         elif self.args.pinyin_embeddings == 'no':
             self.pinyin_embeddings = PinyinNoEmbeddings(self.args, self.pinyin_feature_size)
 
-        self.glyph_embeddings = GlyphEmbedding(args)
+        if self.args.glyph_embeddings == 'resnet':
+            self.glyph_embeddings = GlyphResnetEmbedding(args)
 
         if 'bert_path' in dir(self.args):
             self.load_model(self.args.bert_path)

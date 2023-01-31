@@ -1,0 +1,13 @@
+模型：ResNet5(baseline)，该模型在原有的ResNet5上稍微改了改参数，去掉了一个block，不过整体影响不大
+执行情况：
+Accuracy: 0.7233333333333334
+Accuracy: 0.755625
+Accuracy: 0.76875
+Accuracy: 0.7872916666666666
+Accuracy: 0.7814583333333334
+Accuracy: 0.7775
+Accuracy: 0.8014583333333334
+Accuracy: 0.805625
+Accuracy: 0.7885416666666667
+Accuracy: 0.7977083333333334
+
