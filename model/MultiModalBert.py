@@ -84,22 +84,19 @@ class GlyphConvEmbedding(nn.Module):
         self.args = args
         self.font_size = font_size
         self.embeddings = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2),
+            nn.Conv2d(in_channels=1, out_channels=48, kernel_size=4, stride=1),
             nn.ReLU(),
+            nn.MaxPool2d(2, 2),
             nn.Dropout(0.15),
-            nn.Conv2d(in_channels=3, out_channels=6, kernel_size=2, stride=1),
-            nn.ReLU(),
-            nn.Dropout(0.15),
-            nn.Conv2d(in_channels=6, out_channels=1, kernel_size=2, stride=1),
+            nn.Conv2d(in_channels=48, out_channels=1, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Dropout(0.15),
             nn.Flatten(),
-            nn.Linear(169, 56),
+            nn.Linear(144, 56),
             nn.Tanh()
         )
 
     def forward(self, characters):
-        batch_size = len(characters)
         images = [convert_char_to_image(char_, self.font_size) for char_ in characters]
         images = torch.stack(images).to(self.args.device)
         images = images.unsqueeze(1) / 255.
@@ -119,7 +116,7 @@ class GlyphPCAEmbedding(nn.Module):
             ones = torch.ones(n).view([n, 1])
             h = ((1 / n) * torch.mm(ones, ones.t())) if center else torch.zeros(n * n).view([n, n])
             H = torch.eye(n) - h
-            X_center = torch.mm(H, X)
+            X_center = torch.mm(H.to(self.args.device), X)
             u, s, v = torch.svd(X_center)
             components = v[:k].t()
             return components
