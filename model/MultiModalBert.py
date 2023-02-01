@@ -305,34 +305,45 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.args = args
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer()
+        # self.cls = nn.Sequential(
+        #     nn.Linear(768 + 8 + 56, len(self.tokenizer)),
+        # )
+
         self.cls = nn.Sequential(
-            nn.Linear(768 + 8 + 56, len(self.tokenizer)),
+            nn.Linear(768 + 8 + 56, 2048),
+            nn.ReLU(),
+            nn.Dropout(0.15),
+            nn.Linear(2048, 2048),
+            nn.ReLU(),
+            nn.Dropout(0.15),
+            nn.Linear(2048, len(self.tokenizer)),
         )
 
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.bce_criteria = nn.BCELoss()
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
+        self.optimizer = torch.optim.Adam(self.cls.parameters(), lr=2e-5)
 
     def forward(self, inputs):
         outputs = self.bert(**inputs).last_hidden_state
         return self.cls(outputs)
 
-    # def compute_loss(self, outputs, targets, *args, **kwargs):
-    #     targets = targets['input_ids']
-    #     outputs = outputs.view(-1, outputs.size(-1))
-    #     targets = targets.view(-1)
-    #     return self.criteria(outputs, targets)
-
     def compute_loss(self, outputs, targets, *args, **kwargs):
-        """
-        使用bce_loss
-        """
-        outputs = outputs.sigmoid()
-        outputs = outputs * targets['attention_mask'].unsqueeze(-1)
-        targets_ = F.one_hot(targets['input_ids'], num_classes=len(self.tokenizer))
-        targets_ = targets_ * targets['attention_mask'].unsqueeze(-1)
-        return self.bce_criteria(outputs, targets_.float())
+        targets = targets['input_ids']
+        outputs = outputs.view(-1, outputs.size(-1))
+        targets = targets.view(-1)
+        return self.criteria(outputs, targets)
+
+    # def compute_loss(self, outputs, targets, *args, **kwargs):
+    #     """
+    #     使用bce_loss。FIXME：不知道为什么不work
+    #     """
+    #     outputs = outputs.sigmoid()
+    #     outputs = outputs * targets['attention_mask'].unsqueeze(-1)
+    #     targets_ = F.one_hot(targets['input_ids'], num_classes=len(self.tokenizer))
+    #     targets_ = targets_ * targets['attention_mask'].unsqueeze(-1)
+    #     loss = self.bce_criteria(outputs, targets_.float())
+    #     return loss
 
     # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
     #     """
