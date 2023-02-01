@@ -93,10 +93,14 @@ def restore_special_tokens(src, output):
     if len(src) != len(output):
         return output
 
+    exclude_chars = ['他', '她', '它']
     src = list(src)
     output = list(output)
     for i in range(len(src)):
         if not is_chinese(src[i]) or not is_chinese(output[i]):
+            output[i] = src[i]
+
+        if src[i] in exclude_chars:
             output[i] = src[i]
 
     return ''.join(output)

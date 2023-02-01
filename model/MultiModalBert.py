@@ -124,7 +124,7 @@ class GlyphPCAEmbedding(nn.Module):
         batch_size = len(characters)
         images = [convert_char_to_image(char_, self.font_size) for char_ in characters]
         images = torch.stack(images).to(self.args.device)
-        images = images.view(batch_size, -1) # / 255.
+        images = images.view(batch_size, -1)  # / 255.
         return self.PCA_svd(images, 56)
 
 
@@ -236,7 +236,6 @@ class MultiModalBertModel(nn.Module):
         elif self.args.pinyin_embeddings == 'manual':
             self.pinyin_embeddings = PinyinManualEmbeddings(self.args, self.pinyin_feature_size)
 
-
         if 'glyph_embeddings' not in dir(self.args):
             self.args.glyph_embeddings = 'dense'
         if self.args.glyph_embeddings == 'resnet':
@@ -312,17 +311,28 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
+        self.bce_criteria = nn.BCELoss()
         self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
 
     def forward(self, inputs):
         outputs = self.bert(**inputs).last_hidden_state
         return self.cls(outputs)
 
+    # def compute_loss(self, outputs, targets, *args, **kwargs):
+    #     targets = targets['input_ids']
+    #     outputs = outputs.view(-1, outputs.size(-1))
+    #     targets = targets.view(-1)
+    #     return self.criteria(outputs, targets)
+
     def compute_loss(self, outputs, targets, *args, **kwargs):
-        targets = targets['input_ids']
-        outputs = outputs.view(-1, outputs.size(-1))
-        targets = targets.view(-1)
-        return self.criteria(outputs, targets)
+        """
+        使用bce_loss
+        """
+        outputs = outputs.sigmoid()
+        outputs = outputs * targets['attention_mask'].unsqueeze(-1)
+        targets_ = F.one_hot(targets['input_ids'], num_classes=len(self.tokenizer))
+        targets_ = targets_ * targets['attention_mask'].unsqueeze(-1)
+        return self.bce_criteria(outputs, targets_.float())
 
     # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
     #     """
@@ -344,6 +354,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         return self.optimizer
 
     def predict(self, src, tgt=None):
+        src = src.replace(" ", "")
+        src = " ".join(src)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
         outputs = self.forward(inputs)
         outputs = outputs.argmax(-1)

@@ -46,9 +46,10 @@ class Evaluation(object):
         d_precision, d_recall, d_f1 = 0, 0, 0
         c_precision, c_recall, c_f1 = 0, 0, 0
 
-        progress = tqdm(range(len(self.test_set)), desc='Evaluation')
+        progress = tqdm(range(len(self.test_set)), desc='Sentence-level Evaluation')
         for i in progress:
             src, tgt = self.test_set.__getitem__(i)
+            src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
             c_output = self.model.predict(src)
             c_output = restore_special_tokens(src, c_output)
 
@@ -150,7 +151,7 @@ class Evaluation(object):
         detect_sent_TP, sent_P, sent_N, correct_sent_TP = 0, 0, 0, 0
         dc_TP, dc_FP, dc_FN = 0, 0, 0
 
-        progress = tqdm(range(len(self.test_set)), desc='Evaluation')
+        progress = tqdm(range(len(self.test_set)), desc='Character-level Evaluation')
         for idx in progress:
             src, tgt = self.test_set.__getitem__(idx)
             c_output = self.model.predict(src)
