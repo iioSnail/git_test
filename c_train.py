@@ -199,7 +199,7 @@ class C_Train(object):
                                                  detection_targets.to(self.args.device)
 
             outputs = self.model(inputs)
-            outputs = outputs.argmax(dim=2)
+            outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) else self.model.extract_outputs(outputs)
 
             matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets, inputs.attention_mask)
 
