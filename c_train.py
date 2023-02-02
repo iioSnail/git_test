@@ -62,6 +62,8 @@ class C_Train(object):
         self.correction_best_f1_score = 0
 
     def train_epoch(self):
+        matrix = np.zeros([4])
+
         self.model = self.model.train()
         progress = tqdm(self.train_loader, desc="Epoch {} Training".format(self.current_epoch))
         for i, (inputs, targets, detection_targets) in enumerate(progress):
@@ -86,7 +88,7 @@ class C_Train(object):
             self.total_step += 1
 
             outputs = outputs.argmax(dim=2)
-            matrix = self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets, inputs.attention_mask)
+            matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets, inputs.attention_mask)
 
             correction_matrix = TrainBase.compute_matrix(*matrix)
 
