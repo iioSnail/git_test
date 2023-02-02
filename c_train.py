@@ -55,7 +55,7 @@ class C_Train(object):
             self.optimizer = self.model.get_optimizer()
         else:
             # Default Optimizer.
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=3e-4)
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=2e-5)
 
         self.writer = SummaryWriter(log_dir=self.args.output_path / 'runs' / 'csc_model')
         self.total_step = 0
