@@ -17,6 +17,21 @@ def columns_strip(df):
         else:
             columns.append(item.strip())
     df.columns = columns
+    return df
+
+
+def columns_clean(df):
+    df = columns_strip(df)
+    columns = []
+    for item in df.columns:
+        if item == '是否收款':
+            item = '收款情况'
+        if item == '电话':
+            item = '联系方式'
+        columns.append(item)
+
+    df.columns = columns
+    return df
 
 
 def fill_merge_cells(df, index_column, exclude_columns=None):

@@ -171,6 +171,108 @@ def _build_detail(details, fpkj):
         KCE.text = ""
 
 
+def paper_invoice(info, details):
+    Kp = Element('Kp')
+    Version = SubElement(Kp, 'Version')
+    Fpxx = SubElement(Kp, 'Fpxx')
+    Zsl = SubElement(Fpxx, 'Zsl')
+    Zsl.text = '1'
+    Fpsj = SubElement(Fpxx, 'Fpsj')
+    Fp = SubElement(Fpsj, 'Fp')
+
+    # 发票信息
+    Djh = SubElement(Fp, 'Djh')
+    Djh.text = process(info['发票序号'])
+
+    Gfmc = SubElement(Fp, 'Gfmc')
+    Gfmc.text = process(info['购买方名称'])
+
+    Gfsh = SubElement(Fp, 'Gfsh')
+    Gfsh.text = process(info['识别号'])
+
+    Gfyhzh = SubElement(Fp, 'Gfyhzh')
+    Gfyhzh.text = process(info['开户行及账号'])
+
+    Gfdzdh = SubElement(Fp, 'Gfdzdh')
+    Gfdzdh.text = process(info['地址、电话'])
+
+    Bz = SubElement(Fp, 'Bz')
+    Bz.text = ''    # 备注
+
+    Fhr = SubElement(Fp, 'Fhr')
+    Fhr.text = "周幸"
+
+    Skr = SubElement(Fp, 'Skr')
+    Skr.text = "刘少华"
+
+    Spbmbbh = SubElement(Fp, 'Spbmbbh')
+    Spbmbbh.text = "1"
+
+    Hsbz = SubElement(Fp, 'Hsbz')
+    Hsbz.text = "1"
+
+    Spxx = SubElement(Fp, 'Spxx')
+
+
+    # 商品详情
+    for j in range(len(details)):
+        Sph = SubElement(Spxx, 'Sph')
+
+        detail = details.iloc[j]
+
+        Xh = SubElement(Sph, 'Xh')
+        Xh.text = str(j + 1)
+
+        Spmc = SubElement(Sph, 'Spmc')
+        Spmc.text = process(detail['商品名称'])
+
+        Ggxh = SubElement(Sph, 'Ggxh')
+        Ggxh.text = process(detail['规格型号'])
+
+        Jldw = SubElement(Sph, 'Jldw')
+        Jldw.text = process(detail['计量单位'])
+
+        Spbm = SubElement(Sph, 'Spbm')
+        Spbm.text = process(detail['税收分类编码']).ljust(19, '0')
+
+        Qyspbm = SubElement(Sph, 'Qyspbm')
+        Qyspbm.text = ''
+
+        Syyhzcbz = SubElement(Sph, 'Syyhzcbz')
+        Syyhzcbz.text = '0'
+
+        Lslbz = SubElement(Sph, 'Lslbz')
+        Lslbz.text = ''
+
+        Yhzcsm = SubElement(Sph, 'Yhzcsm')
+        Yhzcsm.text = ''
+
+        Dj = SubElement(Sph, 'Dj')
+        Dj.text = process(detail['单价'] / (1 + detail['税率']) + 0.000001, round_num=6)
+
+        Sl = SubElement(Sph, 'Sl')
+        Sl.text = process(detail['数量'])
+
+        Je = SubElement(Sph, 'Je')
+        Je.text = process(detail['金额（含税）'] / (1 + detail['税率']))
+
+        Slv = SubElement(Sph, 'Slv')
+        Slv.text = process(detail['税率'])
+
+        Kce = SubElement(Sph, 'Kce')
+        Kce.text = '0'
+
+        Se = SubElement(Sph, 'Se')
+        Se.text = process((detail['金额（含税）'] / (1 + detail['税率'])) * detail['税率'])
+
+    tree = ElementTree(Kp)
+    filename = "发票%s(纸质).xml" % process(info['发票序号'])
+    tree.write(filename, encoding='GBK', xml_declaration=True)
+    print("发票%s(纸质)导出完毕~~，文件%s" % (process(info['发票序号']), filename))
+
+
+
+
 if __name__ == '__main__':
     excel = pd.read_excel("dianzi.xlsx", sheet_name=None)
 
@@ -186,6 +288,8 @@ if __name__ == '__main__':
         details = details_list[details_list['发票序号'] == i]
         info = infos[infos['发票序号'] == i].iloc[0]
 
-        electronic_invoice(info, details)
-
+        if pd.isnull(info['是否纸质']) or '' == info['是否纸质']:
+            electronic_invoice(info, details)
+        else:
+            paper_invoice(info, details)
     print("全部导出完毕！")
