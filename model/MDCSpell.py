@@ -144,8 +144,14 @@ class MDCSpellModel(nn.Module):
         """
         self.correction_network.dense_layer.weight.data = self.correction_network.word_embedding_table.weight.data
 
-    def compute_loss(self, correction_outputs, correction_targets, detection_outputs, detection_targets):
+    def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
+        correction_outputs, detection_outputs = outputs
+        correction_targets = targets['input_ids']
+        detection_targets = (inputs['input_ids'] != targets['input_ids']).float()
         return self.criteria(correction_outputs, correction_targets, detection_outputs, detection_targets)
+
+    def extract_outputs(self, outputs):
+        return outputs[0].argmax(dim=2)
 
     def predict(self, sentence):
         tokenizer = self.correction_network.tokenizer

@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from model.BertCorrectionModel import BertCorrectionModel
+from model.MDCSpell import MDCSpellModel
 from model.MultiModalBert import MultiModalBertModel, MultiModalBertCorrectionModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
@@ -42,6 +43,8 @@ class C_Train(object):
             self.model = BertCorrectionModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MultiModalBert':
             self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'MDCSpell':
+            self.model = MDCSpellModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -87,7 +90,7 @@ class C_Train(object):
 
             self.total_step += 1
 
-            outputs = outputs.argmax(dim=2)
+            outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) else self.model.extract_outputs(outputs)
             matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets, inputs.attention_mask)
 
             correction_matrix = TrainBase.compute_matrix(*matrix)
