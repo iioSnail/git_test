@@ -196,6 +196,7 @@ Correction Precision: 0.8846238694019667, Recall: 0.7406723309935831, F1-Score: 
 
 模型：MDCSpell
 执行情况：效果确实比只用bert好很多，到15个epoch时，基本已经可以完全拟合训练数据了。
+eval情况：虽然在Wang271K表现很好，但在eval上表现并不如单纯的MultiModalBert效果好，看来Glyph-phonetic Info还是很重要的
 Correction Precision: 0.9830810329470244, Recall: 0.41495959406118865, F1-Score: 0.5835866257222314
 Correction Precision: 0.9846205282510917, Recall: 0.5529478032293366, F1-Score: 0.7081880481144472
 Correction Precision: 0.9842073897494088, Recall: 0.619932432432316, F1-Score: 0.7607093500553181
@@ -226,5 +227,9 @@ Epoch 18 Training: 100% 250/250 [02:46<00:00,  1.50it/s, loss=0.00942, c_precisi
 Correction Precision: 0.9836499158449185, Recall: 0.7681186631617033, F1-Score: 0.8626251971879352
 Epoch 19 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.0081, c_precision=1, c_recall=0.999, c_f1_score=0.999]
 Correction Precision: 0.9847972972970596, Recall: 0.7663849765256776, F1-Score: 0.8619706405467762
-Finish Training. The best model is saved to drive/MyDrive/C_CSC/csc-best-model.pt
+Eval：
+Detection Character-level Precision 0.8703703703671468, Recall 0.33428165007064825, F1_Score 0.48304213731642315
+Correction Character-level Precision 0.8648648648615257, Recall 0.32369942196485013, F1_Score 0.47108307005481853
+Detection Sentence-level Precision 0.7654320987339328, Recall 0.343807763394754, F1_Score 0.4744897916286509
+Correction Sentence-level Precision 0.7283950616984199, Recall 0.32717190387565304, F1_Score 0.4515306079557672
 

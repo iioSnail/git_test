@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
+from model.MDCSpellPlus import MDCSpellPlusModel
 from model.MultiModalBert import MultiModalBertModel, MultiModalBertCorrectionModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
@@ -45,6 +46,8 @@ class C_Train(object):
             self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpell':
             self.model = MDCSpellModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'MDCSpellPlus':
+            self.model = MDCSpellPlusModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 

@@ -250,9 +250,14 @@ class MultiModalBertModel(nn.Module):
         if 'bert_path' in dir(self.args):
             self.load_model(self.args.bert_path)
 
-    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, characters=None):
+        self.hidden_size = self.bert.config.hidden_size + self.pinyin_feature_size + 56
+
+    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, characters=None, inputs_embeds=None):
         batch_size = input_ids.size(0)
-        bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
+        if inputs_embeds is not None:
+            bert_outputs = self.bert(inputs_embeds=inputs_embeds, attention_mask=attention_mask, token_type_ids=token_type_ids)
+        else:
+            bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
         input_tokens = self.tokenizer.convert_ids_to_tokens(input_ids.view(-1))
         input_pinyins = []
