@@ -195,11 +195,36 @@ Correction Precision: 0.8807017543857717, Recall: 0.7420546932740683, F1-Score: 
 Correction Precision: 0.8846238694019667, Recall: 0.7406723309935831, F1-Score: 0.8062732477193024
 
 模型：MDCSpell
-执行情况：一开始效果炸裂，训练速度很快，一个epoch就能达到其他模型最好的效果，不过就没有后续了，再往后就越来越烂，最终early_stop了
-Correction Precision: 0.9613157894734312, Recall: 0.6865250892688053, F1-Score: 0.8010086608447228
-Correction Precision: 0.9573770491800864, Recall: 0.7127300037550295, F1-Score: 0.8171348612046657
-Correction Precision: 0.896191966614268, Recall: 0.6448948948947738, F1-Score: 0.7500545727504156
-Correction Precision: 0.8280214578728848, Recall: 0.49267743146817633, F1-Score: 0.6177751613920083
-Correction Precision: 0.8746803069051472, Recall: 0.6417714392943062, F1-Score: 0.7403398631332385
-Correction Precision: 0.888832997987704, Recall: 0.6636619718308612, F1-Score: 0.7599182878664451
-Correction Precision: 0.9039735099335446, Recall: 0.6656039009751189, F1-Score: 0.7666882691160325
+执行情况：效果确实比只用bert好很多，到15个epoch时，基本已经可以完全拟合训练数据了。
+Correction Precision: 0.9830810329470244, Recall: 0.41495959406118865, F1-Score: 0.5835866257222314
+Correction Precision: 0.9846205282510917, Recall: 0.5529478032293366, F1-Score: 0.7081880481144472
+Correction Precision: 0.9842073897494088, Recall: 0.619932432432316, F1-Score: 0.7607093500553181
+Correction Precision: 0.9785360484312112, Recall: 0.6676680435597694, F1-Score: 0.7937499995176529
+Correction Precision: 0.9826203208553522, Recall: 0.6896228185399343, F1-Score: 0.8104531917083564
+Correction Precision: 0.9818229031417861, Recall: 0.7100469483566741, F1-Score: 0.8241063639416675
+Correction Precision: 0.9806240563661347, Recall: 0.7308702175542514, F1-Score: 0.8375241774601772
+Correction Precision: 0.9815645241651765, Recall: 0.7396283086163432, F1-Score: 0.8435927625971622
+Correction Precision: 0.9824518042508694, Recall: 0.7463387157339942, F1-Score: 0.8482714463721418
+Correction Precision: 0.9801373222165326, Recall: 0.7506103286383566, F1-Score: 0.8501542056130476
+Epoch 10 Training: 100% 250/250 [01:41<00:00,  2.47it/s, loss=0.0211, c_precision=0.999, c_recall=0.979, c_f1_score=0.989]
+Correction Precision: 0.9824347401802921, Recall: 0.7568126292048943, F1-Score: 0.8549893837969799
+Epoch 11 Training: 100% 250/250 [02:41<00:00,  1.55it/s, loss=0.014, c_precision=0.999, c_recall=0.983, c_f1_score=0.991]
+Correction Precision: 0.9841540711845479, Recall: 0.7579797221177698, F1-Score: 0.856385234977062
+Epoch 12 Training: 100% 250/250 [02:42<00:00,  1.54it/s, loss=0.0131, c_precision=0.999, c_recall=0.991, c_f1_score=0.995]
+Correction Precision: 0.9851653696495658, Recall: 0.76032282282268, F1-Score: 0.8582627113725213
+Epoch 13 Training: 100% 250/250 [02:44<00:00,  1.52it/s, loss=0.0154, c_precision=0.999, c_recall=0.995, c_f1_score=0.997]
+Correction Precision: 0.9823330106483584, Recall: 0.7621104018023352, F1-Score: 0.8583209976046362
+Epoch 14 Training: 100% 250/250 [02:44<00:00,  1.52it/s, loss=0.0102, c_precision=0.999, c_recall=0.997, c_f1_score=0.998]
+Correction Precision: 0.9842843326883499, Recall: 0.7639331957213803, F1-Score: 0.8602218695553052
+Epoch 15 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.0114, c_precision=0.999, c_recall=0.997, c_f1_score=0.998]
+Correction Precision: 0.983075435202857, Recall: 0.7635680751172275, F1-Score: 0.8595285905657428
+Epoch 16 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.00963, c_precision=0.999, c_recall=0.998, c_f1_score=0.999]
+Correction Precision: 0.9833574529664776, Recall: 0.7646286571641476, F1-Score: 0.8603080813814604
+Epoch 17 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.01, c_precision=1, c_recall=0.999, c_f1_score=0.999]
+Correction Precision: 0.9850313858037215, Recall: 0.7659095175519492, F1-Score: 0.8617594250013648
+Epoch 18 Training: 100% 250/250 [02:46<00:00,  1.50it/s, loss=0.00942, c_precision=1, c_recall=0.999, c_f1_score=1]
+Correction Precision: 0.9836499158449185, Recall: 0.7681186631617033, F1-Score: 0.8626251971879352
+Epoch 19 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.0081, c_precision=1, c_recall=0.999, c_f1_score=0.999]
+Correction Precision: 0.9847972972970596, Recall: 0.7663849765256776, F1-Score: 0.8619706405467762
+Finish Training. The best model is saved to drive/MyDrive/C_CSC/csc-best-model.pt
+
