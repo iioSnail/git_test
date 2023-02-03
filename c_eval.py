@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
+from model.MDCSpellPlus import MDCSpellPlusModel
 from model.MultiModalBert import MultiModalBertCorrectionModel
 from utils.dataset import CSCTestDataset
 from train import Train
@@ -27,10 +28,16 @@ class Evaluation(object):
             self.model = BertCorrectionModel(self.args).eval()
         elif self.args.model == 'MultiModalBert':
             self.model = MultiModalBertCorrectionModel(self.args).eval()
+        elif self.args.model == 'MDCSpellPlus':
+            self.model = MDCSpellPlusModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
-        self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        try:
+            self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        except Exception as e:
+            print(e)
+            print("Load model failed.")
         self.model.to(self.args.device)
 
         self.error_sentences = []
