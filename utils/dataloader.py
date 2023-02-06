@@ -8,7 +8,12 @@ from utils.dataset import CSCDataset, SighanTrainDataset, ConfusionMaskDataset, 
 
 
 def create_dataloader(args, collate_fn=None):
-    if args.data_type == 'sighan':
+    if 'data_type' not in dir(args) or args.data_type is None:
+        with open(args.train_data, mode='br') as f:
+            train_data = pickle.load(f)
+
+        dataset = CSCDataset(train_data, args)
+    elif args.data_type == 'sighan':
         dataset = SighanTrainDataset()
     elif args.data_type == 'confusion_mask':
         dataset = ConfusionMaskDataset(args)
@@ -17,10 +22,7 @@ def create_dataloader(args, collate_fn=None):
     elif args.data_type == 'glyph':
         dataset = GlyphProbeDataset()
     else:
-        with open(args.train_data, mode='br') as f:
-            train_data = pickle.load(f)
-
-        dataset = CSCDataset(train_data, args)
+        raise Exception("Unknown data type!")
 
     valid_size = int(len(dataset) * args.valid_ratio)
     train_size = len(dataset) - valid_size

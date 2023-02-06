@@ -4,6 +4,7 @@ import torch
 from torch import nn
 from transformers import AutoTokenizer, AutoModel
 
+from model.BertDetectionModel import BertDetectionModel
 from model.MultiModalBert import MultiModalBertModel
 
 
@@ -159,8 +160,52 @@ class MDCSpellPlusModel(nn.Module):
 
     def predict(self, sentence):
         sentence = ' '.join(sentence)
+        chars = sentence.split(" ")
         tokenizer = self.correction_network.tokenizer
         inputs = tokenizer(sentence, padding=True, return_tensors='pt').to(self.args.device)
         c_outputs, _ = self.forward(inputs)
-        c_output = c_outputs.argmax(2).squeeze()[1:-1]
-        return tokenizer.decode(c_output).replace(" ", "")
+
+        # c_output = c_outputs.argmax(2).squeeze()[1:-1]
+        c_output = self.eval_model_predict(inputs, c_outputs)
+
+        pred_chars = tokenizer.convert_ids_to_tokens(c_output)
+        for i in range(len(pred_chars)):
+            if len(pred_chars[i]) > 1:
+                pred_chars[i] = chars[i]
+        return ''.join(pred_chars)
+
+    def eval_model_predict(self, inputs, c_outputs):
+        token_num = c_outputs.size(1) - 2
+        cand_num = 5
+
+        cand_tokens = c_outputs.argsort(-1, descending=True)[:, 1:-1, :cand_num].squeeze(0)
+        src_tokens = inputs['input_ids'].squeeze(0)
+
+        eval_tokens_list = []
+        for i in range(len(cand_tokens)):
+            item_tokens = src_tokens.repeat(cand_num, 1)
+            item_tokens[:, i+1] = cand_tokens[i]
+            eval_tokens_list.append(item_tokens)
+
+        input_ids = torch.vstack(eval_tokens_list)
+        attention_mask = torch.full_like(input_ids, 1).to(self.args.device)
+        token_type_ids = torch.full_like(input_ids, 0).to(self.args.device)
+        eval_inputs = {
+            'input_ids': input_ids,
+            'attention_mask': attention_mask,
+            'token_type_ids': token_type_ids
+        }
+
+        if not hasattr(self, 'eval_model'):
+            self.eval_model = BertDetectionModel(self.args).eval()
+            self.eval_model.load_state_dict(torch.load("./d_models/d_bert.pt", map_location='cpu'))
+            self.eval_model.to(self.args.device)
+
+        eval_outputs = self.eval_model(eval_inputs)
+        eval_outputs = eval_outputs.view(token_num, cand_num, -1)
+
+        eval_results = []
+        for i in range(token_num):
+            eval_results.append(cand_tokens[i][eval_outputs[i][:, i+1].argmin()].item())
+
+        return eval_results

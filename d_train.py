@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from model.BertDetectionModel import BertDetectionModel
+from model.MyDetectionModel import MyDetectionModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
@@ -28,6 +29,8 @@ class D_Train(object):
         elif self.args.model == "BertCLDetectionModel2":
             from model.BertCLDetectionModel2 import BertCLDetectionModel
             self.model = BertCLDetectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == "MyDetectionModel":
+            self.model = MyDetectionModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -38,7 +41,7 @@ class D_Train(object):
             self.optimizer = self.model.get_optimizer()
         else:
             # Default Optimizer.
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=3e-4)
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=2e-5)
 
         self.writer = SummaryWriter(log_dir=self.args.output_path / 'runs' / 'csc_model')
         self.total_step = 0
@@ -48,6 +51,7 @@ class D_Train(object):
         self.detection_best_f1_score = 0
 
     def train_epoch(self):
+        matrix = np.zeros([4])
         self.model = self.model.train()
         progress = tqdm(self.train_loader, desc="Epoch {} Training".format(self.current_epoch))
         for i, (inputs, targets, d_targets) in enumerate(progress):
@@ -74,7 +78,7 @@ class D_Train(object):
 
             self.total_step += 1
 
-            matrix = self.character_level_confusion_matrix(d_outputs, d_targets, inputs.attention_mask)
+            matrix += self.character_level_confusion_matrix(d_outputs, d_targets, inputs.attention_mask)
 
             d_matrix = TrainBase.compute_matrix(*matrix)
 
@@ -233,6 +237,7 @@ class D_Train(object):
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
         parser.add_argument('--train-data', type=str, default="./data/Wang271K_processed.pkl",
                             help='The file path of training data.')
+        parser.add_argument('--data-type', type=str, default="none")
         parser.add_argument('--valid-ratio', type=float, default=0.2,
                             help='The ratio of splitting validation set.')
         parser.add_argument('--device', type=str, default='auto',

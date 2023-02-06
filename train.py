@@ -52,6 +52,7 @@ class Train(object):
             inputs, targets, detection_targets = inputs.to(self.args.device), \
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
+            targets = targets['input_ids']
             self.detection_optimizer.zero_grad()
             self.correction_optimizer.zero_grad()
 
@@ -206,6 +207,7 @@ class Train(object):
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
 
+            targets = targets['input_ids']
             outputs, detection_outputs = self.model(inputs)
             outputs = outputs.argmax(dim=2)
 

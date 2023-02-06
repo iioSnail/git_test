@@ -33,7 +33,7 @@ class BertDetectionModel(nn.Module):
     def forward(self, inputs):
         outputs = self.bert(inputs).last_hidden_state
         d_outputs = self.cls(outputs).squeeze()
-        return d_outputs * inputs.attention_mask
+        return d_outputs * inputs['attention_mask']
 
     def compute_loss(self, d_outputs, d_targets):
         return self.criteria(d_outputs, d_targets)
