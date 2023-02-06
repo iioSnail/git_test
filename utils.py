@@ -127,3 +127,28 @@ def box_warning(msg, exit_=True):
     top.destroy()
     if exit_:
         exit(0)
+
+
+# 拆分所有的合并单元格，并赋予合并之前的值
+def unmerge_and_fill_cells(worksheet) -> None:
+    all_merged_cell_ranges = list(
+        worksheet.merged_cells.ranges
+    )
+
+    for merged_cell_range in all_merged_cell_ranges:
+        merged_cell = merged_cell_range.start_cell
+        worksheet.unmerge_cells(range_string=merged_cell_range.coord)
+
+        for row_index, col_index in merged_cell_range.cells:
+            cell = worksheet.cell(row=row_index, column=col_index)
+            cell.value = merged_cell.value
+
+
+def unmerge_cell(filename):
+    wb = openpyxl.load_workbook(filename)
+    for sheet_name in wb.sheetnames:
+        sheet = wb[sheet_name]
+        unmerge_and_fill_cells(sheet)
+    filename = filename.replace(".xls", "_temp.xls")
+    wb.save(filename)
+    return filename

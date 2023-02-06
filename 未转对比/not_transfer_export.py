@@ -2,12 +2,13 @@ import sys, os
 sys.path.insert(1, os.path.abspath(".."))
 
 import pandas as pd
-from utils import columns_strip, fill_merge_cells, merge_cell_and_export
+from utils import columns_strip, fill_merge_cells, merge_cell_and_export, columns_clean, unmerge_cell
 import openpyxl
 
 
 def export_not_transfer_items():
-    excel = pd.read_excel("yingshou.xlsx", sheet_name=None, dtype=str)
+    excel_name = unmerge_cell("yingshou.xlsx")
+    excel = pd.read_excel(excel_name, sheet_name=None, dtype=str)
 
     result_df_list = []
 
@@ -16,7 +17,7 @@ def export_not_transfer_items():
 
     for key, df in excel.items():
         df.columns = list(df.iloc[4])
-        columns_strip(df)
+        df = columns_clean(df)
         if df.columns[0] != '发票代码':
             print("错误：sheet页“%s”第6行第一个单元格不是发票代码，请确保表头在第6行!" % key)
 
@@ -57,7 +58,7 @@ def merge_cells():
     df = pd.read_excel("yingshou_final.xlsx", header=0)
 
     merge_columns = ['发票代码', '发票号码', '购方企业名称', '购方税号', '银行账号', '地址电话',
-                     '开票日期', '商品编码版本号', '单据号', '价税合计', '联系人', '电话',
+                     '开票日期', '商品编码版本号', '单据号', '价税合计', '联系人', '联系方式',
                      '接单人', '收款情况']
 
     for item in list(df[index_column].drop_duplicates()):
