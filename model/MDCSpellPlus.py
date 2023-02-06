@@ -165,8 +165,8 @@ class MDCSpellPlusModel(nn.Module):
         inputs = tokenizer(sentence, padding=True, return_tensors='pt').to(self.args.device)
         c_outputs, _ = self.forward(inputs)
 
-        # c_output = c_outputs.argmax(2).squeeze()[1:-1]
-        c_output = self.eval_model_predict(inputs, c_outputs)
+        c_output = c_outputs.argmax(2).squeeze()[1:-1]
+        # c_output = self.eval_model_predict(inputs, c_outputs)     # 可能是因为我的detection_model效果不好，所以最后起了反效果
 
         pred_chars = tokenizer.convert_ids_to_tokens(c_output)
         for i in range(len(pred_chars)):
@@ -207,5 +207,11 @@ class MDCSpellPlusModel(nn.Module):
         eval_results = []
         for i in range(token_num):
             eval_results.append(cand_tokens[i][eval_outputs[i][:, i+1].argmin()].item())
+
+        tokenizer = self.correction_network.tokenizer
+        pred_chars = tokenizer.convert_ids_to_tokens(eval_results)
+        old_chars = tokenizer.convert_ids_to_tokens(c_outputs.argmax(2).squeeze()[1:-1])
+        print('\npred:', ''.join(pred_chars))
+        print('old :', ''.join(old_chars))
 
         return eval_results
