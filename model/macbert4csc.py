@@ -41,7 +41,7 @@ def build_lr_scheduler(optimizer):
                            'delay_iters': 0,
                            'eta_min_lr': 3e-07})
     scheduler = WarmupExponentialLR(**scheduler_args)
-    return {'scheduler': scheduler, 'interval': 'step'}
+    return scheduler
 
 
 def _get_warmup_factor_at_iter(
@@ -159,6 +159,8 @@ class MacBert4CscModel(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.tokenizer = BertTokenizerFast.from_pretrained('hfl/chinese-macbert-base')
         self.w = 0.3
+        self.optimizer = make_optimizer(self)
+        self.lr_scheduler = build_lr_scheduler(self.optimizer)
 
     def forward(self, inputs, targets=None, detection_targets=None):
         encoded_text = inputs
@@ -204,4 +206,7 @@ class MacBert4CscModel(nn.Module):
         return outputs.argmax(dim=2)
 
     def get_optimizer(self):
-        return make_optimizer(self)
+        return self.optimizer
+
+    def get_lr_scheduler(self):
+        return self.lr_scheduler
