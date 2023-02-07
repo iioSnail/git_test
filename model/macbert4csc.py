@@ -202,3 +202,6 @@ class MacBert4CscModel(nn.Module):
             outputs = outputs[3]
 
         return outputs.argmax(dim=2)
+
+    def get_optimizer(self):
+        return make_optimizer(self)
