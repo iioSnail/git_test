@@ -3,13 +3,13 @@ sys.path.insert(1, os.path.abspath(".."))
 
 import pandas as pd
 from utils import columns_strip, fill_merge_cells, merge_cell_and_export, columns_clean, unmerge_cell
-import openpyxl
 
 
 def export_not_transfer_items():
+    print("正在读取文件.", end='')
     excel_name = unmerge_cell("yingshou.xlsx")
+    print()
     excel = pd.read_excel(excel_name, sheet_name=None, dtype=str)
-
     result_df_list = []
 
     index_column = '发票号码'
@@ -47,37 +47,6 @@ def export_not_transfer_items():
     df['价税合计'] = df['价税合计'].astype(float)
 
     merge_cell_and_export(df, "weizhuan.xlsx", '发票号码', exclude_columns)
-
-
-def merge_cells():
-    offset = 2
-
-    index_column = '发票号码'
-    wb = openpyxl.load_workbook("weizhuan_temp.xlsx")
-    sheet = wb[wb.sheetnames[0]]
-    df = pd.read_excel("yingshou_final.xlsx", header=0)
-
-    merge_columns = ['发票代码', '发票号码', '购方企业名称', '购方税号', '银行账号', '地址电话',
-                     '开票日期', '商品编码版本号', '单据号', '价税合计', '联系人', '联系方式',
-                     '接单人', '收款情况']
-
-    for item in list(df[index_column].drop_duplicates()):
-        index = df[df[index_column] == item].index
-        if len(index) <= 1:
-            continue
-
-        start_row = index[0] + offset
-        end_row = index[-1] + offset
-
-        for i, column in enumerate(df.columns):
-            if column not in merge_columns:
-                continue
-
-            sheet.merge_cells(start_row=start_row, end_row=end_row, start_column=i + 1, end_column=i + 1)
-
-    wb.save('weizhuan_final.xlsx')
-    os.remove("weizhuan_temp.xlsx")
-
 
 if __name__ == '__main__':
     export_not_transfer_items()

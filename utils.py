@@ -1,11 +1,12 @@
+import time
 import tkinter as tk
 import tkinter.messagebox
+from pathlib import Path
 
 import pandas as pd
 import openpyxl
 import random
 import os
-
 
 def columns_strip(df):
     i = 1
@@ -130,7 +131,7 @@ def box_warning(msg, exit_=True):
 
 
 # 拆分所有的合并单元格，并赋予合并之前的值
-def unmerge_and_fill_cells(worksheet) -> None:
+def unmerge_and_fill_cells(worksheet):
     all_merged_cell_ranges = list(
         worksheet.merged_cells.ranges
     )
@@ -147,8 +148,20 @@ def unmerge_and_fill_cells(worksheet) -> None:
 def unmerge_cell(filename):
     wb = openpyxl.load_workbook(filename)
     for sheet_name in wb.sheetnames:
+        print('.', end='')
         sheet = wb[sheet_name]
         unmerge_and_fill_cells(sheet)
     filename = filename.replace(".xls", "_temp.xls")
     wb.save(filename)
+    wb.close()
+
+    # openpyxl保存之后，再用pandas读取会存在公式无法读取到的情况，使用下面方式就可以了
+    # 原理=使用windows打开excel，然后另存为一下
+    from win32com.client import Dispatch
+    xlApp = Dispatch("Excel.Application")
+    xlApp.Visible = False
+    xlBook = xlApp.Workbooks.Open(str(Path(".").absolute() / filename))  # 这里必须填绝对路径
+    xlBook.Save()
+    xlBook.Close()
+
     return filename
