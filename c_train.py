@@ -14,6 +14,7 @@ from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
 from model.MultiModalBert import MultiModalBertModel, MultiModalBertCorrectionModel
+from model.macbert4csc import MacBert4CscModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
@@ -32,6 +33,7 @@ from utils.utils import setup_seed, mkdir
 --no-resume
 """
 
+
 class C_Train(object):
 
     def __init__(self):
@@ -48,6 +50,8 @@ class C_Train(object):
             self.model = MDCSpellModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpellPlus':
             self.model = MDCSpellPlusModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'MacBert4CscModel':
+            self.model = MacBert4CscModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -85,7 +89,10 @@ class C_Train(object):
                                                  detection_targets.to(self.args.device)
             self.optimizer.zero_grad()
 
-            outputs = self.model(inputs)
+            if self.args.multi_forward_args:
+                outputs = self.model(inputs, targets, detection_targets)
+            else:
+                outputs = self.model(inputs)
             loss = self.model.compute_loss(outputs, targets, inputs)
             loss.backward()
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5)
@@ -93,8 +100,10 @@ class C_Train(object):
 
             self.total_step += 1
 
-            outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) else self.model.extract_outputs(outputs)
-            matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets, inputs.attention_mask)
+            outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) \
+                else self.model.extract_outputs(outputs)
+            matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets,
+                                                            inputs.attention_mask)
 
             correction_matrix = TrainBase.compute_matrix(*matrix)
 
@@ -202,9 +211,11 @@ class C_Train(object):
                                                  detection_targets.to(self.args.device)
 
             outputs = self.model(inputs)
-            outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) else self.model.extract_outputs(outputs)
+            outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) else self.model.extract_outputs(
+                outputs)
 
-            matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets, inputs.attention_mask)
+            matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets,
+                                                            inputs.attention_mask)
 
             correction_matrix = TrainBase.compute_matrix(*matrix)
             progress.set_postfix({

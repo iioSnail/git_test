@@ -8,7 +8,7 @@ from utils.dataset import CSCDataset, SighanTrainDataset, ConfusionMaskDataset, 
 
 
 def create_dataloader(args, collate_fn=None):
-    if 'data_type' not in dir(args) or args.data_type is None:
+    if 'data_type' not in dir(args) or args.data_type is None or args.data_type == 'none':
         with open(args.train_data, mode='br') as f:
             train_data = pickle.load(f)
 
@@ -22,7 +22,7 @@ def create_dataloader(args, collate_fn=None):
     elif args.data_type == 'glyph':
         dataset = GlyphProbeDataset()
     else:
-        raise Exception("Unknown data type!")
+        raise Exception("Unknown data type: %s!" % args.data_type)
 
     valid_size = int(len(dataset) * args.valid_ratio)
     train_size = len(dataset) - valid_size
