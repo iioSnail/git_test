@@ -8,7 +8,7 @@ from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
 from model.MultiModalBert import MultiModalBertCorrectionModel
-from model.macbert4csc import HuggingFaceMacBert4CscModel
+from model.macbert4csc import HuggingFaceMacBert4CscModel, MacBert4CscModel
 from utils.dataset import CSCTestDataset
 from train import Train
 from utils.utils import save_obj, render_color_for_text, compare_text, restore_special_tokens
@@ -33,6 +33,8 @@ class Evaluation(object):
             self.model = MDCSpellPlusModel(self.args).eval()
         elif self.args.model == 'HuggingFaceMacBert4Csc':
             self.model = HuggingFaceMacBert4CscModel(self.args).eval()
+        elif self.args.model == 'MacBert4Csc':
+            self.model = MacBert4CscModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 

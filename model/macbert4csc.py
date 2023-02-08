@@ -211,6 +211,13 @@ class MacBert4CscModel(nn.Module):
     def get_lr_scheduler(self):
         return self.lr_scheduler
 
+    def predict(self, src):
+        src = ' '.join(src.replace(" ", ""))
+        inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
+        outputs = self.forward(inputs)[1]
+        return self.tokenizer.decode(outputs.argmax(-1)[0], skip_special_tokens=True).replace(' ', '')
+
+
 
 class HuggingFaceMacBert4CscModel(nn.Module):
 
