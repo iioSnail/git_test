@@ -64,6 +64,8 @@ class C_Train(object):
             # Default Optimizer.
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=2e-5)
 
+        self.lr_scheduler = self.model.get_lr_scheduler() if 'get_lr_scheduler' in dir(self.model) else None
+
         self.writer = SummaryWriter(log_dir=self.args.output_path / 'runs' / 'csc_model')
         self.total_step = 0
         self.current_epoch = 0
@@ -97,6 +99,9 @@ class C_Train(object):
             loss.backward()
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5)
             self.optimizer.step()
+
+            if self.lr_scheduler:
+                self.lr_scheduler.step()
 
             self.total_step += 1
 
@@ -170,6 +175,7 @@ class C_Train(object):
         torch.save({
             'model': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
+            'lr_scheduler': self.lr_scheduler.state_dict() if self.lr_scheduler else None,
             'epoch': epoch,
             'total_step': self.total_step,
             'recent_correction_f1_score': self.recent_correction_f1_score,
@@ -192,6 +198,8 @@ class C_Train(object):
         checkpoint = torch.load(self.args.checkpoint_path)
         self.model.load_state_dict(checkpoint['model'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
+        if checkpoint['lr_scheduler']:
+            self.lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
         self.total_step = checkpoint['total_step']
         self.current_epoch = checkpoint['epoch']
         self.recent_correction_f1_score = checkpoint['recent_correction_f1_score']
