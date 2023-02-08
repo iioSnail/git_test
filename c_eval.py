@@ -46,12 +46,13 @@ class Evaluation(object):
         self.error_sentences = []
 
     def evaluate(self):
-        self.character_level_metrics()
-        self.sentence_level_metrics()
-        # save_obj(self.error_sentences, self.args.output_path / self.args.test_data.name.replace(".pkl", ".result.pkl"))
-        # self.print_error_sentences()
+        self.character_level_metrics_by_pycorrector()
+        self.sentence_level_metrics_by_pycorrector()
 
     def sentence_level_metrics(self):
+        """
+        FIXME，好像有问题
+        """
         sent_P, correct_sent_TP, sent_N, detect_sent_TP = 0, 0, 0, 0
         d_precision, d_recall, d_f1 = 0, 0, 0
         c_precision, c_recall, c_f1 = 0, 0, 0
@@ -67,11 +68,13 @@ class Evaluation(object):
             detection_outputs = torch.tensor(compare_text(src, c_output)).int().to(self.args.device)
             correction_outputs = torch.tensor(compare_text(c_output, tgt)).int().to(self.args.device)
 
+            # 模型对句子进行了改错
             if detection_outputs.sum() > 0:
                 sent_P += 1
                 if correction_outputs.sum() == 0:
                     correct_sent_TP += 1
 
+            # 正样本（句子存在错误）
             if detection_targets.sum() > 0:
                 sent_N += 1
 
@@ -102,7 +105,7 @@ class Evaluation(object):
         d_tp, d_fp, d_tn, d_fn = 0, 0, 0, 0
         c_tp, c_fp, c_tn, c_fn = 0, 0, 0, 0
 
-        progress = tqdm(range(len(self.test_set)), desc='Evaluation')
+        progress = tqdm(range(len(self.test_set)), desc='Character-Level Evaluation')
         for i in progress:
             src, tgt = self.test_set.__getitem__(i)
             src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
@@ -257,6 +260,100 @@ class Evaluation(object):
             print("correct_sent_precision=%f, correct_sent_recall=%f, correct_Fscore=%f" % (
                 correct_sent_precision, correct_sent_recall, correct_sent_F1))
 
+    def character_level_metrics_by_pycorrector(self):
+        """
+        copy from pycorrector
+        copy from https://github.com/sunnyqiny/Confusionset-guided-Pointer-Networks-for-Chinese-Spelling-Check/blob/master/utils/evaluation_metrics.py
+        """
+        TP = 0
+        FP = 0
+        FN = 0
+        all_predict_true_index = []
+        all_gold_index = []
+        results = []
+
+        progress = tqdm(range(len(self.test_set)), desc='PyCorrector Character-level Evaluation')
+        for idx in progress:
+            src, tgt = self.test_set.__getitem__(idx)
+            src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
+            c_output = self.model.predict(src)
+            c_output = restore_special_tokens(src, c_output)
+            predict = c_output
+            results.append((src, tgt, predict))
+
+            gold_index = []
+            each_true_index = []
+            for i in range(len(list(src))):
+                if src[i] == tgt[i]:
+                    continue
+                else:
+                    gold_index.append(i)
+            all_gold_index.append(gold_index)
+            predict_index = []
+            for i in range(len(list(src))):
+                if src[i] == predict[i]:
+                    continue
+                else:
+                    predict_index.append(i)
+
+            for i in predict_index:
+                if i in gold_index:
+                    TP += 1
+                    each_true_index.append(i)
+                else:
+                    FP += 1
+            for i in gold_index:
+                if i in predict_index:
+                    continue
+                else:
+                    FN += 1
+            all_predict_true_index.append(each_true_index)
+
+        # For the detection Precision, Recall and F1
+        detection_precision = TP / (TP + FP) if (TP + FP) > 0 else 0
+        detection_recall = TP / (TP + FN) if (TP + FN) > 0 else 0
+        if detection_precision + detection_recall == 0:
+            detection_f1 = 0
+        else:
+            detection_f1 = 2 * (detection_precision * detection_recall) / (detection_precision + detection_recall)
+        print(
+            "The detection result is precision={}, recall={} and F1={}".format(detection_precision, detection_recall,
+                                                                               detection_f1))
+
+        TP = 0
+        FP = 0
+        FN = 0
+
+        for i in range(len(all_predict_true_index)):
+            # we only detect those correctly detected location, which is a different from the common metrics since
+            # we wanna to see the precision improve by using the confusionset
+            if len(all_predict_true_index[i]) > 0:
+                predict_words = []
+                for j in all_predict_true_index[i]:
+                    predict_words.append(results[i][2][j])
+                    if results[i][1][j] == results[i][2][j]:
+                        TP += 1
+                    else:
+                        FP += 1
+                for j in all_gold_index[i]:
+                    if results[i][1][j] in predict_words:
+                        continue
+                    else:
+                        FN += 1
+
+        # For the correction Precision, Recall and F1
+        correction_precision = TP / (TP + FP) if (TP + FP) > 0 else 0
+        correction_recall = TP / (TP + FN) if (TP + FN) > 0 else 0
+        if correction_precision + correction_recall == 0:
+            correction_f1 = 0
+        else:
+            correction_f1 = 2 * (correction_precision * correction_recall) / (correction_precision + correction_recall)
+        print("The correction result is precision={}, recall={} and F1={}".format(correction_precision,
+                                                                                        correction_recall,
+                                                                                        correction_f1))
+
+        return detection_f1, correction_f1
+
     def sentence_level_metrics_by_pycorrector(self):
         TP = 0.0
         FP = 0.0
@@ -264,7 +361,7 @@ class Evaluation(object):
         TN = 0.0
         total_num = 0
 
-        progress = tqdm(range(len(self.test_set)), desc='PyCorrector Evaluation')
+        progress = tqdm(range(len(self.test_set)), desc='PyCorrector Sentence-level Evaluation')
         for idx in progress:
             src, tgt = self.test_set.__getitem__(idx)
             src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
@@ -338,4 +435,6 @@ if __name__ == '__main__':
     evaluation = Evaluation()
     # evaluation.evaluate()
     # evaluation.error_sentences = load_obj('output/sighan15_test_set_simplified.result.pkl')
-    evaluation.sentence_level_metrics_by_pycorrector()
+    evaluation.character_level_metrics_by_pycorrector()
+    # evaluation.sentence_level_metrics_by_pycorrector()
+    # evaluation.sentence_level_metrics()
