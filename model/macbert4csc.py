@@ -4,7 +4,7 @@ from abc import ABC
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import _LRScheduler
-from transformers import BertForMaskedLM, BertTokenizerFast
+from transformers import BertForMaskedLM, BertTokenizerFast, BertTokenizer
 
 BASE_LR = 5e-5
 WEIGHT_DECAY = 0.01
@@ -205,3 +205,18 @@ class MacBert4CscModel(nn.Module):
 
     def get_optimizer(self):
         return make_optimizer(self)
+
+
+class HuggingFaceMacBert4CscModel(nn.Module):
+
+    def __init__(self, args):
+        super(HuggingFaceMacBert4CscModel, self).__init__()
+        self.args = args
+        self.tokenizer = BertTokenizer.from_pretrained("shibing624/macbert4csc-base-chinese")
+        self.model = BertForMaskedLM.from_pretrained("shibing624/macbert4csc-base-chinese")
+
+    def predict(self, src):
+        src = ' '.join(src.replace(" ", ""))
+        texts = [src]
+        outputs = self.model(**self.tokenizer(texts, return_tensors='pt').to(self.args.device)).logits
+        return self.tokenizer.decode(outputs.argmax(-1)[0], skip_special_tokens=True).replace(' ', '')

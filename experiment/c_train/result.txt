@@ -287,7 +287,7 @@ Correction Precision: 0.660209846650418, Recall: 0.757688032604528, F1-Score: 0.
 Correction Precision: 0.6597738287559515, Recall: 0.7564363771067315, F1-Score: 0.704806281321174
 Correction Precision: 0.6599001127757919, Recall: 0.758518518518378, F1-Score: 0.7057809937299167
 
-模型：模型：MacBert4Csc，使用了源码中的optimizer（AdamW），但还未使用schedule
+模型：MacBert4Csc，使用了源码中的optimizer（AdamW），但还未使用schedule
 执行情况：和不用这个optimizer效果差不多，看来optimizer还是要和schedule配合起来才行，属于联合超参数。
 Correction Precision: 0.6342253281062494, Recall: 0.6903525046380908, F1-Score: 0.6610997596500208
 Correction Precision: 0.6486311355903696, Recall: 0.7418936446172425, F1-Score: 0.6921348309628036
@@ -308,3 +308,23 @@ Correction Precision: 0.6605356566633332, Recall: 0.7577271885987862, F1-Score: 
 Epoch 16 Training: 100% 250/250 [02:35<00:00,  1.60it/s, loss=0.0109, c_precision=0.732, c_recall=0.997, c_f1_score=0.844]
 Correction Precision: 0.6601675797614147, Recall: 0.7588442304128988, F1-Score: 0.706074967188638
 
+模型：MacBert4Csc，完全模拟了MacBert4Csc的训练流程
+执行情况：看起来效果并不好，有两种可能性。一是在大数据量上表现会好，二是在我的代码有问题
+Correction Precision: 0.5704747774479654, Recall: 0.5706864564006362, F1-Score: 0.5705805967916766
+Correction Precision: 0.6170952050033673, Recall: 0.6581434130071042, F1-Score: 0.6369586653302253
+Correction Precision: 0.6379776800810554, Recall: 0.6980573543014434, F1-Score: 0.6666666661675599
+Correction Precision: 0.6459011060506431, Recall: 0.7349620581157255, F1-Score: 0.6875595181583541
+Correction Precision: 0.6516744863289675, Recall: 0.7460640859417028, F1-Score: 0.6956822102102774
+Correction Precision: 0.6543369407202948, Recall: 0.7506021863997127, F1-Score: 0.6991715562851054
+Correction Precision: 0.6557825317676281, Recall: 0.7549999999998601, F1-Score: 0.7019023839389535
+Correction Precision: 0.6571337274323922, Recall: 0.762090050027652, F1-Score: 0.705730953517713
+Correction Precision: 0.6591712174749985, Recall: 0.7601407668085274, F1-Score: 0.7060645156314411
+Correction Precision: 0.6602564102563044, Recall: 0.7626804887077447, F1-Score: 0.7077821675148379
+Correction Precision: 0.6600064453753367, Recall: 0.7582376897443986, F1-Score: 0.7057201924726422
+Correction Precision: 0.6613603473226143, Recall: 0.762090050027652, F1-Score: 0.708161156527175
+Correction Precision: 0.6618635926992216, Recall: 0.7658391997034519, F1-Score: 0.7100652691693109
+Correction Precision: 0.66088353413644, Recall: 0.7619929616594254, F1-Score: 0.7078458357033665
+Correction Precision: 0.6600543912972868, Recall: 0.7640740740739325, F1-Score: 0.7082653844480441
+Correction Precision: 0.6623272259722497, Recall: 0.763006850583084, F1-Score: 0.7091112444477395
+Epoch 16 Training: 100% 250/250 [02:33<00:00,  1.63it/s, loss=0.00943, c_precision=0.728, c_recall=0.997, c_f1_score=0.841]
+Correction Precision: 0.6621248986211415, Recall: 0.7550869404364122, F1-Score: 0.7055569954401505

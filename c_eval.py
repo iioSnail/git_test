@@ -8,6 +8,7 @@ from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
 from model.MultiModalBert import MultiModalBertCorrectionModel
+from model.macbert4csc import HuggingFaceMacBert4CscModel
 from utils.dataset import CSCTestDataset
 from train import Train
 from utils.utils import save_obj, render_color_for_text, compare_text, restore_special_tokens
@@ -30,6 +31,8 @@ class Evaluation(object):
             self.model = MultiModalBertCorrectionModel(self.args).eval()
         elif self.args.model == 'MDCSpellPlus':
             self.model = MDCSpellPlusModel(self.args).eval()
+        elif self.args.model == 'HuggingFaceMacBert4Csc':
+            self.model = HuggingFaceMacBert4CscModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -74,7 +77,6 @@ class Evaluation(object):
 
                 if (detection_outputs != detection_targets).sum() == 0:
                     detect_sent_TP += 1
-
 
             d_precision = detect_sent_TP * 1.0 / (sent_P + 1e-8)
             d_recall = detect_sent_TP * 1.0 / (sent_N + 1e-8)
@@ -161,6 +163,7 @@ class Evaluation(object):
         progress = tqdm(range(len(self.test_set)), desc='Character-level Evaluation')
         for idx in progress:
             src, tgt = self.test_set.__getitem__(idx)
+            src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
             c_output = self.model.predict(src)
             c_output = restore_special_tokens(src, c_output)
 
@@ -254,6 +257,47 @@ class Evaluation(object):
             print("correct_sent_precision=%f, correct_sent_recall=%f, correct_Fscore=%f" % (
                 correct_sent_precision, correct_sent_recall, correct_sent_F1))
 
+    def sentence_level_metrics_by_pycorrector(self):
+        TP = 0.0
+        FP = 0.0
+        FN = 0.0
+        TN = 0.0
+        total_num = 0
+
+        progress = tqdm(range(len(self.test_set)), desc='PyCorrector Evaluation')
+        for idx in progress:
+            src, tgt = self.test_set.__getitem__(idx)
+            src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
+            c_output = self.model.predict(src)
+            c_output = restore_special_tokens(src, c_output)
+            tgt_pred = c_output
+            # 负样本
+            if src == tgt:
+                # 预测也为负
+                if tgt == tgt_pred:
+                    TN += 1
+                # 预测为正
+                else:
+                    FP += 1
+            # 正样本
+            else:
+                # 预测也为正
+                if tgt == tgt_pred:
+                    TP += 1
+                # 预测为负
+                else:
+                    FN += 1
+
+            total_num += 1
+        acc = (TP + TN) / total_num
+        precision = TP / (TP + FP) if TP > 0 else 0.0
+        recall = TP / (TP + FN) if TP > 0 else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if precision + recall != 0 else 0
+        print(
+            f'Sentence Level: acc:{acc:.4f}, precision:{precision:.4f}, recall:{recall:.4f}, f1:{f1:.4f}, '
+            f', total num: {total_num}')
+        return acc, precision, recall, f1
+
     def print_error_sentences(self):
         for item in self.error_sentences:
             print("Source:", item['source'])
@@ -292,6 +336,6 @@ class Evaluation(object):
 
 if __name__ == '__main__':
     evaluation = Evaluation()
-    evaluation.evaluate()
+    # evaluation.evaluate()
     # evaluation.error_sentences = load_obj('output/sighan15_test_set_simplified.result.pkl')
-    evaluation.print_error_sentences()
+    evaluation.sentence_level_metrics_by_pycorrector()

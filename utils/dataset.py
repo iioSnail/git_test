@@ -42,6 +42,10 @@ class SighanTrainDataset(Dataset):
 
     def __init__(self):
         super(SighanTrainDataset, self).__init__()
+        """
+        Sighan做的预处理有：
+        1. 去掉如下特殊字符：[' ', '“', '”', '‘', '’', '琊', '…', '—', '擤']
+        """
 
         sighan_2013 = pd.read_csv(ROOT / 'datasets/sighan_2013_train.csv')
         sighan_2014 = pd.read_csv(ROOT / 'datasets/sighan_2014_train.csv')
