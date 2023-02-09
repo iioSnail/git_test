@@ -435,8 +435,8 @@ class Evaluation(object):
 
 if __name__ == '__main__':
     evaluation = Evaluation()
-    # evaluation.evaluate()
+    evaluation.evaluate()
     # evaluation.error_sentences = load_obj('output/sighan15_test_set_simplified.result.pkl')
-    evaluation.character_level_metrics_by_pycorrector()
+    # evaluation.character_level_metrics_by_pycorrector()
     # evaluation.sentence_level_metrics_by_pycorrector()
     # evaluation.sentence_level_metrics()
