@@ -17,8 +17,8 @@ from utils.utils import mock_args, mkdir
 
 font = None
 
-bert_path = "hfl/chinese-macbert-base"
-# bert_path = "hfl/chinese-roberta-wwm-ext"
+# bert_path = "hfl/chinese-macbert-base"
+bert_path = "hfl/chinese-roberta-wwm-ext"
 
 
 def convert_char_to_image(character, font_size=32):
@@ -340,7 +340,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.bce_criteria = nn.BCELoss()
-        self.optimizer = torch.optim.Adam(self.cls.parameters(), lr=2e-5)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
 
     def forward(self, inputs):
         outputs = self.bert(**inputs).last_hidden_state
