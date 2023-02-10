@@ -328,3 +328,9 @@ Correction Precision: 0.6600543912972868, Recall: 0.7640740740739325, F1-Score: 
 Correction Precision: 0.6623272259722497, Recall: 0.763006850583084, F1-Score: 0.7091112444477395
 Epoch 16 Training: 100% 250/250 [02:33<00:00,  1.63it/s, loss=0.00943, c_precision=0.728, c_recall=0.997, c_f1_score=0.841]
 Correction Precision: 0.6621248986211415, Recall: 0.7550869404364122, F1-Score: 0.7055569954401505
+
+Evel情况：经过一次全量数据的训练后，在sighan上的character-level如下，效果还是想当好的。看来optimizer和scheduler非常重要啊。
+The detection result is precision=0.7780979827089337, recall=0.7670454545454546 and F1=0.7725321888412018
+The correction result is precision=0.924074074074074, recall=0.8414839797639123 and F1=0.880847308031774
+Sentence Level: acc:0.7482, precision:0.8103, recall:0.6384, f1:0.7141, , total num: 1100
+

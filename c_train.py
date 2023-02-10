@@ -91,7 +91,7 @@ class C_Train(object):
                                                  detection_targets.to(self.args.device)
             self.optimizer.zero_grad()
 
-            if self.args.multi_forward_args:
+            if hasattr(self.args, "multi_forward_args"):
                 outputs = self.model(inputs, targets, detection_targets)
             else:
                 outputs = self.model(inputs)

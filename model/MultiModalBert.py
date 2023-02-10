@@ -17,6 +17,8 @@ from utils.utils import mock_args, mkdir
 
 font = None
 
+bert_path = "hfl/chinese-macbert-base"
+
 
 def convert_char_to_image(character, font_size=32):
     global font
@@ -220,8 +222,8 @@ class MultiModalBertModel(nn.Module):
     def __init__(self, args):
         super(MultiModalBertModel, self).__init__()
         self.args = args
-        self.bert = BERT().bert
-        self.tokenizer = BERT.get_tokenizer()
+        self.bert = BERT(bert_path).bert
+        self.tokenizer = BERT.get_tokenizer(bert_path)
         self.pinyin_feature_size = 8
         if 'pinyin_embeddings' not in dir(self.args):
             self.args.pinyin_embeddings = 'manual'
@@ -309,15 +311,15 @@ class MultiModalBertCorrectionModel(nn.Module):
         super(MultiModalBertCorrectionModel, self).__init__()
         self.args = args
         self.bert = MultiModalBertModel(args)
-        self.tokenizer = BERT.get_tokenizer()
-        # self.cls = nn.Sequential(
-        #     nn.Linear(768 + 8 + 56, len(self.tokenizer)),
-        # )
-
+        self.tokenizer = BERT.get_tokenizer(bert_path)
         self.cls = nn.Sequential(
-            nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=768 + 8 + 56, nhead=16, batch_first=True), num_layers=2),
             nn.Linear(768 + 8 + 56, len(self.tokenizer)),
         )
+
+        # self.cls = nn.Sequential(
+        #     nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=768 + 8 + 56, nhead=16, batch_first=True), num_layers=2),
+        #     nn.Linear(768 + 8 + 56, len(self.tokenizer)),
+        # )
 
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
