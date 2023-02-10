@@ -71,10 +71,8 @@ class GlyphDenseEmbedding(nn.Module):
             nn.Tanh()
         )
 
-    def forward(self, characters):
-        batch_size = len(characters)
-        images = [convert_char_to_image(char_, self.font_size) for char_ in characters]
-        images = torch.stack(images).to(self.args.device)
+    def forward(self, images):
+        batch_size = len(images)
         images = images.view(batch_size, -1) / 255.
         return self.embeddings(images)
 
@@ -254,6 +252,38 @@ class MultiModalBertModel(nn.Module):
 
         self.hidden_size = self.bert.config.hidden_size + self.pinyin_feature_size + 56
 
+        self.pinyin_embedding_cache = None
+        self.init_pinyin_embedding_cache()
+
+        self.token_images_cache = None
+        self.init_token_images_cache()
+
+    def convert_tokens_to_pinyin_embeddings(self, input_ids):
+        input_pinyins = [self.pinyin_embedding_cache.get(input_id.item(), torch.LongTensor([0])) for input_id in input_ids]
+        return pad_sequence(input_pinyins, batch_first=True).to(self.args.device)
+
+    def init_pinyin_embedding_cache(self):
+        self.pinyin_embedding_cache = {}
+        for token, id in self.tokenizer.get_vocab().items():
+            if not is_chinese(token):
+                continue
+
+            pinyin = pypinyin.pinyin(token, style=pypinyin.NORMAL)[0][0]
+            embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])
+            self.pinyin_embedding_cache[id] = embeddings
+
+    def init_token_images_cache(self):
+        self.token_images_cache = {}
+        for token, id in self.tokenizer.get_vocab().items():
+            if not is_chinese(token):
+                continue
+
+            self.token_images_cache[id] = convert_char_to_image(token, 32)
+
+    def convert_tokens_to_images(self, input_ids):
+        images = [self.token_images_cache.get(input_id.item(), torch.zeros(32, 32)) for input_id in input_ids]
+        return torch.stack(images).to(self.args.device)
+
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, characters=None, inputs_embeds=None):
         batch_size = input_ids.size(0)
         if inputs_embeds is not None:
@@ -261,27 +291,12 @@ class MultiModalBertModel(nn.Module):
         else:
             bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
-        input_tokens = self.tokenizer.convert_ids_to_tokens(input_ids.view(-1))
-        input_pinyins = []
-        for token in input_tokens:
-            if not is_chinese(token):
-                input_pinyins.append(torch.LongTensor([0]))
-                continue
-
-            pinyin = pypinyin.pinyin(token, style=pypinyin.NORMAL)[0][0]
-            embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])
-
-            if embeddings.size(0) <= 6:
-                input_pinyins.append(embeddings)
-            else:
-                raise Exception("难道还有超过6个字母的拼音？")
-
-        input_pinyins = pad_sequence(input_pinyins, batch_first=True).to(self.args.device)
+        input_pinyins = self.convert_tokens_to_pinyin_embeddings(input_ids.view(-1))
         pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
         pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
-        if characters is None:
-            characters = input_tokens
-        glyph_embeddings = self.glyph_embeddings(characters)
+
+        images = self.convert_tokens_to_images(input_ids.view(-1))
+        glyph_embeddings = self.glyph_embeddings(images)
         glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
 
         bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
