@@ -13,7 +13,6 @@ from tqdm import tqdm
 from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
-from model.MultiModalBert import MultiModalBertModel, MultiModalBertCorrectionModel
 from model.macbert4csc import MacBert4CscModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
@@ -45,6 +44,10 @@ class C_Train(object):
         elif self.args.model == "Bert":
             self.model = BertCorrectionModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MultiModalBert':
+            from model.MultiModalBert import MultiModalBertCorrectionModel
+            self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'MultiModalBertBak':
+            from model.MultiModalBertBak import MultiModalBertCorrectionModel
             self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpell':
             self.model = MDCSpellModel(self.args).train().to(self.args.device)

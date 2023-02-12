@@ -5,6 +5,7 @@ import numpy as np
 import pypinyin
 import torch
 from PIL import ImageFont
+from matplotlib import pyplot as plt
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.utils.rnn import pad_sequence
