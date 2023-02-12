@@ -310,14 +310,14 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.args = args
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer()
-        # self.cls = nn.Sequential(
-        #     nn.Linear(768 + 8 + 56, len(self.tokenizer)),
-        # )
-
         self.cls = nn.Sequential(
-            nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=768 + 8 + 56, nhead=16, batch_first=True), num_layers=2),
             nn.Linear(768 + 8 + 56, len(self.tokenizer)),
         )
+
+        # self.cls = nn.Sequential(
+        #     nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=768 + 8 + 56, nhead=16, batch_first=True), num_layers=2),
+        #     nn.Linear(768 + 8 + 56, len(self.tokenizer)),
+        # )
 
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
