@@ -104,7 +104,8 @@ Correction Precision: 0.8840035351301625, Recall: 0.7375115207371912, F1-Score: 
 Correction Precision: 0.8906284454242798, Recall: 0.7446533923302461, F1-Score: 0.8111256145254097
 
 模型：MultiModalBert，Manual Pinyin Embedding，Dense Glyph Embeddings, 但是Dense Glyph Embeddings网络是没有经过训练的。
-执行情况：最终效果并不好，看来还是需要对Glyph Embedding层进行预训练才行。这么说网络在做预测时确实使用了Glyph信息
+执行情况：最终效果并不好，看来还是需要对Glyph Embedding层进行预训练才行。这么说网络在做预测时确实使用了Glyph信息。
+补充：好像不是这个原因，因为我上面MultiModalBert的结果复现不出来了，所以可能是代码某个地方出现了问题
 Correction Precision: 0.05667541074140158, Recall: 0.15122490329708024, F1-Score: 0.082450413864013
 Correction Precision: 0.18047263681589795, Recall: 0.2667769810626463, F1-Score: 0.21529787028051212
 Correction Precision: 0.2529170608640408, Recall: 0.2947445791987698, F1-Score: 0.27223353650219145
