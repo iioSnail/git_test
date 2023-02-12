@@ -322,7 +322,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.bce_criteria = nn.BCELoss()
-        self.optimizer = torch.optim.Adam(self.cls.parameters(), lr=2e-5)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
 
     def forward(self, inputs):
         outputs = self.bert(**inputs).last_hidden_state
