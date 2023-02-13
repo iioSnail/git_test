@@ -277,8 +277,8 @@ class MultiModalBertModel(nn.Module):
     def init_token_images_cache(self):
         self.token_images_cache = {}
         for token, id in self.tokenizer.get_vocab().items():
-            if not is_chinese(token):
-                continue
+            # if not is_chinese(token):
+            #     continue
 
             self.token_images_cache[id] = convert_char_to_image(token, 32)
 
