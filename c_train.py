@@ -46,9 +46,6 @@ class C_Train(object):
         elif self.args.model == 'MultiModalBert':
             from model.MultiModalBert import MultiModalBertCorrectionModel
             self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
-        elif self.args.model == 'MultiModalBertBak':
-            from model.MultiModalBertBak import MultiModalBertCorrectionModel
-            self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpell':
             self.model = MDCSpellModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpellPlus':

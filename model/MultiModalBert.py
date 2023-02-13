@@ -277,8 +277,10 @@ class MultiModalBertModel(nn.Module):
     def init_token_images_cache(self):
         self.token_images_cache = {}
         for token, id in self.tokenizer.get_vocab().items():
-            if not is_chinese(token):
-                continue
+            # FIXME，这个不能加，就算不是中文也需要有glyph信息，否则peformance就会很差
+            # 我也不知道啥原因，很奇怪。
+            # if not is_chinese(token):
+            #     continue
 
             self.token_images_cache[id] = convert_char_to_image(token, 32)
 
