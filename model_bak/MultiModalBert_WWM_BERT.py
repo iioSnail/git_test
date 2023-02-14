@@ -19,8 +19,8 @@ from utils.utils import mock_args, mkdir
 
 font = None
 
-bert_path = "hfl/chinese-macbert-base"
-# bert_path = "hfl/chinese-roberta-wwm-ext"
+# bert_path = "hfl/chinese-macbert-base"
+bert_path = "hfl/chinese-roberta-wwm-ext"
 
 
 def convert_char_to_image(character, font_size=32):
