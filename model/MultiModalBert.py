@@ -351,11 +351,11 @@ class MultiModalBertCorrectionModel(nn.Module):
         outputs = self.bert(**inputs).last_hidden_state
         return self.cls(outputs)
 
-    def compute_loss(self, outputs, targets, *args, **kwargs):
-        targets = targets['input_ids']
-        outputs = outputs.view(-1, outputs.size(-1))
-        targets = targets.view(-1)
-        return self.criteria(outputs, targets)
+    # def compute_loss(self, outputs, targets, *args, **kwargs):
+    #     targets = targets['input_ids']
+    #     outputs = outputs.view(-1, outputs.size(-1))
+    #     targets = targets.view(-1)
+    #     return self.criteria(outputs, targets)
 
     def get_lr_scheduler(self):
         return self.scheduler
@@ -371,21 +371,21 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     loss = self.bce_criteria(outputs, targets_.float())
     #     return loss
 
-    # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
-    #     """
-    #     只计算错字的loss，正确字的loss只给一点点。
-    #     有潜力，但是会慢一点，最终训练的时候可以用这个
-    #     """
-    #     targets = targets['input_ids']
-    #     targets_bak = targets.clone()
-    #     inputs = inputs['input_ids']
-    #     outputs = outputs.view(-1, outputs.size(-1))
-    #     targets[targets == inputs] = 0
-    #     targets = targets.view(-1)
-    #     targets_bak = targets_bak.view(-1)
-    #     loss = self.criteria(outputs, targets)
-    #     soft_loss = self.soft_criteria(outputs, targets_bak)
-    #     return 0.7 * loss + 0.3 * soft_loss
+    def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
+        """
+        只计算错字的loss，正确字的loss只给一点点。
+        有潜力，但是会慢一点，最终训练的时候可以用这个
+        """
+        targets = targets['input_ids']
+        targets_bak = targets.clone()
+        inputs = inputs['input_ids']
+        outputs = outputs.view(-1, outputs.size(-1))
+        targets[targets == inputs] = 0
+        targets = targets.view(-1)
+        targets_bak = targets_bak.view(-1)
+        loss = self.criteria(outputs, targets)
+        soft_loss = self.soft_criteria(outputs, targets_bak)
+        return 0.7 * loss + 0.3 * soft_loss
 
     def get_optimizer(self):
         return self.optimizer

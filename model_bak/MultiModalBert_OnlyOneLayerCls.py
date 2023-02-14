@@ -23,9 +23,14 @@ bert_path = "hfl/chinese-roberta-wwm-ext"
 
 """
 训练情况：
-10000个Wang271K按8:2拆分，验证集的f1可以到0.8左右
+10000个Wang271K按8:2拆分，验证集的f1可以到0.82左右。可以“几乎”过拟合训练数据（f1:0.985左右）
 
-eval情况：
+10000个数据的eval情况：
+The detection result is precision=0.46174142480211083, recall=0.4971590909090909 and F1=0.4787961696306429
+The correction result is precision=0.8485714285714285, recall=0.7105263157894737 and F1=0.7734375
+Sentence Level: acc:0.4873, precision:0.4716, recall:0.3376, f1:0.3935, , total num: 1100
+
+全量1个epoch的eval情况：TODO
 """
 
 def convert_char_to_image(character, font_size=32):
