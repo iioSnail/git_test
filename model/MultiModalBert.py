@@ -13,6 +13,7 @@ from torch.nn.utils.rnn import pad_sequence
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT
+from utils.scheduler import PlateauScheduler
 from utils.str_utils import is_chinese
 from utils.utils import mock_args, mkdir
 
@@ -343,7 +344,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.bce_criteria = nn.BCELoss()
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
+        self.optimizer = torch.optim.AdamW(self.parameters(), lr=2e-4)
+        self.scheduler = PlateauScheduler(self.optimizer)
 
     def forward(self, inputs):
         outputs = self.bert(**inputs).last_hidden_state
@@ -354,6 +356,9 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     outputs = outputs.view(-1, outputs.size(-1))
     #     targets = targets.view(-1)
     #     return self.criteria(outputs, targets)
+
+    def get_lr_scheduler(self):
+        return self.scheduler
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
     #     """

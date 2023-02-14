@@ -101,6 +101,8 @@ class C_Train(object):
             self.optimizer.step()
 
             if self.lr_scheduler:
+                if hasattr(self.lr_scheduler, 'add_loss'):
+                    self.lr_scheduler.add_loss(loss.item())
                 self.lr_scheduler.step()
 
             self.total_step += 1
