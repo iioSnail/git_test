@@ -376,16 +376,16 @@ class MultiModalBertCorrectionModel(nn.Module):
         只计算错字的loss，正确字的loss只给一点点。
         有潜力，但是会慢一点，最终训练的时候可以用这个
         """
+        outputs = outputs.view(-1, outputs.size(-1))
+
         targets = targets['input_ids']
-        targets = targets.clone()
-        targets = targets.view(-1)
-        soft_loss = self.soft_criteria(outputs, targets)
+        targets_ = targets.clone()
+        soft_loss = self.soft_criteria(outputs, targets_.view(-1))
 
         inputs = inputs['input_ids']
-        outputs = outputs.view(-1, outputs.size(-1))
-        targets[targets == inputs] = 0
-        targets = targets.view(-1)
-        loss = self.criteria(outputs, targets)
+        targets_ = targets.clone()
+        targets_[targets_ == inputs] = 0
+        loss = self.criteria(outputs, targets_.view(-1))
 
         return 0.7 * loss + 0.3 * soft_loss
 
