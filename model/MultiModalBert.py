@@ -377,14 +377,16 @@ class MultiModalBertCorrectionModel(nn.Module):
         有潜力，但是会慢一点，最终训练的时候可以用这个
         """
         targets = targets['input_ids']
-        targets_bak = targets.clone()
+        targets = targets.clone()
+        targets = targets.view(-1)
+        soft_loss = self.soft_criteria(outputs, targets)
+
         inputs = inputs['input_ids']
         outputs = outputs.view(-1, outputs.size(-1))
         targets[targets == inputs] = 0
         targets = targets.view(-1)
-        targets_bak = targets_bak.view(-1)
         loss = self.criteria(outputs, targets)
-        soft_loss = self.soft_criteria(outputs, targets_bak)
+
         return 0.7 * loss + 0.3 * soft_loss
 
     def get_optimizer(self):
