@@ -333,6 +333,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer(bert_path)
         self.cls = nn.Sequential(
+            nn.Linear(768 + 8 + 56, 768 + 8 + 56),
+            nn.LayerNorm(768 + 8 + 56),
             nn.Linear(768 + 8 + 56, len(self.tokenizer)),
         )
 
@@ -387,7 +389,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         targets_[targets_ == inputs] = 0
         loss = self.criteria(outputs, targets_.view(-1))
 
-        return 0.7 * loss + 0.3 * soft_loss
+        return 0.3 * loss + 0.7 * soft_loss
 
     def get_optimizer(self):
         return self.optimizer
