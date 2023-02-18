@@ -1,3 +1,6 @@
+from utils.utils import render_color_for_text
+
+
 class CSCMetrics:
 
     def __init__(self):
@@ -8,6 +11,7 @@ class CSCMetrics:
         self.sc_tp, self.sc_fp, self.sc_tn, self.sc_fn = 0, 0, 0, 0
 
         self.total_sent_num = 0
+        self.abnormal_pairs = []
         self.error_pairs = []
 
     def add_sentence(self, src, tgt, pred):
@@ -23,11 +27,15 @@ class CSCMetrics:
             pred_tokens = list(pred)
 
         if not src_tokens:
-            self.error_pairs.append((src, tgt, pred))
+            self.abnormal_pairs.append((src, tgt, pred))
 
         if len(src) != len(tgt) or len(tgt) != len(pred):
-            self.error_pairs.append((src, tgt, pred))
+            self.abnormal_pairs.append((src, tgt, pred))
             return
+
+        if pred != tgt:
+            # 预测错了
+            self.error_pairs.append((src, tgt, pred))
 
         self._char_detect_metrics(src_tokens, tgt_tokens, pred_tokens)
         self._char_correct_metrics(src_tokens, tgt_tokens, pred_tokens)
@@ -76,7 +84,21 @@ class CSCMetrics:
               % (sent_correct_acc, sent_correct_p, sent_correct_r, sent_correct_f1))
         print("------------------------------------------------------------")
 
-        print("Total Sentences Num: %d, Error Sentences Num: %d" % (self.total_sent_num, len(self.error_pairs)))
+        print("Total Sentences Num: %d, Error Sentences Num: %d" % (self.total_sent_num, len(self.abnormal_pairs)))
+
+    def print_errors(self):
+        for src, tgt, pred in self.error_pairs:
+            print("---------------------------")
+            src_tokens = list(src)
+            tgt_tokens = list(tgt)
+            pred_tokens = list(pred)
+            tgt_detects = [1 if src_tokens[i] != tgt_tokens[i] else 0 for i in range(len(src_tokens))]
+            pred_detects = [1 if src_tokens[i] != pred_tokens[i] else 0 for i in range(len(src_tokens))]
+            print("src : %s" % src)
+            print("tgt : %s" % render_color_for_text(tgt, tgt_detects, 'green'))
+            print("pred: %s" % render_color_for_text(pred, pred_detects, 'red'))
+
+
 
     def _char_detect_metrics(self, src_tokens, tgt_tokens, pred_tokens):
         for src, tgt, pred in zip(src_tokens, tgt_tokens, pred_tokens):

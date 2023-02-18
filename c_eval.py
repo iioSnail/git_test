@@ -74,6 +74,7 @@ class Evaluation(object):
             csc_metrics.add_sentence(src, tgt, c_output)
 
         csc_metrics.print_results()
+        # csc_metrics.print_errors()
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
