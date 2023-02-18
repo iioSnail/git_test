@@ -32,7 +32,7 @@ class CSCDataset(Dataset):
         return " ".join(src), " ".join(tgt)
 
     def __len__(self):
-        if self.args.limit_data_size and self.args.limit_data_size > 0:
+        if hasattr(self.args, 'limit_data_size') and self.args.limit_data_size and self.args.limit_data_size > 0:
             return min(self.args.limit_data_size, len(self.dataset))
         else:
             return len(self.dataset)
@@ -111,7 +111,7 @@ class ConfusionMaskDataset(Dataset):
         return ' '.join(sentence)
 
     def __len__(self):
-        if self.args.limit_data_size and self.args.limit_data_size > 0:
+        if hasattr(self.args, 'limit_data_size') and self.args.limit_data_size and self.args.limit_data_size > 0:
             return min(self.args.limit_data_size, len(self.dataset))
         return len(self.dataset)
 

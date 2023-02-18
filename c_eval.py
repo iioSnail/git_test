@@ -1,4 +1,6 @@
 import argparse
+import pickle
+import random
 from pathlib import Path
 
 import torch
@@ -9,7 +11,7 @@ from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
 from model.MultiModalBert import MultiModalBertCorrectionModel
 from model.macbert4csc import HuggingFaceMacBert4CscModel, MacBert4CscModel
-from utils.dataset import CSCTestDataset
+from utils.dataset import CSCTestDataset, CSCDataset
 from utils.metrics import CSCMetrics
 from utils.utils import restore_special_tokens
 
@@ -18,7 +20,16 @@ class Evaluation(object):
 
     def __init__(self):
         self.args = self.parse_args()
-        self.test_set = CSCTestDataset(self.args)
+        if self.args.data_type == 'Wang271K':
+            # FIXME , Please use args to set filepath.
+            with open('./data/Wang271K_processed.pkl', mode='br') as f:
+                train_data = pickle.load(f)
+
+            # Because this dataset is large, you may be just eval the part of it.
+            random.shuffle(train_data)
+            self.test_set = CSCDataset(train_data, self.args)
+        elif self.args.data_type == 'sighan':
+            self.test_set = CSCTestDataset(self.args)
 
         if self.args.model == 'MDCSpell':
             self.model = MDCSpellModel(self.args).eval()
@@ -68,6 +79,11 @@ class Evaluation(object):
         parser = argparse.ArgumentParser()
         parser.add_argument('--test-data', type=str, default="./datasets/sighan_2015_test.csv",
                             help='The file path of test data.')
+        parser.add_argument('--data-type', type=str, default="sighan",
+                            help='The type of test data.')
+        parser.add_argument('--limit-data-size', type=int, default=-1,
+                            help='Limit the data size of the Wang271K for quickly testing if your model works.'
+                                 '-1 means that there\'s no limit.')
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for test. auto, cpu or cuda')
         parser.add_argument('--model', type=str, default='Bert',

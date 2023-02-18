@@ -27,6 +27,7 @@ class CSCMetrics:
 
         if len(src) != len(tgt) or len(tgt) != len(pred):
             self.error_pairs.append((src, tgt, pred))
+            return
 
         self._char_detect_metrics(src_tokens, tgt_tokens, pred_tokens)
         self._char_correct_metrics(src_tokens, tgt_tokens, pred_tokens)
