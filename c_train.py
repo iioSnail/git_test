@@ -13,7 +13,6 @@ from tqdm import tqdm
 from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
-from model.macbert4csc import MacBert4CscModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
@@ -50,7 +49,11 @@ class C_Train(object):
             self.model = MDCSpellModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpellPlus':
             self.model = MDCSpellPlusModel(self.args).train().to(self.args.device)
-        elif self.args.model == 'MacBert4CscModel':
+        elif self.args.model == 'MacBert4Csc':
+            from model.macbert4csc import MacBert4CscModel
+            self.model = MacBert4CscModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'MultiModalMacBert4Csc':
+            from model.multimodal_macbert4csc import MacBert4CscModel
             self.model = MacBert4CscModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))

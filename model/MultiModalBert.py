@@ -12,7 +12,7 @@ from torch.nn.utils.rnn import pad_sequence
 
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
-from model.common import BERT
+from model.common import BERT, BertOnlyMLMHead
 from utils.scheduler import PlateauScheduler
 from utils.str_utils import is_chinese
 from utils.utils import mock_args, mkdir
@@ -332,12 +332,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.args = args
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer(bert_path)
-        self.cls = nn.Sequential(
-            nn.Linear(768 + 8 + 56, 768 + 8 + 56),
-            nn.LayerNorm(768 + 8 + 56),
-            nn.Linear(768 + 8 + 56, len(self.tokenizer)),
-        )
-
+        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
         # self.cls = nn.Sequential(
         #     nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=768 + 8 + 56, nhead=16, batch_first=True), num_layers=2),
         #     nn.Linear(768 + 8 + 56, len(self.tokenizer)),

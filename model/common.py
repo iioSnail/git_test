@@ -4,6 +4,7 @@
 import torch
 from torch import nn
 from transformers import AutoModel, AutoTokenizer, BertConfig
+from transformers.activations import GELUActivation
 
 
 class LayerNorm(nn.Module):
@@ -76,3 +77,22 @@ class BERT(nn.Module):
                            return_tensors='pt',
                            truncation=True)
         return inputs
+
+
+class BertOnlyMLMHead(nn.Module):
+    def __init__(self, hidden_size, vocab_size):
+        super().__init__()
+        self.decoder = nn.Linear(hidden_size, vocab_size, bias=False)
+        self.bias = nn.Parameter(torch.zeros(vocab_size))
+        self.decoder.bias = self.bias
+
+        self.predictions = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            GELUActivation(),
+            nn.LayerNorm(hidden_size, eps=1e-12, elementwise_affine=True),
+            self.decoder,
+        )
+
+    def forward(self, sequence_output: torch.Tensor) -> torch.Tensor:
+        prediction_scores = self.predictions(sequence_output)
+        return prediction_scores
