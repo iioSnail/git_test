@@ -109,6 +109,7 @@ class C_Train(object):
 
             outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) \
                 else self.model.extract_outputs(outputs)
+            matrix *= 0.96  # 每次让之前的值衰减0.96，差不多100次刚好衰减完，相当于matrix展示的是近100次的平均值
             matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets,
                                                             inputs.attention_mask)
 
@@ -243,9 +244,9 @@ class C_Train(object):
         detection_targets[mask == 0] = -1
 
         c_tp = (outputs[detection_targets == 1] == targets[detection_targets == 1]).sum().item()
-        c_fp = (outputs != targets)[detection_targets == 0].sum().item()  # FIXME
-        c_tn = (outputs == targets)[detection_targets == 0].sum().item()  # FIXME
-        c_fn = (outputs[detection_targets == 1] != targets[detection_targets == 1]).sum().item()  # FIXME
+        c_fp = (outputs != targets)[detection_targets == 0].sum().item()
+        c_tn = (outputs == targets)[detection_targets == 0].sum().item()
+        c_fn = (outputs[detection_targets == 1] != targets[detection_targets == 1]).sum().item()
 
         return np.array([c_tp, c_fp, c_tn, c_fn])
 
