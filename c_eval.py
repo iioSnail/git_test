@@ -10,7 +10,7 @@ from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
 from model.MultiModalBert import MultiModalBertCorrectionModel
-from model.macbert4csc import HuggingFaceMacBert4CscModel, MacBert4CscModel
+from model.macbert4csc import HuggingFaceMacBert4CscModel
 from utils.dataset import CSCTestDataset, CSCDataset
 from utils.metrics import CSCMetrics
 from utils.utils import restore_special_tokens
@@ -45,6 +45,10 @@ class Evaluation(object):
         elif self.args.model == 'HuggingFaceMacBert4Csc':
             self.model = HuggingFaceMacBert4CscModel(self.args).eval()
         elif self.args.model == 'MacBert4Csc':
+            from model.macbert4csc import MacBert4CscModel
+            self.model = MacBert4CscModel(self.args).eval()
+        elif self.args.model == 'MultiModalMacBert4Csc':
+            from model.multimodal_macbert4csc import MacBert4CscModel
             self.model = MacBert4CscModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
