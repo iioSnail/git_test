@@ -6,6 +6,7 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import _LRScheduler
 from transformers import BertForMaskedLM, BertTokenizerFast, BertTokenizer, AutoModel
 
+from model.MultiModalBert import MultiModalBertModel
 from model.common import BERT, BertOnlyMLMHead
 
 BASE_LR = 5e-5
@@ -156,10 +157,13 @@ class MacBert4CscModel(nn.Module):
         super(MacBert4CscModel, self).__init__()
         self.args = args
         self.args.multi_forward_args = True
-        self.tokenizer = BertTokenizerFast.from_pretrained('hfl/chinese-macbert-base')
-        self.bert = AutoModel.from_pretrained('hfl/chinese-macbert-base')
-        self.cls = BertOnlyMLMHead(768, len(self.tokenizer))
-        self.detection = nn.Linear(self.bert.config.hidden_size, 1)
+        # self.tokenizer = BertTokenizerFast.from_pretrained('hfl/chinese-macbert-base')
+        # self.bert = AutoModel.from_pretrained('hfl/chinese-macbert-base')
+        self.bert = MultiModalBertModel(args)
+        self.tokenizer = self.bert.tokenizer
+
+        self.cls = BertOnlyMLMHead(self.bert.hidden_size, len(self.tokenizer))
+        self.detection = nn.Linear(self.bert.hidden_size, 1)
         self.sigmoid = nn.Sigmoid()
         self.w = 0.3
         self.optimizer = make_optimizer(self)
