@@ -13,6 +13,7 @@ from torch.nn.utils.rnn import pad_sequence
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT, BertOnlyMLMHead
+from utils.loss import CscFocalLoss
 from utils.scheduler import PlateauScheduler
 from utils.str_utils import is_chinese
 from utils.utils import mock_args, mkdir
@@ -340,6 +341,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
+        self.loss_fnt = CscFocalLoss()
         self.bce_criteria = nn.BCELoss()
         self.optimizer = torch.optim.AdamW(self.parameters(), lr=2e-4)
         self.scheduler = PlateauScheduler(self.optimizer)
@@ -369,22 +371,25 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     return loss
 
     def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
-        """
-        只计算错字的loss，正确字的loss只给一点点。
-        有潜力，但是会慢一点，最终训练的时候可以用这个
-        """
-        outputs = outputs.view(-1, outputs.size(-1))
+        return self.loss_fnt(outputs, targets, inputs)
 
-        targets = targets['input_ids']
-        targets_ = targets.clone()
-        soft_loss = self.soft_criteria(outputs, targets_.view(-1))
-
-        inputs = inputs['input_ids']
-        targets_ = targets.clone()
-        targets_[targets_ == inputs] = 0
-        loss = self.criteria(outputs, targets_.view(-1))
-
-        return 0.3 * loss + 0.7 * soft_loss
+    # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
+    #     """
+    #     只计算错字的loss，正确字的loss只给一点点。
+    #     有潜力，但是会慢一点，最终训练的时候可以用这个
+    #     """
+    #     outputs = outputs.view(-1, outputs.size(-1))
+    #
+    #     targets = targets['input_ids']
+    #     targets_ = targets.clone()
+    #     soft_loss = self.soft_criteria(outputs, targets_.view(-1))
+    #
+    #     inputs = inputs['input_ids']
+    #     targets_ = targets.clone()
+    #     targets_[targets_ == inputs] = 0
+    #     loss = self.criteria(outputs, targets_.view(-1))
+    #
+    #     return 0.3 * loss + 0.7 * soft_loss
 
     def get_optimizer(self):
         return self.optimizer
