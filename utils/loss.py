@@ -80,8 +80,19 @@ class CscFocalLoss(nn.Module):
 
     def forward(self, outputs, targets, inputs):
         outputs = outputs.view(-1, outputs.size(-1))
-        num_labels = outputs.size(-1)
         targets = targets['input_ids']
+
+        copy_loss = self.focal_loss(outputs, targets)
+
+        inputs = inputs['input_ids']
+        targets = targets.clone()
+        targets[targets == inputs] = 0
+        loss = self.focal_loss(outputs, targets)
+
+        return self.alpha * copy_loss + (1 - self.alpha) * loss
+
+    def focal_loss(self, outputs, targets):
+        num_labels = outputs.size(-1)
         targets = targets.view(-1)
         idx = targets.view(-1, 1).long()
         one_hot_key = torch.zeros(idx.size(0), num_labels, dtype=torch.float32, device=idx.device)
@@ -89,20 +100,6 @@ class CscFocalLoss(nn.Module):
         logits = torch.softmax(outputs, dim=-1)
         loss = - one_hot_key * torch.pow((1 - logits), self.gamma) * (logits + self.epsilon).log()
         return loss.sum(1).mean()
-
-    def bak(self, outputs, targets, inputs):
-        outputs = outputs.view(-1, outputs.size(-1))
-
-        targets = targets['input_ids']
-        targets_ = targets.clone()
-        soft_loss = self.soft_criteria(outputs, targets_.view(-1))
-
-        inputs = inputs['input_ids']
-        targets_ = targets.clone()
-        targets_[targets_ == inputs] = 0
-        loss = self.criteria(outputs, targets_.view(-1))
-
-        return self.alpha * loss + (1 - self.alpha) * soft_loss
 
 
 if __name__ == '__main__':
