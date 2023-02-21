@@ -80,6 +80,18 @@ class CscFocalLoss(nn.Module):
 
     def forward(self, outputs, targets, inputs):
         outputs = outputs.view(-1, outputs.size(-1))
+        num_labels = outputs.size(-1)
+        targets = targets['input_ids']
+        targets = targets.view(-1)
+        idx = targets.view(-1, 1).long()
+        one_hot_key = torch.zeros(idx.size(0), num_labels, dtype=torch.float32, device=idx.device)
+        one_hot_key = one_hot_key.scatter_(1, idx, 1)
+        logits = torch.softmax(outputs, dim=-1)
+        loss = - one_hot_key * torch.pow((1 - logits), self.gamma) * (logits + self.epsilon).log()
+        return loss.sum(1).mean()
+
+    def bak(self, outputs, targets, inputs):
+        outputs = outputs.view(-1, outputs.size(-1))
 
         targets = targets['input_ids']
         targets_ = targets.clone()
