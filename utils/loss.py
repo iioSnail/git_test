@@ -69,7 +69,7 @@ class FocalLoss(nn.Module):
 
 class CscFocalLoss(nn.Module):
 
-    def __init__(self, alpha=0.25, gamma=2.0, epsilon=1.e-9):
+    def __init__(self, alpha=0.25, gamma=2.0, epsilon=1.e-9, label_smooth=0.0):
         super(CscFocalLoss, self).__init__()
         self.gamma = gamma
         self.epsilon = epsilon
@@ -86,7 +86,6 @@ class CscFocalLoss(nn.Module):
 
         inputs = inputs['input_ids']
         targets = targets.clone()
-        targets[targets == inputs] = 0
         loss = self.focal_loss(outputs, targets)
 
         return self.alpha * copy_loss + (1 - self.alpha) * loss
@@ -97,6 +96,7 @@ class CscFocalLoss(nn.Module):
         idx = targets.view(-1, 1).long()
         one_hot_key = torch.zeros(idx.size(0), num_labels, dtype=torch.float32, device=idx.device)
         one_hot_key = one_hot_key.scatter_(1, idx, 1)
+        one_hot_key[:, 0] = 0 # ignore 0 index.
         logits = torch.softmax(outputs, dim=-1)
         loss = - one_hot_key * torch.pow((1 - logits), self.gamma) * (logits + self.epsilon).log()
         return loss.sum(1).mean()
