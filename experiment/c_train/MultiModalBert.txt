@@ -308,7 +308,7 @@ Sentence-level Correct Acc: 0.4836, P: 0.4680, R: 0.3083, F1: 0.3717
 
 
 FIXME：有问题，忘了Ignore 0 index了
-模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.1的loss和0.9的soft_loss
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss
 执行情况：在11个Epoch的时候，我手动停了，因为早就过拟合训练数据了，再训练下去也不会有啥太好的效果了。
 Correction Precision: 0.5451686678100214, Recall: 0.35584997200963686, F1-Score: 0.4306198482292144
 Correction Precision: 0.794760935910276, Recall: 0.5825876211781166, F1-Score: 0.672332185398123

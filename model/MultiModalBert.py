@@ -21,6 +21,8 @@ from utils.utils import mock_args, mkdir
 font = None
 
 bert_path = "hfl/chinese-macbert-base"
+
+
 # bert_path = "hfl/chinese-roberta-wwm-ext"
 
 
@@ -263,7 +265,8 @@ class MultiModalBertModel(nn.Module):
         self.init_token_images_cache()
 
     def convert_tokens_to_pinyin_embeddings(self, input_ids):
-        input_pinyins = [self.pinyin_embedding_cache.get(input_id.item(), torch.LongTensor([0])) for input_id in input_ids]
+        input_pinyins = [self.pinyin_embedding_cache.get(input_id.item(), torch.LongTensor([0])) for input_id in
+                         input_ids]
         return pad_sequence(input_pinyins, batch_first=True).to(self.args.device)
 
     def init_pinyin_embedding_cache(self):
@@ -293,7 +296,8 @@ class MultiModalBertModel(nn.Module):
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, characters=None, inputs_embeds=None):
         batch_size = input_ids.size(0)
         if inputs_embeds is not None:
-            bert_outputs = self.bert(inputs_embeds=inputs_embeds, attention_mask=attention_mask, token_type_ids=token_type_ids)
+            bert_outputs = self.bert(inputs_embeds=inputs_embeds, attention_mask=attention_mask,
+                                     token_type_ids=token_type_ids)
         else:
             bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
@@ -341,10 +345,29 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
-        self.loss_fnt = CscFocalLoss(alpha=0.75, label_smooth=0.15)
+        self.loss_fnt = CscFocalLoss(alpha=0.99)
         self.bce_criteria = nn.BCELoss()
-        self.optimizer = torch.optim.AdamW(self.parameters(), lr=2e-4)
+        self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
+
+    def make_optimizer(self):
+        params = []
+        for key, value in self.bert.named_parameters():
+            if not value.requires_grad:
+                continue
+            lr = 2e-6
+            weight_decay = 0.01
+            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+
+        for key, value in self.cls.named_parameters():
+            if not value.requires_grad:
+                continue
+            lr = 2e-4
+            weight_decay = 0.01
+            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+
+        optimizer = torch.optim.AdamW(params)
+        return optimizer
 
     def forward(self, inputs):
         outputs = self.bert(**inputs).last_hidden_state
