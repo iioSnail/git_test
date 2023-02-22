@@ -341,7 +341,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         self.criteria = nn.CrossEntropyLoss(ignore_index=0)
         self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
-        self.loss_fnt = CscFocalLoss(alpha=0.75, label_smooth=0.85)
+        self.loss_fnt = CscFocalLoss(alpha=0.75, label_smooth=0.15)
         self.bce_criteria = nn.BCELoss()
         self.optimizer = torch.optim.AdamW(self.parameters(), lr=2e-4)
         self.scheduler = PlateauScheduler(self.optimizer)

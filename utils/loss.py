@@ -87,6 +87,7 @@ class CscFocalLoss(nn.Module):
 
         inputs = inputs['input_ids']
         targets = targets.clone()
+        targets[targets == inputs] = 0
         loss = self.focal_loss(outputs, targets)
 
         return self.alpha * copy_loss + (1 - self.alpha) * loss
