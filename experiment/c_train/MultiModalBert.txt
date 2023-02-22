@@ -234,3 +234,98 @@ Character-level Detect Acc: 0.9748, P: 0.4110, R: 0.4540, F1: 0.4315
 Character-level Correct Acc: 0.9735, P: 0.3775, R: 0.3946, F1: 0.3859
 Sentence-level Detect Acc: 0.4891, P: 0.4767, R: 0.3193, F1: 0.3824
 Sentence-level Correct Acc: 0.4755, P: 0.4543, R: 0.2917, F1: 0.3553
+
+# FIXME 有问题，实际上是2的copy_loss，代码有bug
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.25的loss和0.75的soft_loss
+执行情况：执行了7个epoch手动停了，基本上已经过拟合训练集了。
+Correction Precision: 0.5744434807746244, Recall: 0.3707781302481114, F1-Score: 0.45066908548364637
+Correction Precision: 0.8090050835146915, Recall: 0.623042505592725, F1-Score: 0.7039494465856923
+Correction Precision: 0.8412338398727962, Recall: 0.69288249579662, F1-Score: 0.7598852689165255
+Correction Precision: 0.871522280026946, Recall: 0.719111608809123, F1-Score: 0.7880151339762567
+Correction Precision: 0.9187457083998811, Recall: 0.7494398805077017, F1-Score: 0.825501284852024
+Correction Precision: 0.9175022789423615, Recall: 0.7506992355023772, F1-Score: 0.8257614598678692
+Correction Precision: 0.9252807701120959, Recall: 0.7531716417909042, F1-Score: 0.8304021387625171
+Epoch 7 Training: 100% 250/250 [03:29<00:00,  1.19it/s, loss=0.00252, c_precision=0.996, c_recall=0.986, c_f1_score=0.991]
+Correction Precision: 0.9253216911762578, Recall: 0.7515864128404718, F1-Score: 0.8294541704629714
+Eval情况：
+Character-level Detect Acc: 0.9752, P: 0.4223, R: 0.4880, F1: 0.4528
+Character-level Correct Acc: 0.9738, P: 0.3886, R: 0.4243, F1: 0.4057
+Sentence-level Detect Acc: 0.5155, P: 0.5155, R: 0.3651, F1: 0.4275
+Sentence-level Correct Acc: 0.4936, P: 0.4834, R: 0.3211, F1: 0.3859
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。
+在此基础上，0.25的loss和0.75的soft_loss。增加0.25的label_smooth
+执行情况：执行了16个epoch然后early stop了，基本上已经过拟合训练集了。
+**看起来label_smooth过拟合没什么效果**
+Correction Precision: 0.5835205992507906, Recall: 0.43608882254143755, F1-Score: 0.499145663756396
+Correction Precision: 0.8026375625282395, Recall: 0.6580909768828005, F1-Score: 0.7232124559685873
+Correction Precision: 0.8683566822324064, Recall: 0.7294974780495554, F1-Score: 0.7928934005188435
+Correction Precision: 0.898992161253998, Recall: 0.7491601343783596, F1-Score: 0.8172656006441469
+Correction Precision: 0.912605811027016, Recall: 0.7447722180730498, F1-Score: 0.8201912198195467
+Correction Precision: 0.915374087591032, Recall: 0.7482752190936512, F1-Score: 0.8234328506385572
+Correction Precision: 0.9153583617745357, Recall: 0.7505597014923973, F1-Score: 0.8248077903811972
+Correction Precision: 0.9156599042623852, Recall: 0.7497200447926932, F1-Score: 0.8244227804180838
+Correction Precision: 0.9151308304889839, Recall: 0.7506532288165825, F1-Score: 0.8247718645718641
+Correction Precision: 0.9153968614962666, Recall: 0.750093179276789, F1-Score: 0.8245416362967262
+Correction Precision: 0.9146951774338228, Recall: 0.749766921499021, F1-Score: 0.8240598417016866
+Correction Precision: 0.915739268680237, Recall: 0.7515377446410527, F1-Score: 0.8255528250575059
+Correction Precision: 0.9164389799633613, Recall: 0.750512772701706, F1-Score: 0.8252178365114479
+Correction Precision: 0.9157559198540719, Recall: 0.7495341036152162, F1-Score: 0.8243492514006928
+Correction Precision: 0.9154704944176542, Recall: 0.7493472584854999, F1-Score: 0.8241206025198847
+Correction Precision: 0.9149954421146501, Recall: 0.7499066118788289, F1-Score: 0.824266063967896
+Epoch 16 Training: 100% 250/250 [03:17<00:00,  1.26it/s, loss=0.00509, c_precision=0.99, c_recall=0.954, c_f1_score=0.972]
+Correction Precision: 0.9151308304889839, Recall: 0.7502331654540663, F1-Score: 0.8245182446871847
+Eval情况：
+Character-level Detect Acc: 0.9734, P: 0.3960, R: 0.4979, F1: 0.4411
+Character-level Correct Acc: 0.9718, P: 0.3561, R: 0.4201, F1: 0.3855
+Sentence-level Detect Acc: 0.4809, P: 0.4695, R: 0.3670, F1: 0.4119
+Sentence-level Correct Acc: 0.4582, P: 0.4364, R: 0.3211, F1: 0.3700
+
+
+FIXME：有问题，忘了Ignore 0 index了
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.1的loss和0.9的soft_loss
+执行情况：13个epoch后early stop，完全拟合训练集。
+Correction Precision: 0.4687731424338512, Recall: 0.3543571561857894, F1-Score: 0.4036131769803506
+Correction Precision: 0.7464197530862354, Recall: 0.5635719612228628, F1-Score: 0.6422349687044209
+Correction Precision: 0.8145421076850403, Recall: 0.6613114141601604, F1-Score: 0.7299721615838041
+Correction Precision: 0.8288188277085192, Recall: 0.6967151922357788, F1-Score: 0.7570472515822815
+Correction Precision: 0.8664660958109542, Recall: 0.6990291262134617, F1-Score: 0.7737935305585719
+Correction Precision: 0.8629893238432244, Recall: 0.7234756666043775, F1-Score: 0.7870980824735822
+Correction Precision: 0.9070351758791897, Recall: 0.7408582089550856, F1-Score: 0.8155678779193757
+Correction Precision: 0.9192415730334926, Recall: 0.7329227323626851, F1-Score: 0.8155763234937283
+Correction Precision: 0.9134149157236403, Recall: 0.7383351997012433, F1-Score: 0.8165961394579724
+Correction Precision: 0.9147161066046546, Recall: 0.7355572120758972, F1-Score: 0.8154116305355767
+Correction Precision: 0.9147556173266354, Recall: 0.7363415998506924, F1-Score: 0.8159090904147605
+Correction Precision: 0.9150266265337079, Recall: 0.7366262814537303, F1-Score: 0.81619165584602
+Correction Precision: 0.9158553546590366, Recall: 0.7367145254520349, F1-Score: 0.8165753844390538
+Epoch 13 Training: 100% 250/250 [03:27<00:00,  1.20it/s, loss=0.0464, c_precision=0.983, c_recall=0.99, c_f1_score=0.987]
+Correction Precision: 0.9151992585725404, Recall: 0.73611628773747, F1-Score: 0.8159471178696862
+Eval情况：感觉泛化性还不错
+Character-level Detect Acc: 0.9767, P: 0.4511, R: 0.4823, F1: 0.4662
+Character-level Correct Acc: 0.9752, P: 0.4122, R: 0.4116, F1: 0.4119
+Sentence-level Detect Acc: 0.5064, P: 0.5026, R: 0.3541, F1: 0.4155
+Sentence-level Correct Acc: 0.4836, P: 0.4680, R: 0.3083, F1: 0.3717
+
+
+FIXME：有问题，忘了Ignore 0 index了
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.1的loss和0.9的soft_loss
+执行情况：在11个Epoch的时候，我手动停了，因为早就过拟合训练数据了，再训练下去也不会有啥太好的效果了。
+Correction Precision: 0.5451686678100214, Recall: 0.35584997200963686, F1-Score: 0.4306198482292144
+Correction Precision: 0.794760935910276, Recall: 0.5825876211781166, F1-Score: 0.672332185398123
+Correction Precision: 0.8350058343055227, Recall: 0.6684102372500151, F1-Score: 0.7424776919733023
+Correction Precision: 0.8518183871694484, Recall: 0.7038073908173378, F1-Score: 0.7707715886714612
+Correction Precision: 0.8902906059921399, Recall: 0.7378640776697651, F1-Score: 0.8069423170131504
+Correction Precision: 0.9150356896152624, Recall: 0.7410031698674732, F1-Score: 0.8188749222335624
+Correction Precision: 0.9203132197142053, Recall: 0.7455223880595624, F1-Score: 0.823747680395873
+Correction Precision: 0.9233433387206365, Recall: 0.7463605823066916, F1-Score: 0.8254721844574547
+Correction Precision: 0.9237875288681469, Recall: 0.7465472191114694, F1-Score: 0.8257638310496375
+Correction Precision: 0.9234140715107442, Recall: 0.745993291091922, F1-Score: 0.8252757442740577
+Correction Precision: 0.9231833910032472, Recall: 0.7462241282862676, F1-Score: 0.8253248087444661
+Epoch 11 Training: 100% 250/250 [03:27<00:00,  1.20it/s, loss=0.0128, c_precision=0.998, c_recall=0.982, c_f1_score=0.99]
+Correction Precision: 0.9237151417375146, Recall: 0.747064305684856, F1-Score: 0.8260511124485352
+Eval情况：
+Character-level Detect Acc: 0.9772, P: 0.4590, R: 0.4668, F1: 0.4628
+Character-level Correct Acc: 0.9759, P: 0.4246, R: 0.4059, F1: 0.4150
+Sentence-level Detect Acc: 0.5182, P: 0.5209, R: 0.3431, F1: 0.4137
+Sentence-level Correct Acc: 0.5000, P: 0.4926, R: 0.3064, F1: 0.3778
+
