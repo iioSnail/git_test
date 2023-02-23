@@ -380,12 +380,13 @@ class MultiModalBertCorrectionModel(nn.Module):
             #     weight_decay = 0
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
-        # optimizer = torch.optim.AdamW(params)
-        optimizer = torch_optimizer.AdaBound(params)
+        optimizer = torch.optim.AdamW(params)
         return optimizer
 
     def forward(self, inputs):
         outputs = self.bert(**inputs).last_hidden_state
+        if self.training:
+            outputs += (1 - torch.rand(outputs.size()) * 2) * 0.1  # add noise, noise in (-0.1, 0.1)
         return self.cls(outputs)
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
