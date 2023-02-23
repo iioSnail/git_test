@@ -9,7 +9,6 @@ from tqdm import tqdm
 from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
-from model.MultiModalBert import MultiModalBertCorrectionModel
 from model.macbert4csc import HuggingFaceMacBert4CscModel
 from utils.dataset import CSCTestDataset, CSCDataset
 from utils.metrics import CSCMetrics
@@ -39,6 +38,10 @@ class Evaluation(object):
         elif self.args.model == 'Bert':
             self.model = BertCorrectionModel(self.args).eval()
         elif self.args.model == 'MultiModalBert':
+            from model.MultiModalBert import MultiModalBertCorrectionModel
+            self.model = MultiModalBertCorrectionModel(self.args).eval()
+        elif self.args.model == 'MultiModalBert_temp':
+            from model.MultiModalBert_temp import MultiModalBertCorrectionModel
             self.model = MultiModalBertCorrectionModel(self.args).eval()
         elif self.args.model == 'MDCSpellPlus':
             self.model = MDCSpellPlusModel(self.args).eval()
@@ -72,7 +75,7 @@ class Evaluation(object):
         for i in progress:
             src, tgt = self.test_set.__getitem__(i)
             src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
-            c_output = self.model.predict(src)
+            c_output = self.model.predict(src, tgt)
             c_output = restore_special_tokens(src, c_output)
 
             csc_metrics.add_sentence(src, tgt, c_output)

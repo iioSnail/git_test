@@ -437,7 +437,9 @@ class MultiModalBertCorrectionModel(nn.Module):
         src = src.replace(" ", "")
         src = " ".join(src)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
-        outputs = self.forward(inputs)
+        targets = self.tokenizer(tgt, return_tensors='pt').to(self.args.device)
+        detection_targets = (inputs['input_ids'] != targets['input_ids']).float()
+        outputs = self.forward(inputs, targets, detection_targets)
         outputs = outputs.argmax(-1)
         outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
         outputs = [outputs[i] if len(outputs[i]) == 1 else src[i] for i in range(len(outputs))]

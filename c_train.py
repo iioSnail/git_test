@@ -227,7 +227,10 @@ class C_Train(object):
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
 
-            outputs = self.model(inputs)
+            if hasattr(self.args, "multi_forward_args"):
+                outputs = self.model(inputs, targets, detection_targets)
+            else:
+                outputs = self.model(inputs)
             outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) else self.model.extract_outputs(
                 outputs)
 
