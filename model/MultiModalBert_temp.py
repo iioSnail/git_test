@@ -337,7 +337,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.args = args
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer(bert_path)
-        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
+        self.cls = BertOnlyMLMHead(768 + 8 + 56 + 1, len(self.tokenizer))
         # self.cls = nn.Sequential(
         #     nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=768 + 8 + 56, nhead=16, batch_first=True), num_layers=2),
         #     nn.Linear(768 + 8 + 56, len(self.tokenizer)),
@@ -349,6 +349,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.bce_criteria = nn.BCELoss()
         self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
+        self.args.multi_forward_args = True
 
         for layer in self.cls.predictions:
             if isinstance(layer, nn.Linear):
@@ -382,8 +383,10 @@ class MultiModalBertCorrectionModel(nn.Module):
         optimizer = torch.optim.AdamW(params)
         return optimizer
 
-    def forward(self, inputs):
+    def forward(self, inputs, targets, detection_targets):
         outputs = self.bert(**inputs).last_hidden_state
+        # 把该字是否正确这个特征加到里面去。
+        outputs = torch.concat([outputs, detection_targets.unsqueeze(-1)], dim=-1)
         return self.cls(outputs)
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
@@ -434,7 +437,9 @@ class MultiModalBertCorrectionModel(nn.Module):
         src = src.replace(" ", "")
         src = " ".join(src)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
-        outputs = self.forward(inputs)
+        targets = self.tokenizer(tgt, return_tensors='pt').to(self.args.device)
+        detection_targets = (inputs['input_ids'] != targets['input_ids']).float()
+        outputs = self.forward(inputs, targets, detection_targets)
         outputs = outputs.argmax(-1)
         outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
         outputs = [outputs[i] if len(outputs[i]) == 1 else src[i] for i in range(len(outputs))]

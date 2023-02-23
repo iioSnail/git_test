@@ -45,6 +45,9 @@ class C_Train(object):
         elif self.args.model == 'MultiModalBert':
             from model.MultiModalBert import MultiModalBertCorrectionModel
             self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'MultiModalBert_temp':
+            from model.MultiModalBert_temp import MultiModalBertCorrectionModel
+            self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpell':
             self.model = MDCSpellModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpellPlus':
@@ -224,7 +227,10 @@ class C_Train(object):
                                                  targets.to(self.args.device), \
                                                  detection_targets.to(self.args.device)
 
-            outputs = self.model(inputs)
+            if hasattr(self.args, "multi_forward_args"):
+                outputs = self.model(inputs, targets, detection_targets)
+            else:
+                outputs = self.model(inputs)
             outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) else self.model.extract_outputs(
                 outputs)
 
