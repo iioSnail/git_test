@@ -436,6 +436,8 @@ class MultiModalBertCorrectionModel(nn.Module):
     def predict(self, src, tgt=None):
         src = src.replace(" ", "")
         src = " ".join(src)
+        tgt = tgt.replace(" ", "")
+        tgt = " ".join(tgt)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
         targets = self.tokenizer(tgt, return_tensors='pt').to(self.args.device)
         detection_targets = (inputs['input_ids'] != targets['input_ids']).float()
