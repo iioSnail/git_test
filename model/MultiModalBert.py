@@ -357,13 +357,21 @@ class MultiModalBertCorrectionModel(nn.Module):
                 continue
             lr = 2e-6
             weight_decay = 0.01
+            if "bias" in key:
+                lr = 4e-6
+                weight_decay = 0
+
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+
 
         for key, value in self.cls.named_parameters():
             if not value.requires_grad:
                 continue
             lr = 2e-4
             weight_decay = 0.01
+            if "bias" in key:
+                lr = 4e-4
+                weight_decay = 0
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
         optimizer = torch.optim.AdamW(params)
