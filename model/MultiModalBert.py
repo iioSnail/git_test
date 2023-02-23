@@ -4,7 +4,6 @@ import os.path
 import numpy as np
 import pypinyin
 import torch
-import torch_optimizer
 from PIL import ImageFont
 from matplotlib import pyplot as plt
 from torch import nn
@@ -386,7 +385,7 @@ class MultiModalBertCorrectionModel(nn.Module):
     def forward(self, inputs):
         outputs = self.bert(**inputs).last_hidden_state
         if self.training:
-            outputs += (1 - torch.rand(outputs.size()) * 2) * 0.1  # add noise, noise in (-0.1, 0.1)
+            outputs += (1 - torch.rand(outputs.size(), device=outputs.device) * 2) * 0.5  # add noise, noise in (-0.05, 0.05)
         return self.cls(outputs)
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):

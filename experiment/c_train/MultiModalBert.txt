@@ -444,6 +444,30 @@ Sentence-level Detect Acc: 0.6182, P: 0.6812, R: 0.4312, F1: 0.5281
 Sentence-level Correct Acc: 0.5827, P: 0.6405, R: 0.3596, F1: 0.4606
 
 模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1
+在head前增加了(-0.1, 0.1)的noise
+执行情况：执行了12个epoch后手动停了，训练集也没有完全拟合，但感觉学不下去了。可能是noise加的太多了？
+Correction Precision: 0.35914074737069607, Recall: 0.30078710644672024, F1-Score: 0.3273839872651889
+Correction Precision: 0.7795790671215075, Recall: 0.5132958801497166, F1-Score: 0.6190153563413053
+Correction Precision: 0.8831978319780804, Recall: 0.6102996254680505, F1-Score: 0.7218161678443304
+Correction Precision: 0.9098867147268512, Recall: 0.6615499812802954, F1-Score: 0.7660958156840096
+Correction Precision: 0.9318239633678627, Recall: 0.6867266591674752, F1-Score: 0.7907177545031997
+Correction Precision: 0.9362720403020311, Recall: 0.6956765861874048, F1-Score: 0.7982390202344156
+Correction Precision: 0.939067201604579, Recall: 0.7023630907725614, F1-Score: 0.8036480681797531
+Correction Precision: 0.9397470865358444, Recall: 0.7092065868262145, F1-Score: 0.8083608825212251
+Correction Precision: 0.9405351833496183, Recall: 0.710728328028326, F1-Score: 0.8096406095127108
+Correction Precision: 0.9396189062111013, Recall: 0.7110486891384435, F1-Score: 0.8095085806841293
+Correction Precision: 0.941147378832606, Recall: 0.7127340823968702, F1-Score: 0.8111679449484092
+Epoch 11 Training: 100% 250/250 [03:27<00:00,  1.20it/s, loss=0.0211, c_precision=0.989, c_recall=0.826, c_f1_score=0.9]
+Correction Precision: 0.940841584158183, Recall: 0.7127320457527259, F1-Score: 0.8110530241545996
+Eval情况：Eval情况也没有变好，甚至变差了2个点
+Character-level Detect Acc: 0.9813, P: 0.5644, R: 0.5021, F1: 0.5314
+Character-level Correct Acc: 0.9794, P: 0.5142, R: 0.4102, F1: 0.4563
+Sentence-level Detect Acc: 0.6118, P: 0.6746, R: 0.4183, F1: 0.5164
+Sentence-level Correct Acc: 0.5736, P: 0.6284, R: 0.3413, F1: 0.4423
+
+
+
+模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1
 为模型增加了一个特征，832+1，这一个特征是该字是否有错，然后看看在告诉模型这个字是错的前提下，模型的表现如何。
 执行情况：比之前好了1.5个点，但并没有好处太多，看来模型不太会利用这个特征。也可以理解，800多个特征，他根本就不知道最后一个特征居然这么重要。
 Correction Precision: 0.3687031082528684, Recall: 0.3158281307380984, F1-Score: 0.34022351844268445
