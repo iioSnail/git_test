@@ -352,7 +352,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         for layer in self.cls.predictions:
             if isinstance(layer, nn.Linear):
-                nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='relu')
+                nn.init.orthogonal_(layer.weight, gain=1)
 
     def make_optimizer(self):
         params = []
