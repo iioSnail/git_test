@@ -443,3 +443,23 @@ Character-level Correct Acc: 0.9797, P: 0.5216, R: 0.4272, F1: 0.4697
 Sentence-level Detect Acc: 0.6182, P: 0.6812, R: 0.4312, F1: 0.5281
 Sentence-level Correct Acc: 0.5827, P: 0.6405, R: 0.3596, F1: 0.4606
 
+模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1
+为模型增加了一个特征，832+1，这一个特征是该字是否有错，然后看看在告诉模型这个字是错的前提下，模型的表现如何。
+执行情况：比之前好了1.5个点，但并没有好处太多，看来模型不太会利用这个特征。也可以理解，800多个特征，他根本就不知道最后一个特征居然这么重要。
+Correction Precision: 0.3687031082528684, Recall: 0.3158281307380984, F1-Score: 0.34022351844268445
+Correction Precision: 0.7748719331354071, Recall: 0.5275330396474802, F1-Score: 0.6277165005553533
+Correction Precision: 0.877087682672005, Recall: 0.6170369010463342, F1-Score: 0.7244315115313713
+Correction Precision: 0.9122287968439565, Recall: 0.6790236740685118, F1-Score: 0.7785376112938471
+Correction Precision: 0.9326695116166588, Recall: 0.7220998531569893, F1-Score: 0.8139871710369987
+Correction Precision: 0.9389044943818026, Recall: 0.736368643289749, F1-Score: 0.8253935585152664
+Correction Precision: 0.9417587476977574, Recall: 0.7506422018347246, F1-Score: 0.8354094338537651
+Correction Precision: 0.9418257070588774, Recall: 0.7519735634292726, F1-Score: 0.8362596973419621
+Correction Precision: 0.9427786678871726, Recall: 0.7560572687223281, F1-Score: 0.8391565646479696
+Correction Precision: 0.9428832533696725, Recall: 0.7578038927651931, F1-Score: 0.8402728285803711
+Correction Precision: 0.9421978524101113, Recall: 0.7569750367105805, F1-Score: 0.839491093653353
+Eval情况：Eval情况也比之前好了很多，但很明显没有把最后一个特征体现出来。
+Character-level Detect Acc: 0.9845, P: 0.6667, R: 0.5318, F1: 0.5917
+Character-level Correct Acc: 0.9823, P: 0.6163, R: 0.4272, F1: 0.5046
+Sentence-level Detect Acc: 0.6564, P: 0.7393, R: 0.4734, F1: 0.5772
+Sentence-level Correct Acc: 0.6136, P: 0.6987, R: 0.3872, F1: 0.4982
+

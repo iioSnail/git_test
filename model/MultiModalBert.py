@@ -4,6 +4,7 @@ import os.path
 import numpy as np
 import pypinyin
 import torch
+import torch_optimizer
 from PIL import ImageFont
 from matplotlib import pyplot as plt
 from torch import nn
@@ -379,7 +380,8 @@ class MultiModalBertCorrectionModel(nn.Module):
             #     weight_decay = 0
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
-        optimizer = torch.optim.AdamW(params)
+        # optimizer = torch.optim.AdamW(params)
+        optimizer = torch_optimizer.AdaBound(params)
         return optimizer
 
     def forward(self, inputs):
