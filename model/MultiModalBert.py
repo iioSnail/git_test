@@ -350,6 +350,10 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
 
+        for layer in self.cls.predictions:
+            if isinstance(layer, nn.Linear):
+                nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='relu')
+
     def make_optimizer(self):
         params = []
         for key, value in self.bert.named_parameters():
@@ -357,9 +361,10 @@ class MultiModalBertCorrectionModel(nn.Module):
                 continue
             lr = 2e-6
             weight_decay = 0.01
-            if "bias" in key:
-                lr = 4e-6
-                weight_decay = 0
+            # 感觉用处不是很大
+            # if "bias" in key:
+            #     lr = 4e-6
+            #     weight_decay = 0
 
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
@@ -369,9 +374,9 @@ class MultiModalBertCorrectionModel(nn.Module):
                 continue
             lr = 2e-4
             weight_decay = 0.01
-            if "bias" in key:
-                lr = 4e-4
-                weight_decay = 0
+            # if "bias" in key:
+            #     lr = 4e-4
+            #     weight_decay = 0
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
         optimizer = torch.optim.AdamW(params)
