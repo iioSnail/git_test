@@ -329,3 +329,24 @@ Character-level Correct Acc: 0.9759, P: 0.4246, R: 0.4059, F1: 0.4150
 Sentence-level Detect Acc: 0.5182, P: 0.5209, R: 0.3431, F1: 0.4137
 Sentence-level Correct Acc: 0.5000, P: 0.4926, R: 0.3064, F1: 0.3778
 
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。
+加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的copy_loss。使用2e-6学习率训练bert，2e-4训练cls
+执行情况：训练了11个epoch手动停了，看起来训练集很难过拟合了，可能是模型还不够复杂，也许这样也好。
+Correction Precision: 0.43727087576365836, Recall: 0.4006344467250605, F1-Score: 0.41815171826609016
+Correction Precision: 0.7895285230526727, Recall: 0.5650633855330788, F1-Score: 0.6586982500840523
+Correction Precision: 0.8756892230574247, Recall: 0.6527181019987571, F1-Score: 0.7479396334610322
+Correction Precision: 0.9083616917839308, Recall: 0.6974617394548903, F1-Score: 0.7890624995084576
+Correction Precision: 0.925511661113535, Recall: 0.7261015683344424, F1-Score: 0.813768570337836
+Correction Precision: 0.9282690498586715, Recall: 0.73596867424935, F1-Score: 0.8210088398601191
+Correction Precision: 0.9313634248485501, Recall: 0.7468283582088159, F1-Score: 0.8289500926928691
+Correction Precision: 0.9321836401768976, Recall: 0.7465472191114694, F1-Score: 0.8291014607972677
+Correction Precision: 0.9314272431425077, Recall: 0.7478536767449144, F1-Score: 0.8296066247646023
+Correction Precision: 0.9320614239178845, Recall: 0.7465523667534948, F1-Score: 0.8290562908966633
+Correction Precision: 0.9311787956287069, Recall: 0.7467835166882814, F1-Score: 0.8288493372542108
+Epoch 11 Training: 100% 250/250 [03:24<00:00,  1.22it/s, loss=0.0143, c_precision=0.985, c_recall=0.876, c_f1_score=0.927]
+Correction Precision: 0.9315227483748998, Recall: 0.7479962721340637, F1-Score: 0.8297322438974042
+Eval情况：Eval情况是目前看起来最好的，果然迁移学习的时候原始模型不能训练的太多。
+Character-level Detect Acc: 0.9804, P: 0.5347, R: 0.5233, F1: 0.5289
+Character-level Correct Acc: 0.9779, P: 0.4721, R: 0.4074, F1: 0.4374
+Sentence-level Detect Acc: 0.6082, P: 0.6557, R: 0.4404, F1: 0.5269
+Sentence-level Correct Acc: 0.5627, P: 0.6013, R: 0.3486, F1: 0.4413
