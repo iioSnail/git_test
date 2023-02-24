@@ -43,6 +43,9 @@ class Evaluation(object):
         elif self.args.model == 'MultiModalBert_temp':
             from model.MultiModalBert_temp import MultiModalBertCorrectionModel
             self.model = MultiModalBertCorrectionModel(self.args).eval()
+        elif self.args.model == 'MultiModalBertWithDetection':
+            from model.MultiModalBertWithDetection import MultiModalBertCorrectionModel
+            self.model = MultiModalBertCorrectionModel(self.args).eval()
         elif self.args.model == 'MDCSpellPlus':
             self.model = MDCSpellPlusModel(self.args).eval()
         elif self.args.model == 'HuggingFaceMacBert4Csc':
@@ -75,7 +78,7 @@ class Evaluation(object):
         for i in progress:
             src, tgt = self.test_set.__getitem__(i)
             src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
-            c_output = self.model.predict(src, tgt)
+            c_output = self.model.predict(src)
             c_output = restore_special_tokens(src, c_output)
 
             csc_metrics.add_sentence(src, tgt, c_output)

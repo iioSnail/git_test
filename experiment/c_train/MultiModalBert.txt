@@ -465,6 +465,57 @@ Character-level Correct Acc: 0.9794, P: 0.5142, R: 0.4102, F1: 0.4563
 Sentence-level Detect Acc: 0.6118, P: 0.6746, R: 0.4183, F1: 0.5164
 Sentence-level Correct Acc: 0.5736, P: 0.6284, R: 0.3413, F1: 0.4423
 
+模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1
+在head前增加了(-0.05, 0.05)的noise
+执行情况：17个epoch后early stop了，同样没有过拟合训练集，且验证集上表现一般
+Correction Precision: 0.3627012522360548, Recall: 0.3039730134931964, F1-Score: 0.3307504073341551
+Correction Precision: 0.7807790730734203, Recall: 0.5142322097377314, F1-Score: 0.6200745168519668
+Correction Precision: 0.8845633955120615, Recall: 0.612734082396889, F1-Score: 0.7239738904334562
+Correction Precision: 0.910095042383532, Recall: 0.6632347435416205, F1-Score: 0.7672983211147419
+Correction Precision: 0.9323843416367736, Recall: 0.6876640419946217, F1-Score: 0.7915407850097278
+Correction Precision: 0.9361809045223779, Recall: 0.6973610331273259, F1-Score: 0.7993135251996711
+Correction Precision: 0.9388471177942509, Recall: 0.702550637659283, F1-Score: 0.8036901947472633
+Correction Precision: 0.9395590785234235, Recall: 0.7097679640717234, F1-Score: 0.8086557931349462
+Correction Precision: 0.9405940594057077, Recall: 0.7114772514509059, F1-Score: 0.810148171346135
+Correction Precision: 0.9396935244683787, Recall: 0.7119850187264584, F1-Score: 0.8101427653307668
+Correction Precision: 0.9407114624503605, Recall: 0.7131086142320762, F1-Score: 0.8112484017248914
+Correction Precision: 0.9402469135800148, Recall: 0.7140446277891028, F1-Score: 0.8116806986459119
+Correction Precision: 0.9411619891676659, Recall: 0.7149803628201393, F1-Score: 0.8126262084580319
+Correction Precision: 0.9402911423634492, Recall: 0.7135367908630006, F1-Score: 0.811368958419169
+Correction Precision: 0.9403500123241458, Recall: 0.7148210605207579, F1-Score: 0.8122205658280371
+Correction Precision: 0.941481481481249, Recall: 0.7147141518274198, F1-Score: 0.8125732547036595
+Correction Precision: 0.9405793513243524, Recall: 0.7130255255253917, F1-Score: 0.8111455103452085
+Epoch 17 Training: 100% 250/250 [03:22<00:00,  1.23it/s, loss=0.025, c_precision=0.988, c_recall=0.826, c_f1_score=0.9]
+Correction Precision: 0.9405964998765244, Recall: 0.7146067415728998, F1-Score: 0.8121740976255678
+Eval情况：不如无噪音的好
+Character-level Detect Acc: 0.9814, P: 0.5660, R: 0.5035, F1: 0.5329
+Character-level Correct Acc: 0.9794, P: 0.5151, R: 0.4102, F1: 0.4567
+Sentence-level Detect Acc: 0.6127, P: 0.6766, R: 0.4183, F1: 0.5170
+Sentence-level Correct Acc: 0.5736, P: 0.6293, R: 0.3394, F1: 0.4410
+
+模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1
+在head前增加了(-0.01, 0.01)的noise
+执行情况：14个epoch后手动停了了，同样没有过拟合训练集，且验证集上表现一般
+Correction Precision: 0.36375838926166354, Recall: 0.30472263868060256, F1-Score: 0.3316336931607767
+Correction Precision: 0.7818181818179597, Recall: 0.5153558052433491, F1-Score: 0.62121896114624
+Correction Precision: 0.88465694219317, Recall: 0.6132958801496978, F1-Score: 0.7243972567602208
+Correction Precision: 0.9099999999997667, Recall: 0.6643579183825038, F1-Score: 0.7680155805550702
+Correction Precision: 0.9324358648714929, Recall: 0.6882264716909096, F1-Score: 0.7919318299501854
+Correction Precision: 0.9366993217782124, Recall: 0.6979225154406329, F1-Score: 0.7998712993817971
+Correction Precision: 0.9391435011267371, Recall: 0.7033008252061697, F1-Score: 0.8042895437460618
+Correction Precision: 0.9395890071797625, Recall: 0.7101422155687294, F1-Score: 0.8089097298729225
+Correction Precision: 0.940841584158183, Recall: 0.7116644823065509, F1-Score: 0.8103613682334605
+Correction Precision: 0.9397233201578706, Recall: 0.7123595505616643, F1-Score: 0.8103962500418921
+Correction Precision: 0.9407407407405085, Recall: 0.713483146067282, F1-Score: 0.8115015969533532
+Correction Precision: 0.9402321560876907, Recall: 0.7138571160696204, F1-Score: 0.8115540391595863
+Correction Precision: 0.940915805021925, Recall: 0.714793342060835, F1-Score: 0.8124136460178151
+Epoch 13 Training: 100% 250/250 [03:26<00:00,  1.21it/s, loss=0.018, c_precision=0.989, c_recall=0.821, c_f1_score=0.897]
+Correction Precision: 0.9400444115467703, Recall: 0.7133495600073556, F1-Score: 0.811156056566923
+Eval情况：不如无噪音的好
+Character-level Detect Acc: 0.9813, P: 0.5644, R: 0.5021, F1: 0.5314
+Character-level Correct Acc: 0.9794, P: 0.5142, R: 0.4102, F1: 0.4563
+Sentence-level Detect Acc: 0.6127, P: 0.6766, R: 0.4183, F1: 0.5170
+Sentence-level Correct Acc: 0.5736, P: 0.6293, R: 0.3394, F1: 0.4410
 
 
 模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1

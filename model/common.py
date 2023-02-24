@@ -86,13 +86,16 @@ class BertOnlyMLMHead(nn.Module):
         self.bias = nn.Parameter(torch.zeros(vocab_size))
         self.decoder.bias = self.bias
 
-        self.predictions = nn.Sequential(
+        self.head = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
             GELUActivation(),
             nn.LayerNorm(hidden_size, eps=1e-12, elementwise_affine=True),
-            self.decoder,
+        )
+
+        self.predictions = nn.Sequential(
+            self.head,
+            self.decoder
         )
 
     def forward(self, sequence_output: torch.Tensor) -> torch.Tensor:
-        prediction_scores = self.predictions(sequence_output)
-        return prediction_scores
+        return self.predictions(sequence_output)

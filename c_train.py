@@ -48,6 +48,9 @@ class C_Train(object):
         elif self.args.model == 'MultiModalBert_temp':
             from model.MultiModalBert_temp import MultiModalBertCorrectionModel
             self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'MultiModalBertWithDetection':
+            from model.MultiModalBertWithDetection import MultiModalBertCorrectionModel
+            self.model = MultiModalBertCorrectionModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpell':
             self.model = MDCSpellModel(self.args).train().to(self.args.device)
         elif self.args.model == 'MDCSpellPlus':
@@ -84,7 +87,7 @@ class C_Train(object):
 
         self.model = self.model.train()
         progress = tqdm(self.train_loader, desc="Epoch {} Training".format(self.current_epoch))
-        for i, (inputs, targets, detection_targets) in enumerate(progress):
+        for i, (inputs, targets, detect_targets) in enumerate(progress):
 
             if self.args.resume and self.total_step > self.current_epoch * len(self.train_loader) + i:
                 # Resume the progress of training loader.
@@ -92,16 +95,16 @@ class C_Train(object):
             else:
                 self.args.resume = False
 
-            inputs, targets, detection_targets = inputs.to(self.args.device), \
+            inputs, targets, detect_targets = inputs.to(self.args.device), \
                                                  targets.to(self.args.device), \
-                                                 detection_targets.to(self.args.device)
+                                                 detect_targets.to(self.args.device)
             self.optimizer.zero_grad()
 
             if hasattr(self.args, "multi_forward_args"):
-                outputs = self.model(inputs, targets, detection_targets)
+                outputs = self.model(inputs, targets, detect_targets)
             else:
                 outputs = self.model(inputs)
-            loss = self.model.compute_loss(outputs, targets, inputs)
+            loss = self.model.compute_loss(outputs, targets, inputs, detect_targets)
             loss.backward()
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5)
             self.optimizer.step()
@@ -116,7 +119,7 @@ class C_Train(object):
             outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) \
                 else self.model.extract_outputs(outputs)
             matrix *= 0.96  # 每次让之前的值衰减0.96，差不多100次刚好衰减完，相当于matrix展示的是近100次的平均值
-            matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detection_targets,
+            matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], detect_targets,
                                                             inputs.attention_mask)
 
             correction_matrix = TrainBase.compute_matrix(*matrix)
