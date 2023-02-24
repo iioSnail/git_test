@@ -1,0 +1,55 @@
+模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1
+加入了Detection模块，Detection模块和
+
+Downloading (…)solve/main/vocab.txt: 100% 110k/110k [00:00<00:00, 1.95MB/s]
+Downloading (…)/main/tokenizer.json: 100% 269k/269k [00:00<00:00, 3.40MB/s]
+Downloading (…)in/added_tokens.json: 100% 2.00/2.00 [00:00<00:00, 767B/s]
+Downloading (…)cial_tokens_map.json: 100% 112/112 [00:00<00:00, 42.3kB/s]
+Load MultiModalBert From ./drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt
+Epoch 0 Training: 100% 250/250 [03:38<00:00,  1.14it/s, loss=0.167, c_precision=0.331, c_recall=0.322, c_f1_score=0.327]
+Epoch 0 Validation: 100% 62/62 [00:19<00:00,  3.22it/s, c_precision=0.448, c_recall=0.407, c_f1_score=0.427]
+Correction Precision: 0.4484823456534279, Recall: 0.40712277413300707, F1-Score: 0.42680290773452917
+Epoch 1 Training: 100% 250/250 [03:43<00:00,  1.12it/s, loss=0.0873, c_precision=0.785, c_recall=0.537, c_f1_score=0.638]
+Epoch 1 Validation: 100% 62/62 [00:19<00:00,  3.12it/s, c_precision=0.807, c_recall=0.576, c_f1_score=0.672]
+Correction Precision: 0.8068241469814156, Recall: 0.5764110256889975, F1-Score: 0.6724269928419558
+Epoch 2 Training: 100% 250/250 [03:44<00:00,  1.11it/s, loss=0.0569, c_precision=0.902, c_recall=0.638, c_f1_score=0.747]
+Epoch 2 Validation: 100% 62/62 [00:19<00:00,  3.14it/s, c_precision=0.878, c_recall=0.657, c_f1_score=0.752]
+Correction Precision: 0.8784835551089936, Recall: 0.6570892018778108, F1-Score: 0.75182638541483
+Epoch 3 Training: 100% 250/250 [03:43<00:00,  1.12it/s, loss=0.0262, c_precision=0.938, c_recall=0.709, c_f1_score=0.807]
+Epoch 3 Validation: 100% 62/62 [00:19<00:00,  3.11it/s, c_precision=0.911, c_recall=0.701, c_f1_score=0.792]
+Correction Precision: 0.9105275954289057, Recall: 0.7010482965180267, F1-Score: 0.7921734527076457
+Epoch 4 Training: 100% 250/250 [03:42<00:00,  1.12it/s, loss=0.022, c_precision=0.964, c_recall=0.775, c_f1_score=0.859]
+Epoch 4 Validation: 100% 62/62 [00:19<00:00,  3.11it/s, c_precision=0.925, c_recall=0.719, c_f1_score=0.81]
+Correction Precision: 0.9254163649527092, Recall: 0.7194595608930907, F1-Score: 0.8095439184265869
+Epoch 5 Training: 100% 250/250 [03:40<00:00,  1.13it/s, loss=0.0197, c_precision=0.973, c_recall=0.799, c_f1_score=0.877]
+Epoch 5 Validation: 100% 62/62 [00:19<00:00,  3.13it/s, c_precision=0.934, c_recall=0.74, c_f1_score=0.826]
+Correction Precision: 0.9335225928552321, Recall: 0.7403377110692794, F1-Score: 0.8257821487164902
+Epoch 6 Training: 100% 250/250 [03:42<00:00,  1.12it/s, loss=0.0153, c_precision=0.984, c_recall=0.867, c_f1_score=0.921]
+Epoch 6 Validation: 100% 62/62 [00:19<00:00,  3.18it/s, c_precision=0.937, c_recall=0.746, c_f1_score=0.83]
+Correction Precision: 0.9367058823527207, Recall: 0.7457849381789535, F1-Score: 0.8304130157766029
+Epoch 7 Training: 100% 250/250 [03:43<00:00,  1.12it/s, loss=0.00603, c_precision=0.987, c_recall=0.857, c_f1_score=0.918]
+Epoch 7 Validation: 100% 62/62 [00:19<00:00,  3.20it/s, c_precision=0.938, c_recall=0.751, c_f1_score=0.834]
+Correction Precision: 0.9383208255157273, Recall: 0.7507975229872863, F1-Score: 0.8341499004754453
+Epoch 8 Training: 100% 250/250 [03:43<00:00,  1.12it/s, loss=0.00459, c_precision=0.992, c_recall=0.885, c_f1_score=0.935]
+Epoch 8 Validation: 100% 62/62 [00:20<00:00,  3.09it/s, c_precision=0.938, c_recall=0.749, c_f1_score=0.833]
+Correction Precision: 0.9380717804360923, Recall: 0.7494377811093048, F1-Score: 0.8332117924011672
+Epoch 9 Training: 100% 250/250 [03:41<00:00,  1.13it/s, loss=0.0089, c_precision=0.993, c_recall=0.892, c_f1_score=0.939]
+Epoch 9 Validation: 100% 62/62 [00:20<00:00,  3.09it/s, c_precision=0.939, c_recall=0.753, c_f1_score=0.835]
+Correction Precision: 0.9387277829745231, Recall: 0.7525309336331547, F1-Score: 0.8353798122009956
+Epoch 10 Training: 100% 250/250 [03:41<00:00,  1.13it/s, loss=0.00878, c_precision=0.993, c_recall=0.885, c_f1_score=0.936]
+Epoch 10 Validation: 100% 62/62 [00:19<00:00,  3.18it/s, c_precision=0.939, c_recall=0.752, c_f1_score=0.835]
+Correction Precision: 0.938713450292178, Recall: 0.7519205546185587, F1-Score: 0.8349979187735119
+Epoch 11 Training: 100% 250/250 [03:43<00:00,  1.12it/s, loss=0.00887, c_precision=0.992, c_recall=0.887, c_f1_score=0.936]
+Epoch 11 Validation: 100% 62/62 [00:19<00:00,  3.22it/s, c_precision=0.939, c_recall=0.752, c_f1_score=0.835]
+Correction Precision: 0.9391243268553173, Recall: 0.7518275538892686, F1-Score: 0.8351030600930934
+Epoch 12 Training: 100% 250/250 [03:42<00:00,  1.12it/s, loss=0.0115, c_precision=0.99, c_recall=0.885, c_f1_score=0.935]
+Epoch 12 Validation: 100% 62/62 [00:20<00:00,  3.07it/s, c_precision=0.938, c_recall=0.751, c_f1_score=0.834]
+Correction Precision: 0.9382311651846189, Recall: 0.7513584410716223, F1-Score: 0.834460513500324
+Epoch 13 Training: 100% 250/250 [03:42<00:00,  1.12it/s, loss=0.00926, c_precision=0.991, c_recall=0.882, c_f1_score=0.933]
+Epoch 13 Validation: 100% 62/62 [00:20<00:00,  3.09it/s, c_precision=0.938, c_recall=0.752, c_f1_score=0.835]
+Correction Precision: 0.9379971923254706, Recall: 0.7517344834050718, F1-Score: 0.834599770506214
+
+Character-level Detect Acc: 0.9836, P: 0.6266, R: 0.5460, F1: 0.5835
+Character-level Correct Acc: 0.9813, P: 0.5749, R: 0.4399, F1: 0.4984
+Sentence-level Detect Acc: 0.6445, P: 0.7115, R: 0.4752, F1: 0.5699
+Sentence-level Correct Acc: 0.6018, P: 0.6688, R: 0.3890, F1: 0.4919
