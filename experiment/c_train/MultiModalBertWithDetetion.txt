@@ -40,5 +40,7 @@ Character-level Detect Acc: 0.9816, P: 0.5680, R: 0.5318, F1: 0.5493
 Character-level Correct Acc: 0.9793, P: 0.5103, R: 0.4215, F1: 0.4617
 Sentence-level Detect Acc: 0.6109, P: 0.6585, R: 0.4459, F1: 0.5317
 Sentence-level Correct Acc: 0.5673, P: 0.6075, R: 0.3578, F1: 0.4503
+Detection Eval情况：看起来Detection模块是有被训练的
+Detection Character-level Precision 0.5966101694905143, Recall 0.49787835926379365, F1_Score 0.5427910557869634
 
 
