@@ -50,7 +50,7 @@ class Evaluation(object):
 
     def evaluate(self):
         self.character_level_metrics()
-        self.print_error_sentences()
+        # self.print_error_sentences()
 
     def character_level_metrics(self):
         d_tp, d_fp, d_tn, d_fn = 0, 0, 0, 0
