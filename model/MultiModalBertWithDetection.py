@@ -395,7 +395,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         zero_pad = torch.zeros(batch_size, sequence_num, outputs.size(-1) - 768, device=outputs.device)
         outputs += torch.concat([detection_head_outputs, zero_pad], dim=-1)
         detection_outputs = self.detection_cls.decoder(detection_head_outputs)
-        outputs = self.cls(outputs)
+        outputs = self.cls(outputs.clone())
         return outputs, detection_outputs
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
