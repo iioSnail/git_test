@@ -33,12 +33,19 @@ class Evaluation(object):
         elif self.args.model == "BertCLDetectionModel2":
             from model.BertCLDetectionModel2 import BertCLDetectionModel
             self.model = BertCLDetectionModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'MultiModalBertWithDetection':
+            from model.MultiModalBertWithDetection import MultiModalBertCorrectionModel
+            self.model = MultiModalBertCorrectionModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
-        self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
-        self.model.to(self.args.device)
+        try:
+            self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+        except Exception as e:
+            print(e)
+            print("Load model failed.")
 
+        self.model.to(self.args.device)
         self.error_sentences = []
 
     def evaluate(self):
@@ -51,7 +58,10 @@ class Evaluation(object):
         progress = tqdm(range(len(self.test_set)), desc='Evaluation')
         for i in progress:
             src, tgt = self.test_set.__getitem__(i)
-            d_outputs, d_targets = self.model.predict(src, tgt)
+            if hasattr(self.model, "d_predict"):
+                d_outputs, d_targets = self.model.d_predict(src, tgt)
+            else:
+                d_outputs, d_targets = self.model.predict(src, tgt)
 
             d_tp += (d_outputs[d_targets == 1] == 1).sum().item()
             d_fp_ = (d_outputs[d_targets == 0] == 1).sum().item()

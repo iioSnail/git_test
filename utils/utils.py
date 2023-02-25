@@ -55,10 +55,11 @@ def render_color_for_text(text, indices, color='red'):
         'yellow': '33'
     }
 
-    char_list = list(text.replace(" ", ""))
+    text = text.replace(" ", "")
+    char_list = list(text)
     for i in range(len(indices)):
         if indices[i]:
-            char_list[i] = "\033[" + color_indices.get(color, '30') + "m" + char_list[i] + "\033[0m"
+            char_list[i] = "\033[" + color_indices.get(color, '30') + "m" + text[i] + "\033[0m"
 
     return ''.join(char_list)
 

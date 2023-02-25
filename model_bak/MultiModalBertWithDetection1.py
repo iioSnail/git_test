@@ -463,20 +463,6 @@ class MultiModalBertCorrectionModel(nn.Module):
         #     print()
         return ''.join(outputs)
 
-    def d_predict(self, src, tgt=None):
-        src = src.replace(" ", "")
-        src = " ".join(src)
-        tgt = tgt.replace(" ", "")
-        tgt = " ".join(tgt)
-        inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
-        targets = self.tokenizer(tgt, return_tensors='pt').to(self.args.device)
-
-        _, d_outputs = self.forward(inputs)
-        d_targets = (inputs['input_ids'] != targets['input_ids']).int().squeeze()
-        d_outputs = (torch.sigmoid(d_outputs.squeeze()) > 0.5).int()
-        return d_outputs[1:-1], d_targets[1:-1]
-
-
 
 def merge_multi_modal_bert():
     parser = argparse.ArgumentParser()
