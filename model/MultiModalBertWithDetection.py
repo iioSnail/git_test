@@ -367,6 +367,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         params = []
 
         def _init_params(parameters, lr):
+            _params = []
             for key, value in parameters:
                 if not value.requires_grad:
                     continue
@@ -376,7 +377,8 @@ class MultiModalBertCorrectionModel(nn.Module):
                 #     lr = 4e-6
                 #     weight_decay = 0
 
-                return [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+                _params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+            return _params
 
         params += _init_params(self.bert.named_parameters(), 2e-6)
         params += _init_params(self.head.named_parameters(), 2e-4)
@@ -388,8 +390,8 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def forward(self, inputs):
         batch_size, sequence_num = inputs['input_ids'].size()
-        outputs = self.bert(**inputs).last_hidden_state
-        head_outputs = self.head(outputs)
+        last_hidden_state = self.bert(**inputs).last_hidden_state
+        head_outputs = self.head(last_hidden_state)
 
         outputs = self.cls(head_outputs)
         detection_outputs = self.detection_cls(head_outputs).squeeze(-1)
