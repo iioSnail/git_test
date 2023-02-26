@@ -1,3 +1,4 @@
+# FIXME d_loss忘了对pad进行mask了
 模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。Detection模块的head也是macbert的head，detection模块在head前一层把特征加到correction模块中去。d_loss和loss分别是0.3,0.7。
 代码：MultiModalBertWithDetection1.py
 执行情况：第14个epoch我手动停了，看起来不会再增长了，虽然还没有过拟合训练集。效果比之前要好1个点，但并没有好太多。
@@ -22,6 +23,7 @@ Character-level Correct Acc: 0.9813, P: 0.5749, R: 0.4399, F1: 0.4984
 Sentence-level Detect Acc: 0.6445, P: 0.7115, R: 0.4752, F1: 0.5699
 Sentence-level Correct Acc: 0.6018, P: 0.6688, R: 0.3890, F1: 0.4919
 
+# FIXME d_loss忘了对pad进行mask了
 模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。Detection模块的head也是macbert的head，detection模块在head前一层把特征加到correction模块中去。d_loss和loss分别是0.3,0.7。
 调整为：0.15的loss和0.75的soft_loss
 执行情况：第9个epoch我手动停了，看起来不会再增长了，虽然还没有过拟合训练集。效果不如0.99soft_loss好
@@ -43,6 +45,7 @@ Sentence-level Correct Acc: 0.5673, P: 0.6075, R: 0.3578, F1: 0.4503
 Detection Eval情况：看起来Detection模块是有被训练的
 Detection Character-level Precision 0.5966101694905143, Recall 0.49787835926379365, F1_Score 0.5427910557869634
 
+# FIXME d_loss忘了对pad进行mask了
 模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。Detection模块的head也是macbert的head。d_loss和loss分别是0.3,0.7。
 相比相加融合，本次使用了concat进行融合（因为concat了，correction的head的网络会变宽）。
 执行情况：执行了10个epoch后手动停了，很难再涨了。效果相比相加融合差了0.5个点
@@ -64,3 +67,5 @@ Sentence-level Detect Acc: 0.6336, P: 0.6983, R: 0.4587, F1: 0.5537
 Sentence-level Correct Acc: 0.5836, P: 0.6436, R: 0.3578, F1: 0.4599
 Detection Eval情况：看起来Detection模块是有被训练的，但效果不够好。
 Detection Character-level Precision 0.5982608695641769, Recall 0.48656294200779837, F1_Score 0.5366614659631219
+
+

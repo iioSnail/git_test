@@ -35,3 +35,6 @@ Character-level Detect Acc: 0.9853, P: 0.8620, R: 0.3621, F1: 0.5100
 Character-level Correct Acc: 0.9848, P: 0.8530, R: 0.3366, F1: 0.4828
 Sentence-level Detect Acc: 0.6645, P: 0.8964, R: 0.3651, F1: 0.5189
 Sentence-level Correct Acc: 0.6536, P: 0.8905, R: 0.3431, F1: 0.4954
+Detection Eval情况：完全没学到怎么detection，但又感觉不太可能，但又没看到报加载模型失败，后续还得在看看。# FIXME
+Detection Character-level Precision 0.021064863093286625, Recall 0.9999999999985856, F1_Score 0.041260577724397104
+

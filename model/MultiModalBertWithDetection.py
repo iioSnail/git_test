@@ -396,7 +396,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         outputs += torch.concat([detection_head_outputs, zero_pad], dim=-1)
         detection_outputs = self.detection_cls.decoder(detection_head_outputs)
         outputs = self.cls(outputs)
-        return outputs, detection_outputs
+        detection_outputs = torch.sigmoid(detection_outputs.squeeze(-1))
+        return outputs, detection_outputs * inputs['attention_mask']
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
     #     targets = targets['input_ids']
@@ -420,7 +421,6 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def compute_loss(self, outputs, targets, inputs, detect_targets, *args, **kwargs):
         outputs, detect_outputs = outputs
-        detect_outputs = torch.sigmoid(detect_outputs.squeeze(-1))
 
         loss = self.loss_fnt(outputs, targets, inputs)
         d_loss = self.detect_loss_fnt(detect_outputs, detect_targets)
@@ -473,7 +473,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         _, d_outputs = self.forward(inputs)
         d_targets = (inputs['input_ids'] != targets['input_ids']).int().squeeze()
-        d_outputs = (torch.sigmoid(d_outputs.squeeze()) > 0.5).int()
+        d_outputs = (d_outputs.squeeze() > 0.5).int()
         return d_outputs[1:-1], d_targets[1:-1]
 
 
