@@ -43,4 +43,24 @@ Sentence-level Correct Acc: 0.5673, P: 0.6075, R: 0.3578, F1: 0.4503
 Detection Eval情况：看起来Detection模块是有被训练的
 Detection Character-level Precision 0.5966101694905143, Recall 0.49787835926379365, F1_Score 0.5427910557869634
 
-
+模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。Detection模块的head也是macbert的head。d_loss和loss分别是0.3,0.7。
+相比相加融合，本次使用了concat进行融合（因为concat了，correction的head的网络会变宽）。
+执行情况：执行了10个epoch后手动停了，很难再涨了。效果相比相加融合差了0.5个点
+Correction Precision: 0.7256157635466193, Recall: 0.5529279279278241, F1-Score: 0.6276097140381738
+Correction Precision: 0.8818204676889912, Recall: 0.6582207207205971, F1-Score: 0.7537882853781911
+Correction Precision: 0.9210718635807743, Recall: 0.7087160262416665, F1-Score: 0.8010593215422169
+Correction Precision: 0.9278375149340673, Recall: 0.7281080067502853, F1-Score: 0.8159277154138053
+Correction Precision: 0.9314649081486265, Recall: 0.7423048048046654, F1-Score: 0.8261959468636398
+Correction Precision: 0.9310183012667923, Recall: 0.7443256424684404, F1-Score: 0.8272698837966649
+Correction Precision: 0.9331456720617092, Recall: 0.7455022488754225, F1-Score: 0.8288363366245247
+Correction Precision: 0.9333958724200436, Recall: 0.7458770614691255, F1-Score: 0.8291666661727284
+Correction Precision: 0.9344454887215848, Recall: 0.7458739684919831, F1-Score: 0.8295786394727489
+Epoch 9 Training: 100% 250/250 [03:56<00:00,  1.06it/s, loss=0.00626, c_precision=0.995, c_recall=0.924, c_f1_score=0.958]
+Correction Precision: 0.9338494018294783, Recall: 0.7462043111526249, F1-Score: 0.8295478219690776
+Eval情况：Eval情况也不如相加融合
+Character-level Detect Acc: 0.9835, P: 0.6226, R: 0.5530, F1: 0.5858
+Character-level Correct Acc: 0.9808, P: 0.5587, R: 0.4243, F1: 0.4823
+Sentence-level Detect Acc: 0.6336, P: 0.6983, R: 0.4587, F1: 0.5537
+Sentence-level Correct Acc: 0.5836, P: 0.6436, R: 0.3578, F1: 0.4599
+Detection Eval情况：看起来Detection模块是有被训练的，但效果不够好。
+Detection Character-level Precision 0.5982608695641769, Recall 0.48656294200779837, F1_Score 0.5366614659631219

@@ -154,6 +154,7 @@ class MDCSpellModel(nn.Module):
         return outputs[0].argmax(dim=2)
 
     def predict(self, sentence):
+        sentence = sentence.replace(" ", "")
         sentence = ' '.join(sentence)
         tokenizer = self.correction_network.tokenizer
         inputs = tokenizer(sentence, padding=True, return_tensors='pt').to(self.args.device)
