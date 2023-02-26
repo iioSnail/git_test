@@ -117,4 +117,30 @@ Sentence-level Correct Acc: 0.6064, P: 0.6830, R: 0.3835, F1: 0.4912
 Detection Eval情况：也比之前好一点，但不多
 Detection Character-level Precision 0.5806916426504601, Recall 0.5700141442707638, F1_Score 0.5753033542458312
 
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。d_loss和loss分别是0.3,0.7。Detection模块和Correction模块前（BERT后）加了一个共同的Head，然后Detection和Correction各学各的，目的是：让head具有改错和纠错的共同特征。
+增加了残差链接，bert后的hidden_state加到了head的输出上。
+执行情况：训练了15个epoch后停了。比不加残差连接好一点
+Correction Precision: 0.4171299155856666, Recall: 0.37784408802678515, F1-Score: 0.3965162926805152
+Correction Precision: 0.7893655278703341, Recall: 0.5726798360043658, F1-Score: 0.6637865855369198
+Correction Precision: 0.8806731259559203, Recall: 0.6438024231126479, F1-Score: 0.7438354684469815
+Correction Precision: 0.9032727272725082, Recall: 0.6937255632097014, F1-Score: 0.7847514738134136
+Correction Precision: 0.9246411483251376, Recall: 0.7201416061112874, F1-Score: 0.8096784325231665
+Correction Precision: 0.9296838131191765, Recall: 0.7349375116581356, F1-Score: 0.8209188452197674
+Correction Precision: 0.9337856808608015, Recall: 0.7427880141446598, F1-Score: 0.8274074836982942
+Correction Precision: 0.9353257062804259, Recall: 0.7468307233406511, F1-Score: 0.8305172587576867
+Correction Precision: 0.934433852592203, Recall: 0.7492542878447521, F1-Score: 0.8316606306491767
+Correction Precision: 0.9353939112245094, Recall: 0.749813710879145, F1-Score: 0.8323854818758633
+Correction Precision: 0.9365706319700425, Recall: 0.7516315495057334, F1-Score: 0.8339712418767804
+Correction Precision: 0.9360613810739511, Recall: 0.7505592841161911, F1-Score: 0.8331091562570399
+Correction Precision: 0.9356263072272981, Recall: 0.7501397428729737, F1-Score: 0.8326783862690661
+Correction Precision: 0.936363636363418, Recall: 0.7498599962664271, F1-Score: 0.8327977604679011
+Epoch 14 Training: 100% 250/250 [03:32<00:00,  1.18it/s, loss=0.00569, c_precision=0.993, c_recall=0.902, c_f1_score=0.945]
+Correction Precision: 0.9354688950787057, Recall: 0.7499069594341737, F1-Score: 0.8324726291278679
+Eval情况：首次突破50大关，比不加残差链接好了2个点。
+Character-level Detect Acc: 0.9848, P: 0.6701, R: 0.5488, F1: 0.6034
+Character-level Correct Acc: 0.9828, P: 0.6262, R: 0.4526, F1: 0.5255
+Sentence-level Detect Acc: 0.6636, P: 0.7410, R: 0.4936, F1: 0.5925
+Sentence-level Correct Acc: 0.6200, P: 0.7016, R: 0.4055, F1: 0.5140
+Detection Eval情况：Detection情况也有所好转，但不多。
+Detection Character-level Precision 0.6168224299055813, Recall 0.5601131541717679, F1_Score 0.5871015562089635
 
