@@ -1,5 +1,5 @@
 # FIXME d_loss忘了对pad进行mask了
-模型：模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。Detection模块的head也是macbert的head，detection模块在head前一层把特征加到correction模块中去。d_loss和loss分别是0.3,0.7。
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。Detection模块的head也是macbert的head，detection模块在head前一层把特征加到correction模块中去。d_loss和loss分别是0.3,0.7。
 代码：MultiModalBertWithDetection1.py
 执行情况：第14个epoch我手动停了，看起来不会再增长了，虽然还没有过拟合训练集。效果比之前要好1个点，但并没有好太多。
 Correction Precision: 0.4484823456534279, Recall: 0.40712277413300707, F1-Score: 0.42680290773452917
@@ -69,3 +69,27 @@ Detection Eval情况：看起来Detection模块是有被训练的，但效果不
 Detection Character-level Precision 0.5982608695641769, Recall 0.48656294200779837, F1_Score 0.5366614659631219
 
 
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。Detection模块的head也是macbert的head，detection模块在head前一层把特征加到correction模块中去。d_loss和loss分别是0.3,0.7。
+将Detection的head的激活函数从GELU改为了Tanh。
+执行情况：13个epoch后停了。效果不如GELU好。
+Correction Precision: 0.45574582215794185, Recall: 0.4140581068415343, F1-Score: 0.43390296551952723
+Correction Precision: 0.8093487394955858, Recall: 0.5779111194448568, F1-Score: 0.6743244716721759
+Correction Precision: 0.8814328960643589, Recall: 0.6561502347416608, F1-Score: 0.7522876515721499
+Correction Precision: 0.9117073170729483, Recall: 0.6997379258703295, F1-Score: 0.7917814017537705
+Correction Precision: 0.9258724428397289, Recall: 0.7218990429722796, F1-Score: 0.8112610707854322
+Correction Precision: 0.930472308798626, Recall: 0.7281425891180622, F1-Score: 0.8169666345983114
+Correction Precision: 0.9325681492106808, Recall: 0.7306107156236922, F1-Score: 0.8193277305996371
+Correction Precision: 0.9332376166544787, Recall: 0.731844623756665, F1-Score: 0.8203618000961195
+Correction Precision: 0.9330143540667624, Recall: 0.7308845577210024, F1-Score: 0.8196721306547473
+Correction Precision: 0.9336357125803452, Recall: 0.7332208473939382, F1-Score: 0.8213798167915247
+Correction Precision: 0.9333333333331102, Recall: 0.7318718381111613, F1-Score: 0.8204158785241592
+Correction Precision: 0.9340028694402357, Recall: 0.7321462043110155, F1-Score: 0.8208469050446255
+Epoch 12 Training: 100% 250/250 [03:33<00:00,  1.17it/s, loss=0.0215, c_precision=0.986, c_recall=0.82, c_f1_score=0.895]
+Correction Precision: 0.93307839388123, Recall: 0.731497095746537, F1-Score: 0.8200819236747898
+Eval情况：不太行
+Character-level Detect Acc: 0.9822, P: 0.5864, R: 0.5233, F1: 0.5531
+Character-level Correct Acc: 0.9798, P: 0.5272, R: 0.4116, F1: 0.4623
+Sentence-level Detect Acc: 0.6218, P: 0.6817, R: 0.4440, F1: 0.5378
+Sentence-level Correct Acc: 0.5764, P: 0.6295, R: 0.3523, F1: 0.4518
+Detection Eval情况：
+Detection Character-level Precision 0.5947281713334519, Recall 0.5106082036767884, F1_Score 0.5494672749967322

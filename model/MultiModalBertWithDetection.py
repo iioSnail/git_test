@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.utils.rnn import pad_sequence
+from transformers.activations import GELUActivation
 
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
@@ -337,8 +338,15 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.args = args
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer(bert_path)
-        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
-        self.detection_cls = BertOnlyMLMHead(768, 1, activation='tanh')
+
+        self.head = nn.Sequential(
+            nn.Linear(self.bert.hidden_size, self.bert.hidden_size),
+            GELUActivation(),
+            nn.LayerNorm(self.bert.hidden_size, eps=1e-12, elementwise_affine=True),
+        )
+
+        self.cls = BertOnlyMLMHead(self.bert.hidden_size, len(self.tokenizer))
+        self.detection_cls = BertOnlyMLMHead(self.bert.hidden_size, 1)
 
         self.loss_fnt = CscFocalLoss(alpha=0.99)
         self.detect_loss_fnt = BinaryFocalLoss()
@@ -346,44 +354,34 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
 
-        for layer in self.cls.predictions:
+        self._init_parameters(self.head)
+        self._init_parameters(self.cls.predictions)
+        self._init_parameters(self.detection_cls.predictions)
+
+    def _init_parameters(self, layers):
+        for layer in layers:
             if isinstance(layer, nn.Linear):
                 nn.init.orthogonal_(layer.weight, gain=1)
 
     def make_optimizer(self):
         params = []
-        for key, value in self.bert.named_parameters():
-            if not value.requires_grad:
-                continue
-            lr = 2e-6
-            weight_decay = 0.01
-            # 感觉用处不是很大
-            # if "bias" in key:
-            #     lr = 4e-6
-            #     weight_decay = 0
 
-            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+        def _init_params(parameters, lr):
+            for key, value in parameters:
+                if not value.requires_grad:
+                    continue
+                weight_decay = 0.01
+                # 感觉用处不是很大
+                # if "bias" in key:
+                #     lr = 4e-6
+                #     weight_decay = 0
 
+                return [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
-        for key, value in self.cls.named_parameters():
-            if not value.requires_grad:
-                continue
-            lr = 2e-4
-            weight_decay = 0.01
-            # if "bias" in key:
-            #     lr = 4e-4
-            #     weight_decay = 0
-            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
-
-        for key, value in self.detection_cls.named_parameters():
-            if not value.requires_grad:
-                continue
-            lr = 2e-4
-            weight_decay = 0.01
-            # if "bias" in key:
-            #     lr = 4e-4
-            #     weight_decay = 0
-            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+        params += _init_params(self.bert.named_parameters(), 2e-6)
+        params += _init_params(self.head.named_parameters(), 2e-4)
+        params += _init_params(self.cls.named_parameters(), 2e-4)
+        params += _init_params(self.detection_cls.named_parameters(), 2e-4)
 
         optimizer = torch.optim.AdamW(params)
         return optimizer
@@ -391,12 +389,12 @@ class MultiModalBertCorrectionModel(nn.Module):
     def forward(self, inputs):
         batch_size, sequence_num = inputs['input_ids'].size()
         outputs = self.bert(**inputs).last_hidden_state
-        detection_head_outputs = self.detection_cls.head(outputs[:, :, :768].clone())
-        zero_pad = torch.zeros(batch_size, sequence_num, outputs.size(-1) - 768, device=outputs.device)
-        outputs += torch.concat([detection_head_outputs, zero_pad], dim=-1)
-        detection_outputs = self.detection_cls.decoder(detection_head_outputs)
-        outputs = self.cls(outputs)
-        detection_outputs = torch.sigmoid(detection_outputs.squeeze(-1))
+        head_outputs = self.head(outputs)
+
+        outputs = self.cls(head_outputs)
+        detection_outputs = self.detection_cls(head_outputs).squeeze(-1)
+        detection_outputs = detection_outputs.sigmoid()
+
         return outputs, detection_outputs * inputs['attention_mask']
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
@@ -475,7 +473,6 @@ class MultiModalBertCorrectionModel(nn.Module):
         d_targets = (inputs['input_ids'] != targets['input_ids']).int().squeeze()
         d_outputs = (d_outputs.squeeze() > 0.5).int()
         return d_outputs[1:-1], d_targets[1:-1]
-
 
 
 def merge_multi_modal_bert():
