@@ -125,6 +125,8 @@ class MDCSpellModel(nn.Module):
         # 构造Detection Network
         self.detection_network = DetectionNetwork(position_embeddings, transformer, hidden_size, args)
 
+        self.tokenizer = self.correction_network.tokenizer
+
         self.criteria = MDCSpellLoss()
 
     def forward(self, inputs):
@@ -161,3 +163,16 @@ class MDCSpellModel(nn.Module):
         c_outputs, _ = self.forward(inputs)
         c_output = c_outputs.argmax(2).squeeze()[1:-1]
         return tokenizer.decode(c_output).replace(" ", "")
+
+    def d_predict(self, src, tgt=None):
+        src = src.replace(" ", "")
+        src = " ".join(src)
+        tgt = tgt.replace(" ", "")
+        tgt = " ".join(tgt)
+        inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
+        targets = self.tokenizer(tgt, return_tensors='pt').to(self.args.device)
+
+        _, d_outputs = self.forward(inputs)
+        d_targets = (inputs['input_ids'] != targets['input_ids']).int().squeeze()
+        d_outputs = (torch.sigmoid(d_outputs.squeeze()) > 0.5).int()
+        return d_outputs[1:-1], d_targets[1:-1]

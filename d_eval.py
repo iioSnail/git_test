@@ -9,6 +9,7 @@ from model.BertDetectionModel import BertDetectionModel
 from model.CLModel import DetectionCLModel
 from model.CSCModelV1 import CSCModel
 from model.KNNModel import DetectionKNNModel
+from model.MDCSpell import MDCSpellModel
 from utils.dataset import CSCTestDataset
 
 from train import Train
@@ -36,6 +37,8 @@ class Evaluation(object):
         elif self.args.model == 'MultiModalBertWithDetection':
             from model.MultiModalBertWithDetection import MultiModalBertCorrectionModel
             self.model = MultiModalBertCorrectionModel(self.args).eval()
+        elif self.args.model == 'MDCSpell':
+            self.model = MDCSpellModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
