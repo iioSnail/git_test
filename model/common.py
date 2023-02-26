@@ -80,15 +80,25 @@ class BERT(nn.Module):
 
 
 class BertOnlyMLMHead(nn.Module):
-    def __init__(self, hidden_size, vocab_size):
+    def __init__(self, hidden_size, vocab_size, activation='gelu'):
         super().__init__()
         self.decoder = nn.Linear(hidden_size, vocab_size, bias=False)
         self.bias = nn.Parameter(torch.zeros(vocab_size))
         self.decoder.bias = self.bias
 
+        self.activation = None
+        if activation == 'gelu':
+            self.activation = GELUActivation()
+        elif activation == 'tanh':
+            self.activation = nn.Tanh()
+        elif activation == 'sigmoid':
+            self.activation = nn.Sigmoid()
+        else:
+            raise Exception("Please add activation function here.")
+
         self.head = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
-            GELUActivation(),
+            self.activation,
             nn.LayerNorm(hidden_size, eps=1e-12, elementwise_affine=True),
         )
 

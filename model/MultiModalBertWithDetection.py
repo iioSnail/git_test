@@ -337,8 +337,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.args = args
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer(bert_path)
-        self.cls = BertOnlyMLMHead(768 + 8 + 56 + 768, len(self.tokenizer))
-        self.detection_cls = BertOnlyMLMHead(768, 1)
+        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
+        self.detection_cls = BertOnlyMLMHead(768, 1, activation='tanh')
 
         self.loss_fnt = CscFocalLoss(alpha=0.99)
         self.detect_loss_fnt = BinaryFocalLoss()
@@ -392,8 +392,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         batch_size, sequence_num = inputs['input_ids'].size()
         outputs = self.bert(**inputs).last_hidden_state
         detection_head_outputs = self.detection_cls.head(outputs[:, :, :768].clone())
-        outputs = torch.concat([outputs, detection_head_outputs], dim=-1)
-
+        zero_pad = torch.zeros(batch_size, sequence_num, outputs.size(-1) - 768, device=outputs.device)
+        outputs += torch.concat([detection_head_outputs, zero_pad], dim=-1)
         detection_outputs = self.detection_cls.decoder(detection_head_outputs)
         outputs = self.cls(outputs)
         return outputs, detection_outputs
