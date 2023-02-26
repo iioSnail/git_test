@@ -144,3 +144,27 @@ Sentence-level Correct Acc: 0.6200, P: 0.7016, R: 0.4055, F1: 0.5140
 Detection Eval情况：Detection情况也有所好转，但不多。
 Detection Character-level Precision 0.6168224299055813, Recall 0.5601131541717679, F1_Score 0.5871015562089635
 
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。d_loss和loss分别是0.3,0.7。Detection模块和Correction模块前（BERT后）加了一个共同的Head，然后Detection和Correction各学各的，目的是：让head具有改错和纠错的共同特征。增加了残差链接，bert后的hidden_state加到了head的输出上。
+Correct模型融合了Detection的特征。Detection head的输出加到了Head的输出上后，送给Correction的预测层。
+执行情况：执行了13个epoch后手动停了，感觉有没有这个效果没啥差别，都是0.832左右
+Correction Precision: 0.4183572976166203, Recall: 0.3961208504288705, F1-Score: 0.40693552972349617
+Correction Precision: 0.78684807256216, Recall: 0.5819977636972452, F1-Score: 0.669094804010251
+Correction Precision: 0.8730836893689689, Recall: 0.6475302889094785, F1-Score: 0.7435787666341294
+Correction Precision: 0.8905318387787048, Recall: 0.6952150437533615, F1-Score: 0.780844834304578
+Correction Precision: 0.9216203259825211, Recall: 0.7164151294949289, F1-Score: 0.8061641676594757
+Correction Precision: 0.9274952919018531, Recall: 0.7349375116581356, F1-Score: 0.8200645223497053
+Correction Precision: 0.9304911955512208, Recall: 0.7474409082447891, F1-Score: 0.8289813185273502
+Correction Precision: 0.931090487238763, Recall: 0.7481357196120901, F1-Score: 0.829646474593628
+Correction Precision: 0.9318549318547165, Recall: 0.7520507084264071, F1-Score: 0.832353244115041
+Correction Precision: 0.9325011558019111, Recall: 0.7523312196940036, F1-Score: 0.8327828236178495
+Correction Precision: 0.9325790810434235, Recall: 0.7527021990307952, F1-Score: 0.8330411462519406
+Epoch 12 Training: 100% 250/250 [03:26<00:00,  1.21it/s, loss=0.00722, c_precision=0.991, c_recall=0.925, c_f1_score=0.957]
+Correction Precision: 0.9321016166279602, Recall: 0.7522833178004189, F1-Score: 0.8325941201862898
+Eval情况：确实没啥差别。
+Character-level Detect Acc: 0.9845, P: 0.6545, R: 0.5601, F1: 0.6037
+Character-level Correct Acc: 0.9823, P: 0.6064, R: 0.4554, F1: 0.5202
+Sentence-level Detect Acc: 0.6655, P: 0.7373, R: 0.5046, F1: 0.5991
+Sentence-level Correct Acc: 0.6173, P: 0.6937, R: 0.4073, F1: 0.5133
+Detection Eval情况：甚至差了1个点。这也可以理解，因为被干扰了。
+Detection Character-level Precision 0.5922038980500867, Recall 0.5586987270147684, F1_Score 0.5749636093976944

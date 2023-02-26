@@ -345,7 +345,7 @@ class MultiModalBertCorrectionModel(nn.Module):
             nn.LayerNorm(self.bert.hidden_size, eps=1e-12, elementwise_affine=True),
         )
 
-        self.cls = BertOnlyMLMHead(self.bert.hidden_size, len(self.tokenizer))
+        self.cls = BertOnlyMLMHead(self.bert.hidden_size + 1, len(self.tokenizer))
         self.detection_cls = BertOnlyMLMHead(self.bert.hidden_size, 1)
 
         self.loss_fnt = CscFocalLoss(alpha=0.99)
@@ -401,7 +401,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         detection_outputs = detection_outputs.sigmoid()
 
-        outputs = self.cls(head_outputs + d_head_outputs)
+        outputs = self.cls(torch.concat([head_outputs, detection_outputs.unsqueeze(-1)], dim=-1))
         return outputs, detection_outputs * inputs['attention_mask']
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
