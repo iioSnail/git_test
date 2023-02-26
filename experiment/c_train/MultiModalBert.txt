@@ -1,4 +1,3 @@
-
 模型：MultiModalBert，随便弄的，glyph和pinyin信息大概都是75%。
 执行情况：花费2个多小时
 Correction Precision: 0.0787985865724312, Recall: 0.16484938089074758, F1-Score: 0.10662841388307617
