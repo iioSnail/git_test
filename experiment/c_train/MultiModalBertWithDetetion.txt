@@ -93,3 +93,28 @@ Sentence-level Detect Acc: 0.6218, P: 0.6817, R: 0.4440, F1: 0.5378
 Sentence-level Correct Acc: 0.5764, P: 0.6295, R: 0.3523, F1: 0.4518
 Detection Eval情况：
 Detection Character-level Precision 0.5947281713334519, Recall 0.5106082036767884, F1_Score 0.5494672749967322
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。d_loss和loss分别是0.3,0.7。
+Detection模块和Correction模块前（BERT后）加了一个共同的Head，然后Detection和Correction各学各的，目的是：让head具有改错和纠错的共同特征。
+代码：MultiModalBertWithDetection2.py
+执行情况：10个epoch后停了。Wang271K上并没有好太多。
+Correction Precision: 0.4254560704549328, Recall: 0.3784035807533796, F1-Score: 0.40055275836058174
+Correction Precision: 0.7923017308187051, Recall: 0.5715616846812203, F1-Score: 0.6640684199957945
+Correction Precision: 0.8816223067171403, Recall: 0.6482758620688446, F1-Score: 0.747153597792889
+Correction Precision: 0.9038508113342445, Recall: 0.6948426736174464, F1-Score: 0.7856842100346964
+Correction Precision: 0.9245689655170198, Recall: 0.7193963107880157, F1-Score: 0.8091795028084671
+Correction Precision: 0.9300782175868854, Recall: 0.7319529938442955, F1-Score: 0.8192066800914851
+Correction Precision: 0.9329425556855959, Recall: 0.7405546249765976, F1-Score: 0.8256899766801242
+Correction Precision: 0.9343611305767496, Recall: 0.7457121551079892, F1-Score: 0.8294453079561062
+Correction Precision: 0.9344569288387324, Recall: 0.7442207307977732, F1-Score: 0.8285595677918448
+Epoch 9 Training: 100% 250/250 [03:29<00:00,  1.19it/s, loss=0.00584, c_precision=0.991, c_recall=0.906, c_f1_score=0.947]
+Correction Precision: 0.934096751577253, Recall: 0.7445976154991161, F1-Score: 0.828651393722018
+Eval情况：这个比MultiModalBertWithDetection1.py好了一丢丢（可以忽略不计）
+Character-level Detect Acc: 0.9842, P: 0.6514, R: 0.5417, F1: 0.5915
+Character-level Correct Acc: 0.9822, P: 0.6050, R: 0.4441, F1: 0.5122
+Sentence-level Detect Acc: 0.6500, P: 0.7260, R: 0.4716, F1: 0.5717
+Sentence-level Correct Acc: 0.6064, P: 0.6830, R: 0.3835, F1: 0.4912
+Detection Eval情况：也比之前好一点，但不多
+Detection Character-level Precision 0.5806916426504601, Recall 0.5700141442707638, F1_Score 0.5753033542458312
+
+

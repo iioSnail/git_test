@@ -393,8 +393,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         last_hidden_state = self.bert(**inputs).last_hidden_state
         head_outputs = self.head(last_hidden_state)
 
-        outputs = self.cls(head_outputs + last_hidden_state)
-        detection_outputs = self.detection_cls(head_outputs + last_hidden_state).squeeze(-1)
+        outputs = self.cls(head_outputs)
+        detection_outputs = self.detection_cls(head_outputs).squeeze(-1)
         detection_outputs = detection_outputs.sigmoid()
 
         return outputs, detection_outputs * inputs['attention_mask']
