@@ -362,7 +362,6 @@ class MultiModalBertCorrectionModel(nn.Module):
 
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
-
         for key, value in self.cls.named_parameters():
             if not value.requires_grad:
                 continue
@@ -379,7 +378,7 @@ class MultiModalBertCorrectionModel(nn.Module):
     def forward(self, inputs, targets, detection_targets):
         outputs = self.bert(**inputs).last_hidden_state
         # 把该字是否正确这个特征加到里面去。
-        return self.cls(outputs)
+        return self.cls(outputs), targets
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
     #     targets = targets['input_ids']
@@ -402,9 +401,22 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     return loss
 
     def compute_loss(self, outputs, targets, inputs, detection_targets, *args, **kwargs):
+        outputs, _ = outputs
         targets = targets['input_ids'].clone()
         targets[(~detection_targets.bool()) & (targets != 0)] = 1
         return self.loss_fnt(outputs.view(-1, len(self.tokenizer)), targets.view(-1))
+
+    def extract_outputs(self, outputs):
+        outputs, targets = outputs
+        targets = targets['input_ids']
+        outputs = outputs.argmax(-1)
+
+        for i in range(len(outputs)):
+            for j in range(len(outputs[i])):
+                if outputs[i][j] == 1:
+                    outputs[i][j] = targets[i][j]
+
+        return outputs
 
     # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
     #     """
