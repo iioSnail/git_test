@@ -44,7 +44,7 @@ class FocalLoss(nn.Module):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         if isinstance(alpha, list):
-            self.alpha = torch.Tensor(alpha, device=device)
+            self.alpha = torch.Tensor(alpha).to(device)
         else:
             self.alpha = alpha
         self.epsilon = epsilon

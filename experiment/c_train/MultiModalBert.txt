@@ -537,3 +537,24 @@ Character-level Correct Acc: 0.9823, P: 0.6163, R: 0.4272, F1: 0.5046
 Sentence-level Detect Acc: 0.6564, P: 0.7393, R: 0.4734, F1: 0.5772
 Sentence-level Correct Acc: 0.6136, P: 0.6987, R: 0.3872, F1: 0.4982
 
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1
+对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。
+执行情况：执行了11个epoch手动停了，看起来效果不错。
+Correction Precision: 0.9538606403004201, Recall: 0.1888868170799573, F1-Score: 0.31533073902357184
+Correction Precision: 0.9680511182105189, Recall: 0.5084840574304478, F1-Score: 0.6667481658074429
+Correction Precision: 0.9744047619044719, Recall: 0.6100242220978926, F1-Score: 0.7503151135402522
+Correction Precision: 0.9756367663341706, Recall: 0.656238361266172, F1-Score: 0.7846804715742007
+Correction Precision: 0.9694323144102314, Recall: 0.7034482758619378, F1-Score: 0.8152948796161581
+Correction Precision: 0.9730964467002606, Recall: 0.7152985074625531, F1-Score: 0.8245161285437375
+Correction Precision: 0.9738285144563874, Recall: 0.727696032780643, F1-Score: 0.8329602382907986
+Correction Precision: 0.9733698357389314, Recall: 0.7288483041370241, F1-Score: 0.8335464615732259
+Correction Precision: 0.973684210526074, Recall: 0.7310344827584844, F1-Score: 0.8350899601189166
+Correction Precision: 0.9732342007432532, Recall: 0.731557377049044, F1-Score: 0.835265340358536
+Epoch 10 Training: 100% 250/250 [03:38<00:00,  1.14it/s, loss=0.0184, c_precision=0.99, c_recall=0.871, c_f1_score=0.927]
+Correction Precision: 0.9725519287831423, Recall: 0.733768656716281, F1-Score: 0.8364525728826465
+Eval情况：Eval情况相当不错，尤其是精准率提高了超多。没想到这么一个简单的改造可以提升这么多。
+Character-level Detect Acc: 0.9865, P: 0.7576, R: 0.5304, F1: 0.6240
+Character-level Correct Acc: 0.9842, P: 0.7115, R: 0.4187, F1: 0.5272
+Sentence-level Detect Acc: 0.6882, P: 0.7971, R: 0.4972, F1: 0.6124
+Sentence-level Correct Acc: 0.6336, P: 0.7536, R: 0.3872, F1: 0.5115
+

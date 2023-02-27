@@ -339,7 +339,11 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.tokenizer = BERT.get_tokenizer(bert_path)
         self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
 
-        self.loss_fnt = FocalLoss()
+        alpha = [0.75] * len(self.tokenizer)
+        alpha[0] = 0
+        alpha[1] = 0.25
+        self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
+
         self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
         self.args.multi_forward_args = True
