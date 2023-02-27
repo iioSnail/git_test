@@ -61,6 +61,7 @@ class FocalLoss(nn.Module):
         idx = target.view(-1, 1).long()
         one_hot_key = torch.zeros(idx.size(0), num_labels, dtype=torch.float32, device=idx.device)
         one_hot_key = one_hot_key.scatter_(1, idx, 1)
+        one_hot_key[:, 0] = 0  # ignore 0 index.
         logits = torch.softmax(input, dim=-1)
         loss = -self.alpha * one_hot_key * torch.pow((1 - logits), self.gamma) * (logits + self.epsilon).log()
         loss = loss.sum(1)

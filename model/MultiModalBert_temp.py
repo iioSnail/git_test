@@ -13,7 +13,7 @@ from torch.nn.utils.rnn import pad_sequence
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT, BertOnlyMLMHead
-from utils.loss import CscFocalLoss
+from utils.loss import CscFocalLoss, FocalLoss
 from utils.scheduler import PlateauScheduler
 from utils.str_utils import is_chinese
 from utils.utils import mock_args, mkdir
@@ -337,16 +337,9 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.args = args
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer(bert_path)
-        self.cls = BertOnlyMLMHead(768 + 8 + 56 + 1, len(self.tokenizer))
-        # self.cls = nn.Sequential(
-        #     nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=768 + 8 + 56, nhead=16, batch_first=True), num_layers=2),
-        #     nn.Linear(768 + 8 + 56, len(self.tokenizer)),
-        # )
+        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
 
-        self.criteria = nn.CrossEntropyLoss(ignore_index=0)
-        self.soft_criteria = nn.CrossEntropyLoss(ignore_index=0)
-        self.loss_fnt = CscFocalLoss(alpha=0.99)
-        self.bce_criteria = nn.BCELoss()
+        self.loss_fnt = FocalLoss()
         self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
         self.args.multi_forward_args = True
@@ -386,7 +379,6 @@ class MultiModalBertCorrectionModel(nn.Module):
     def forward(self, inputs, targets, detection_targets):
         outputs = self.bert(**inputs).last_hidden_state
         # 把该字是否正确这个特征加到里面去。
-        outputs = torch.concat([outputs, detection_targets.unsqueeze(-1)], dim=-1)
         return self.cls(outputs)
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
@@ -409,8 +401,10 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     loss = self.bce_criteria(outputs, targets_.float())
     #     return loss
 
-    def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
-        return self.loss_fnt(outputs, targets, inputs)
+    def compute_loss(self, outputs, targets, inputs, detection_targets, *args, **kwargs):
+        targets = targets['input_ids'].clone()
+        targets[(~detection_targets.bool()) & (targets != 0)] = 1
+        return self.loss_fnt(outputs.view(-1, len(self.tokenizer)), targets.view(-1))
 
     # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
     #     """
