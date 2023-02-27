@@ -558,3 +558,22 @@ Character-level Correct Acc: 0.9842, P: 0.7115, R: 0.4187, F1: 0.5272
 Sentence-level Detect Acc: 0.6882, P: 0.7971, R: 0.4972, F1: 0.6124
 Sentence-level Correct Acc: 0.6336, P: 0.7536, R: 0.3872, F1: 0.5115
 
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。
+对FocalLoss的alpha参数做了调整，index 1的alpha为0.25，其余为0.75
+执行情况：执行了9个epoch后手动停了。效果比使用默认alpha效果好一点（可忽略不计），可能alpha参数是锦上添花？
+Correction Precision: 0.8901560624244357, Recall: 0.27652433339543603, F1-Score: 0.42196613991419835
+Correction Precision: 0.9221222463540422, Recall: 0.5541674435948994, F1-Score: 0.69228977358168
+Correction Precision: 0.9445496348388032, Recall: 0.6506428172162007, F1-Score: 0.7705207409113309
+Correction Precision: 0.9514811031662535, Recall: 0.6938547486032227, F1-Score: 0.802498384177173
+Correction Precision: 0.945894182427353, Recall: 0.7364398881638887, F1-Score: 0.8281282745023366
+Correction Precision: 0.9450860240393718, Recall: 0.7481343283580694, F1-Score: 0.8351556800230961
+Correction Precision: 0.9535104364324113, Recall: 0.7487427826409482, F1-Score: 0.8388106411346029
+Correction Precision: 0.9518981372315604, Recall: 0.75232948192308, F1-Score: 0.840428853467335
+Correction Precision: 0.9537517697024648, Recall: 0.7534016775394681, F1-Score: 0.8418202640073881
+Epoch 9 Training: 100% 250/250 [03:37<00:00,  1.15it/s, loss=0.00484, c_precision=0.964, c_recall=0.911, c_f1_score=0.937]
+Correction Precision: 0.9540094339620391, Recall: 0.7535394932934513, F1-Score: 0.8420066606224532
+Eval情况：如果比较Character-level的话，没有变差。
+Character-level Detect Acc: 0.9856, P: 0.6777, R: 0.6068, F1: 0.6403
+Character-level Correct Acc: 0.9825, P: 0.6129, R: 0.4569, F1: 0.5235
+Sentence-level Detect Acc: 0.6727, P: 0.7342, R: 0.5321, F1: 0.6170
+Sentence-level Correct Acc: 0.6045, P: 0.6719, R: 0.3945, F1: 0.4971
