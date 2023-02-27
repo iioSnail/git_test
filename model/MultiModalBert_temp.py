@@ -375,10 +375,10 @@ class MultiModalBertCorrectionModel(nn.Module):
         optimizer = torch.optim.AdamW(params)
         return optimizer
 
-    def forward(self, inputs, targets, detection_targets):
+    def forward(self, inputs, *args, **kwargs):
         outputs = self.bert(**inputs).last_hidden_state
         # 把该字是否正确这个特征加到里面去。
-        return self.cls(outputs), targets
+        return self.cls(outputs), inputs['input_ids']
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
     #     targets = targets['input_ids']
@@ -407,14 +407,13 @@ class MultiModalBertCorrectionModel(nn.Module):
         return self.loss_fnt(outputs.view(-1, len(self.tokenizer)), targets.view(-1))
 
     def extract_outputs(self, outputs):
-        outputs, targets = outputs
-        targets = targets['input_ids']
+        outputs, input_ids = outputs
         outputs = outputs.argmax(-1)
 
         for i in range(len(outputs)):
             for j in range(len(outputs[i])):
                 if outputs[i][j] == 1:
-                    outputs[i][j] = targets[i][j]
+                    outputs[i][j] = input_ids[i][j]
 
         return outputs
 
@@ -439,16 +438,12 @@ class MultiModalBertCorrectionModel(nn.Module):
     def get_optimizer(self):
         return self.optimizer
 
-    def predict(self, src, tgt=None):
+    def predict(self, src):
         src = src.replace(" ", "")
         src = " ".join(src)
-        tgt = tgt.replace(" ", "")
-        tgt = " ".join(tgt)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
-        targets = self.tokenizer(tgt, return_tensors='pt').to(self.args.device)
-        detection_targets = (inputs['input_ids'] != targets['input_ids']).float()
-        outputs = self.forward(inputs, targets, detection_targets)
-        outputs = outputs.argmax(-1)
+        outputs = self.forward(inputs)
+        outputs = self.extract_outputs(outputs)
         outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
         outputs = [outputs[i] if len(outputs[i]) == 1 else src[i] for i in range(len(outputs))]
         # if ''.join(outputs) != tgt:   # 最后配合Detector，让softmax前5，用Detector来确定用哪一个
