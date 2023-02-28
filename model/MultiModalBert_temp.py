@@ -259,7 +259,8 @@ class MultiModalBertModel(nn.Module):
         self.hidden_size = self.bert.config.hidden_size + self.pinyin_feature_size + 56
 
         # 未初始化
-        self.forget_gate = nn.Linear(768 * 2, 768)
+        self.token_forget_gate = nn.Linear(768, 768)
+        self.hidden_forget_gate = nn.Linear(768, 768)
 
         self.pinyin_embedding_cache = None
         self.init_pinyin_embedding_cache()
@@ -318,8 +319,10 @@ class MultiModalBertModel(nn.Module):
         else:
             token_embeddings = self.bert.embeddings(input_ids)
         # 使用遗忘门过滤token_embeddings
-        forget_gate_weights = self.forget_gate(torch.concat([token_embeddings, bert_outputs.last_hidden_state], dim=-1))
-        token_embeddings = token_embeddings * forget_gate_weights.sigmoid()
+        token_embeddings = token_embeddings * self.token_forget_gate(token_embeddings).sigmoid()
+        bert_outputs.last_hidden_state = bert_outputs.last_hidden_state * self.hidden_forget_gate(
+            bert_outputs.last_hidden_state).sigmoid()
+
         bert_outputs.last_hidden_state += token_embeddings
 
         bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,

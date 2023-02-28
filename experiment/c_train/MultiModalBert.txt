@@ -613,3 +613,26 @@ Character-level Correct Acc: 0.9827, P: 0.6089, R: 0.5021, F1: 0.5504
 Sentence-level Detect Acc: 0.6445, P: 0.6944, R: 0.5046, F1: 0.5845
 Sentence-level Correct Acc: 0.6109, P: 0.6630, R: 0.4367, F1: 0.5265
 
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门
+遗忘门权重使用了concat(token_embedding, bert_hidden_states) 共同来计算。
+执行情况：13个epoch后early stop了。在Wang271K上的表现不如只使用token_embedding的遗忘门。
+Correction Precision: 0.9682179341651713, Recall: 0.3161601186063165, F1-Score: 0.4766694603719625
+Correction Precision: 0.9615728328862194, Recall: 0.5974458634091064, F1-Score: 0.7369863008969701
+Correction Precision: 0.9680738786277129, Recall: 0.6789415247963214, F1-Score: 0.7981292142204777
+Correction Precision: 0.9599027946534726, Recall: 0.731481481481346, F1-Score: 0.8302679974070003
+Correction Precision: 0.9674816045570929, Recall: 0.7545353572749436, F1-Score: 0.8478419131840166
+Correction Precision: 0.9696466682473394, Recall: 0.7570820218476657, F1-Score: 0.8502807231505692
+Correction Precision: 0.9675446848539586, Recall: 0.7614288358318042, F1-Score: 0.8522009316664321
+Correction Precision: 0.9674396814239944, Recall: 0.7646732086649204, F1-Score: 0.8541882104684123
+Correction Precision: 0.9675294117644782, Recall: 0.7623285131626321, F1-Score: 0.8527581911285925
+Correction Precision: 0.9678780773737472, Recall: 0.7631724902938134, F1-Score: 0.8534215417850872
+Correction Precision: 0.9678177120035311, Recall: 0.7626804887077447, F1-Score: 0.8530903815339743
+Correction Precision: 0.9679999999997722, Recall: 0.7622753381506833, F1-Score: 0.8529076391876211
+Epoch 12 Training: 100% 250/250 [03:40<00:00,  1.13it/s, loss=0.0172, c_precision=0.986, c_recall=0.858, c_f1_score=0.917]
+Correction Precision: 0.9676056338025897, Recall: 0.7631920014810658, F1-Score: 0.8533278123626096
+Eval情况：不如只使用token_embedding的遗忘门
+Character-level Detect Acc: 0.9835, P: 0.6240, R: 0.5446, F1: 0.5816
+Character-level Correct Acc: 0.9818, P: 0.5850, R: 0.4625, F1: 0.5166
+Sentence-level Detect Acc: 0.6264, P: 0.6727, R: 0.4789, F1: 0.5595
+Sentence-level Correct Acc: 0.5891, P: 0.6340, R: 0.4037, F1: 0.4933
