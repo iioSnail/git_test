@@ -169,3 +169,29 @@ Sentence-level Correct Acc: 0.6173, P: 0.6937, R: 0.4073, F1: 0.5133
 Detection Eval情况：甚至差了1个点。这也可以理解，因为被干扰了。
 Detection Character-level Precision 0.5922038980500867, Recall 0.5586987270147684, F1_Score 0.5749636093976944
 
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。加入了Detection模块，Detection模块。d_loss和loss分别是0.3,0.7。Detection模块和Correction模块前（BERT后）加了一个共同的Head，然后Detection和Correction各学各的，目的是：让head具有改错和纠错的共同特征。增加了残差链接，bert后的hidden_state加到了head的输出上。
+对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。
+执行情况：没啥效果，但也没咋降。原因可能是：用多任务和index1的效果重叠了，它们都是让模型具有纠错的特征，所以两者结合用和单独用其中一者效果都一样。
+Correction Precision: 0.9171974522263784, Recall: 0.05371130175306719, F1-Score: 0.1014799153288475
+Correction Precision: 0.9635395329778929, Recall: 0.43831531867304535, F1-Score: 0.6025361850446062
+Correction Precision: 0.9654305468255923, Recall: 0.5726001863931831, F1-Score: 0.718848718381168
+Correction Precision: 0.964566929133587, Recall: 0.6386147830942769, F1-Score: 0.7684552476441661
+Correction Precision: 0.9699067909451479, Recall: 0.6785913918388897, F1-Score: 0.7985090983972631
+Correction Precision: 0.9563783920870007, Recall: 0.7034135422494491, F1-Score: 0.8106190880754982
+Correction Precision: 0.9632663191856631, Recall: 0.7223152801040903, F1-Score: 0.8255690273764528
+Correction Precision: 0.9614906832295748, Recall: 0.7214765100669795, F1-Score: 0.8243689418893737
+Correction Precision: 0.9639482844353645, Recall: 0.7227815063384185, F1-Score: 0.8261240139997109
+Correction Precision: 0.9649253731340883, Recall: 0.7226154992547088, F1-Score: 0.8263740940989694
+Correction Precision: 0.9652260307995616, Recall: 0.7245944434084048, F1-Score: 0.8277771855787666
+Correction Precision: 0.965217391304108, Recall: 0.7242729306486345, F1-Score: 0.827564170348208
+Correction Precision: 0.9647292598109874, Recall: 0.7236817588968281, F1-Score: 0.8269988284251644
+Epoch 13 Training: 100% 250/250 [03:45<00:00,  1.11it/s, loss=0.00526, c_precision=0.991, c_recall=0.88, c_f1_score=0.932]
+Correction Precision: 0.964864191377781, Recall: 0.7227926078027398, F1-Score: 0.8264674488164072
+Eval情况：没降没升
+Character-level Detect Acc: 0.9863, P: 0.7375, R: 0.5446, F1: 0.6265
+Character-level Correct Acc: 0.9837, P: 0.6851, R: 0.4215, F1: 0.5219
+Sentence-level Detect Acc: 0.6855, P: 0.7835, R: 0.5046, F1: 0.6138
+Sentence-level Correct Acc: 0.6264, P: 0.7343, R: 0.3853, F1: 0.5054
+Detection Eval情况：几乎没差别
+Detection Character-level Precision 0.5670103092776199, Recall 0.6223479490797421, F1_Score 0.593391772932514

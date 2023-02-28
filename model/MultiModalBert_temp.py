@@ -309,6 +309,12 @@ class MultiModalBertModel(nn.Module):
         glyph_embeddings = self.glyph_embeddings(images)
         glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
 
+        # 把经过bert前的embedding加到输出上
+        if inputs_embeds is not None:
+            bert_outputs.last_hidden_state += inputs_embeds.clone()
+        else:
+            bert_outputs.last_hidden_state += self.bert.embeddings(input_ids)
+
         bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
                                                        pinyin_embeddings,
                                                        glyph_embeddings], dim=-1)
@@ -339,10 +345,10 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.tokenizer = BERT.get_tokenizer(bert_path)
         self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
 
-        alpha = [0.75] * len(self.tokenizer)
-        alpha[0] = 0
-        alpha[1] = 0.25
-        self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
+        # alpha = [0.75] * len(self.tokenizer)
+        # alpha[0] = 0
+        # alpha[1] = 0.25
+        self.loss_fnt = FocalLoss(device=self.args.device)
 
         self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
