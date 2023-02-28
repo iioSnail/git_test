@@ -577,3 +577,18 @@ Character-level Detect Acc: 0.9856, P: 0.6777, R: 0.6068, F1: 0.6403
 Character-level Correct Acc: 0.9825, P: 0.6129, R: 0.4569, F1: 0.5235
 Sentence-level Detect Acc: 0.6727, P: 0.7342, R: 0.5321, F1: 0.6170
 Sentence-level Correct Acc: 0.6045, P: 0.6719, R: 0.3945, F1: 0.4971
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。
+bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings
+执行情况：执行了14个epoch后手动停了（前面的数据丢了）。这是首次模型在Wang271K上到达0.86。很有前景
+Correction Precision: 0.9673913043476022, Recall: 0.7799738952077605, F1-Score: 0.8636316708176413
+Correction Precision: 0.967794253938608, Recall: 0.7788551184037331, F1-Score: 0.8631056922425251
+Correction Precision: 0.9683017121700674, Recall: 0.779765231973024, F1-Score: 0.8638662395716922
+Correction Precision: 0.9678761266464136, Recall: 0.7798882681562793, F1-Score: 0.8637723002171666
+Epoch 13 Training: 100% 250/250 [03:40<00:00,  1.13it/s, loss=0.00707, c_precision=0.989, c_recall=0.923, c_f1_score=0.955]
+Correction Precision: 0.9680555555553314, Recall: 0.7794967381172824, F1-Score: 0.863603510089019
+Eval情况：Eval情况只能用没降来形容。
+Character-level Detect Acc: 0.9835, P: 0.6092, R: 0.5997, F1: 0.6044
+Character-level Correct Acc: 0.9815, P: 0.5676, R: 0.5050, F1: 0.5344
+Sentence-level Detect Acc: 0.6318, P: 0.6691, R: 0.5083, F1: 0.5777
+Sentence-level Correct Acc: 0.5891, P: 0.6267, R: 0.4220, F1: 0.5044

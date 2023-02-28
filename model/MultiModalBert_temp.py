@@ -258,6 +258,9 @@ class MultiModalBertModel(nn.Module):
 
         self.hidden_size = self.bert.config.hidden_size + self.pinyin_feature_size + 56
 
+        # 未初始化
+        self.forget_gate = nn.Linear(768, 768)
+
         self.pinyin_embedding_cache = None
         self.init_pinyin_embedding_cache()
 
@@ -311,9 +314,12 @@ class MultiModalBertModel(nn.Module):
 
         # 把经过bert前的embedding加到输出上
         if inputs_embeds is not None:
-            bert_outputs.last_hidden_state += inputs_embeds.clone()
+            token_embeddings = inputs_embeds.clone()
         else:
-            bert_outputs.last_hidden_state += self.bert.embeddings(input_ids)
+            token_embeddings = self.bert.embeddings(input_ids)
+        # 使用遗忘门过滤token_embeddings
+        token_embeddings = token_embeddings * self.forget_gate(token_embeddings).sigmoid()
+        bert_outputs.last_hidden_state += token_embeddings
 
         bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
                                                        pinyin_embeddings,
