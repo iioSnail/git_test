@@ -401,7 +401,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         detection_outputs = detection_outputs.sigmoid()
 
-        outputs = self.cls(head_outputs + d_head_outputs)
+        outputs = self.cls(head_outputs)
         return outputs, detection_outputs * inputs['attention_mask']
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
