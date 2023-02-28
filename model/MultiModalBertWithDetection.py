@@ -14,7 +14,7 @@ from transformers.activations import GELUActivation
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT, BertOnlyMLMHead
-from utils.loss import CscFocalLoss, BinaryFocalLoss
+from utils.loss import CscFocalLoss, BinaryFocalLoss, FocalLoss
 from utils.scheduler import PlateauScheduler
 from utils.str_utils import is_chinese
 from utils.utils import mock_args, mkdir
@@ -348,7 +348,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.cls = BertOnlyMLMHead(self.bert.hidden_size, len(self.tokenizer))
         self.detection_cls = BertOnlyMLMHead(self.bert.hidden_size, 1)
 
-        self.loss_fnt = CscFocalLoss(alpha=0.99)
+        # self.loss_fnt = CscFocalLoss(alpha=0.99)
+        self.loss_fnt = FocalLoss(device=self.args.device)
         self.detect_loss_fnt = BinaryFocalLoss()
         self.bce_criteria = nn.BCELoss()
         self.optimizer = self.make_optimizer()
@@ -402,7 +403,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         detection_outputs = detection_outputs.sigmoid()
 
         outputs = self.cls(head_outputs)
-        return outputs, detection_outputs * inputs['attention_mask']
+        return outputs, detection_outputs * inputs['attention_mask'], inputs['input_ids']
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
     #     targets = targets['input_ids']
@@ -425,10 +426,14 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     return loss
 
     def compute_loss(self, outputs, targets, inputs, detect_targets, *args, **kwargs):
-        outputs, detect_outputs = outputs
-
-        loss = self.loss_fnt(outputs, targets, inputs)
+        outputs, detect_outputs, _ = outputs
         d_loss = self.detect_loss_fnt(detect_outputs, detect_targets)
+        # loss = self.loss_fnt(outputs, targets, inputs)
+
+        targets = targets['input_ids'].clone()
+        targets[(~detect_targets.bool()) & (targets != 0)] = 1
+        loss = self.loss_fnt(outputs.view(-1, len(self.tokenizer)), targets.view(-1))
+
         return 0.7 * loss + 0.3 * d_loss
 
     # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
@@ -452,15 +457,26 @@ class MultiModalBertCorrectionModel(nn.Module):
     def get_optimizer(self):
         return self.optimizer
 
-    def extract_outputs(self, outputs):
-        return outputs[0].argmax(dim=2)
+    # def extract_outputs(self, outputs):
+    #     return outputs[0].argmax(dim=2)
 
-    def predict(self, src, tgt=None):
+    def extract_outputs(self, outputs):
+        outputs, _, input_ids = outputs
+        outputs = outputs.argmax(-1)
+
+        for i in range(len(outputs)):
+            for j in range(len(outputs[i])):
+                if outputs[i][j] == 1:
+                    outputs[i][j] = input_ids[i][j]
+
+        return outputs
+
+    def predict(self, src):
         src = src.replace(" ", "")
         src = " ".join(src)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
         outputs = self.forward(inputs)
-        outputs = outputs[0].argmax(-1)
+        outputs = self.extract_outputs(outputs)
         outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
         outputs = [outputs[i] if len(outputs[i]) == 1 else src[i] for i in range(len(outputs))]
         # if ''.join(outputs) != tgt:   # 最后配合Detector，让softmax前5，用Detector来确定用哪一个
@@ -476,7 +492,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
         targets = self.tokenizer(tgt, return_tensors='pt').to(self.args.device)
 
-        _, d_outputs = self.forward(inputs)
+        _, d_outputs, _ = self.forward(inputs)
         d_targets = (inputs['input_ids'] != targets['input_ids']).int().squeeze()
         d_outputs = (d_outputs.squeeze() > 0.5).int()
         return d_outputs[1:-1], d_targets[1:-1]
