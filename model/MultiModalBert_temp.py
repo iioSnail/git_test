@@ -260,7 +260,7 @@ class MultiModalBertModel(nn.Module):
 
         # 未初始化
         self.token_forget_gate = nn.Linear(768, 768)
-        self.hidden_forget_gate = nn.Linear(768, 768)
+        # self.hidden_forget_gate = nn.Linear(768, 768)
 
         self.pinyin_embedding_cache = None
         self.init_pinyin_embedding_cache()
@@ -320,8 +320,9 @@ class MultiModalBertModel(nn.Module):
             token_embeddings = self.bert.embeddings(input_ids)
         # 使用遗忘门过滤token_embeddings
         token_embeddings = token_embeddings * self.token_forget_gate(token_embeddings).sigmoid()
-        bert_outputs.last_hidden_state = bert_outputs.last_hidden_state * self.hidden_forget_gate(
-            bert_outputs.last_hidden_state).sigmoid()
+        # 初步试验显示：last_hidden_state加遗忘门不好
+        # bert_outputs.last_hidden_state = bert_outputs.last_hidden_state * self.hidden_forget_gate(
+        #     bert_outputs.last_hidden_state).sigmoid()
 
         bert_outputs.last_hidden_state += token_embeddings
 

@@ -636,3 +636,26 @@ Character-level Detect Acc: 0.9835, P: 0.6240, R: 0.5446, F1: 0.5816
 Character-level Correct Acc: 0.9818, P: 0.5850, R: 0.4625, F1: 0.5166
 Sentence-level Detect Acc: 0.6264, P: 0.6727, R: 0.4789, F1: 0.5595
 Sentence-level Correct Acc: 0.5891, P: 0.6340, R: 0.4037, F1: 0.4933
+
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门
+给bert_outputs.last_hidden_state也加了遗忘门
+执行情况：执行了11个epoch后手动停了。在Wang271K上增加遗忘门后performance降低了，但不是很明显
+Correction Precision: 0.9463120923226561, Recall: 0.35029717682014294, F1-Score: 0.5113189639541617
+Correction Precision: 0.9425634824664624, Recall: 0.5795539033456172, F1-Score: 0.7177716385706308
+Correction Precision: 0.9336747759280579, Recall: 0.6773174809584475, F1-Score: 0.7850990520534051
+Correction Precision: 0.9529935675405856, Recall: 0.716251394570339, F1-Score: 0.8178343944143421
+Correction Precision: 0.938592456301532, Recall: 0.7572833549822309, F1-Score: 0.8382458657887922
+Correction Precision: 0.9555763385548385, Recall: 0.7581153774808461, F1-Score: 0.8454695899077874
+Correction Precision: 0.957195742711486, Recall: 0.7685305591676075, F1-Score: 0.8525502313450583
+Correction Precision: 0.9556684368503912, Recall: 0.768331167625623, F1-Score: 0.8518213619259796
+Correction Precision: 0.9563611175246002, Recall: 0.7694594092512038, F1-Score: 0.8527897874406277
+Correction Precision: 0.9563106796114293, Recall: 0.7686733556297345, F1-Score: 0.8522867733005488
+Epoch 10 Training: 100% 250/250 [03:40<00:00,  1.14it/s, loss=0.0071, c_precision=0.98, c_recall=0.89, c_f1_score=0.933]
+Correction Precision: 0.956351039260749, Recall: 0.7687024317800688, F1-Score: 0.8523206746112261
+Eval情况：这个降的比较明显
+Character-level Detect Acc: 0.9827, P: 0.5831, R: 0.6252, F1: 0.6034
+Character-level Correct Acc: 0.9801, P: 0.5298, R: 0.5035, F1: 0.5163
+Sentence-level Detect Acc: 0.6136, P: 0.6364, R: 0.5138, F1: 0.5685
+Sentence-level Correct Acc: 0.5618, P: 0.5822, R: 0.4092, F1: 0.4806
+
