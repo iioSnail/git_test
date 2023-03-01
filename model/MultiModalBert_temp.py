@@ -260,6 +260,7 @@ class MultiModalBertModel(nn.Module):
 
         # 未初始化
         self.token_forget_gate = nn.Linear(768, 768)
+        nn.init.orthogonal_(self.token_forget_gate.weight, gain=1)
         # self.hidden_forget_gate = nn.Linear(768, 768)
 
         self.pinyin_embedding_cache = None
