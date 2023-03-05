@@ -595,6 +595,7 @@ Sentence-level Correct Acc: 0.5891, P: 0.6267, R: 0.4220, F1: 0.5044
 
 模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings
 对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+代码：MultiModalBert1.py
 执行情况：执行了10个epoch手动停了，在Wang271K上看起来差不多
 Correction Precision: 0.9642267473852701, Recall: 0.32414431082325174, F1-Score: 0.48518415913587865
 Correction Precision: 0.9578787878784976, Recall: 0.5849370836416385, F1-Score: 0.7263327201172844
@@ -612,6 +613,15 @@ Character-level Detect Acc: 0.9843, P: 0.6421, R: 0.5785, F1: 0.6086
 Character-level Correct Acc: 0.9827, P: 0.6089, R: 0.5021, F1: 0.5504
 Sentence-level Detect Acc: 0.6445, P: 0.6944, R: 0.5046, F1: 0.5845
 Sentence-level Correct Acc: 0.6109, P: 0.6630, R: 0.4367, F1: 0.5265
+一次全量训练情况：Wang271K上全量好像效果并不是很好
+Epoch 0 Training: 100% 6783/6783 [1:40:33<00:00,  1.12it/s, loss=0.0398, c_precision=0.959, c_recall=0.64, c_f1_score=0.767]
+Correction Precision: 0.9628663109873781, Recall: 0.6539966388319854, F1-Score: 0.778929754944518
+一次全量训练的Eval情况：不过Eval情况还行，快接近PyCorrector的0.61了。
+Character-level Detect Acc: 0.9865, P: 0.7490, R: 0.5403, F1: 0.6278
+Character-level Correct Acc: 0.9853, P: 0.7277, R: 0.4837, F1: 0.5811
+Sentence-level Detect Acc: 0.6945, P: 0.8255, R: 0.4862, F1: 0.6120
+Sentence-level Correct Acc: 0.6745, P: 0.8127, R: 0.4459, F1: 0.5758
+
 
 
 模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门
