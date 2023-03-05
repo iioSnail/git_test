@@ -325,7 +325,14 @@ class MultiModalBertModel(nn.Module):
         # bert_outputs.last_hidden_state = bert_outputs.last_hidden_state * self.hidden_forget_gate(
         #     bert_outputs.last_hidden_state).sigmoid()
 
+        left_state = bert_outputs.last_hidden_state.clone()[:, 1:, :]
+        right_state = bert_outputs.last_hidden_state.clone()[:, :-1, :]
+        pad_zeros = torch.zeros(batch_size, 1, 768, device=left_state.device)
+        left_state = torch.concat([left_state, pad_zeros], dim=1)
+        right_state = torch.concat([right_state, pad_zeros], dim=1)
+
         bert_outputs.last_hidden_state += token_embeddings
+        bert_outputs.last_hidden_state = bert_outputs.last_hidden_state + left_state + right_state
 
         bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
                                                        pinyin_embeddings,
