@@ -616,7 +616,7 @@ Sentence-level Correct Acc: 0.6109, P: 0.6630, R: 0.4367, F1: 0.5265
 一次全量训练情况：Wang271K上全量好像效果并不是很好
 Epoch 0 Training: 100% 6783/6783 [1:40:33<00:00,  1.12it/s, loss=0.0398, c_precision=0.959, c_recall=0.64, c_f1_score=0.767]
 Correction Precision: 0.9628663109873781, Recall: 0.6539966388319854, F1-Score: 0.778929754944518
-一次全量训练的Eval情况：不过Eval情况还行，快接近PyCorrector的0.61了。
+一次全量训练的Eval情况：不过Eval情况也一般，距离PyCorrector还很远
 Character-level Detect Acc: 0.9865, P: 0.7490, R: 0.5403, F1: 0.6278
 Character-level Correct Acc: 0.9853, P: 0.7277, R: 0.4837, F1: 0.5811
 Sentence-level Detect Acc: 0.6945, P: 0.8255, R: 0.4862, F1: 0.6120

@@ -198,3 +198,14 @@ def token_embeddings_visualise(embeddings, text):
     plt.ylim(embeddings[:, 1].min() - 0.5, embeddings[:, 1].max() + 0.5)
     plt.show()
 
+
+def convert_ids_to_tokens(tokenizer, ids):
+    shape = ids.shape
+    ids = ids.reshape(-1)
+    tokens = tokenizer.convert_ids_to_tokens(ids)
+    return np.array(tokens).reshape(shape).tolist()
+
+
+def get_top_n(outputs, tokenizer, n):
+    ids = outputs.argsort(descending=True)[:, :n]
+    return convert_ids_to_tokens(tokenizer, ids)

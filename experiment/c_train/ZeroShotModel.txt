@@ -1,0 +1,7 @@
+模型：使用原生的hfl/chinese-roberta-wwm-ext的MLM模型，什么都不做，也不Mask
+Eval情况：比想象中的要高很多
+Character-level Detect Acc: 0.9859, P: 0.7427, R: 0.5028, F1: 0.5997
+Character-level Correct Acc: 0.9813, P: 0.6204, R: 0.2847, F1: 0.3903
+Sentence-level Detect Acc: 0.6648, P: 0.7993, R: 0.4320, F1: 0.5609
+Sentence-level Correct Acc: 0.5838, P: 0.7122, R: 0.2684, F1: 0.3899
+
