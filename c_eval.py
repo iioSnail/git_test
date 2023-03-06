@@ -53,6 +53,9 @@ class Evaluation(object):
         elif self.args.model == 'MacBert4Csc':
             from model.macbert4csc import MacBert4CscModel
             self.model = MacBert4CscModel(self.args).eval()
+        elif self.args.model == 'MacBert4CscPlus':
+            from model.macbert4csc_plus import MacBert4CscModel
+            self.model = MacBert4CscModel(self.args).eval()
         elif self.args.model == 'MultiModalMacBert4Csc':
             from model.multimodal_macbert4csc import MacBert4CscModel
             self.model = MacBert4CscModel(self.args).eval()
