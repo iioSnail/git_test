@@ -50,6 +50,7 @@ class ZeroShotModel(nn.Module):
     def __init__(self, args):
         super(ZeroShotModel, self).__init__()
         self.args = args
+        self.max_length = 128
 
         # self.tokenizer = AutoTokenizer.from_pretrained("hfl/chinese-roberta-wwm-ext")
         # self.model = AutoModelForMaskedLM.from_pretrained("hfl/chinese-roberta-wwm-ext")
@@ -68,9 +69,11 @@ class ZeroShotModel(nn.Module):
 
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
 
-        # mask src
-        src_mask = self.d_model.predict(src).bool()
-        inputs['input_ids'][0][1:-1][src_mask] = 103
+        # FIXME，显存不足的临时方案
+        if self.max_length <= self.max_length:
+            # mask src
+            src_mask = self.d_model.predict(src).bool()
+            inputs['input_ids'][0][1:-1][src_mask] = 103
 
         outputs = self.model(**inputs).logits.squeeze()[1:-1, :]
         tokens_list = get_top_n(outputs, self.tokenizer, 10)
