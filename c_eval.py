@@ -59,6 +59,9 @@ class Evaluation(object):
         elif self.args.model == 'MultiModalMacBert4Csc':
             from model.multimodal_macbert4csc import MacBert4CscModel
             self.model = MacBert4CscModel(self.args).eval()
+        elif self.args.model == 'ZeroShot':
+            from model.ZeroShotModel import ZeroShotModel
+            self.model = ZeroShotModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
@@ -87,7 +90,7 @@ class Evaluation(object):
             csc_metrics.add_sentence(src, tgt, c_output)
 
         csc_metrics.print_results()
-        # csc_metrics.print_errors()
+        csc_metrics.print_errors()
 
     def parse_args(self):
         parser = argparse.ArgumentParser()

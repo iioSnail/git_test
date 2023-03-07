@@ -12,6 +12,7 @@ same_glyph_confusion_set = {}
 all_confusion_set = {}
 inited = False
 
+
 def _load_confusion(in_file):
     confusion_datas = {}
     with open(in_file, encoding='utf-8') as f:
@@ -50,9 +51,7 @@ def _get_confusion_set(type='random'):
 
 
 def confuse_char(char: str, type='random'):
-    global inited
-    if not inited:
-        init_confusion_set()
+    init_confusion_set()
 
     confusion_set = _get_confusion_set(type)
     if char not in confusion_set:
@@ -60,11 +59,15 @@ def confuse_char(char: str, type='random'):
 
     confusion_list = confusion_set[char]
 
-    rand_i = random.randint(0, len(confusion_list)-1)
+    rand_i = random.randint(0, len(confusion_list) - 1)
     return confusion_list[rand_i]
 
 
 def init_confusion_set():
+    global inited
+    if inited:
+        return
+
     global same_pinyin_confusion_set
     global simi_pinyin_confusion_set
     global same_glyph_confusion_set
@@ -72,7 +75,21 @@ def init_confusion_set():
     simi_pinyin_confusion_set = _load_confusion(ROOT / "confusion/simi_pinyin.txt")
     same_glyph_confusion_set = _load_confusion(ROOT / "confusion/same_stroke.txt")
 
-    global inited
     inited = True
+
+
+def is_confusion_char(c1, c2):
+    init_confusion_set()
+
+    if c1 in same_pinyin_confusion_set and c2 in same_pinyin_confusion_set[c1]:
+        return True
+
+    if c1 in simi_pinyin_confusion_set and c2 in simi_pinyin_confusion_set[c1]:
+        return True
+
+    if c1 in same_glyph_confusion_set and c2 in same_glyph_confusion_set[c1]:
+        return True
+
+    return False
 
 # init_confusion_set()
