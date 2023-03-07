@@ -229,6 +229,11 @@ class HuggingFaceMacBert4CscModel(nn.Module):
 
     def predict(self, src):
         src = ' '.join(src.replace(" ", ""))
+
+        # src = src.replace("步", "[MASK]")
+        # src = src.replace("式", "[MASK]")
+
         texts = [src]
         outputs = self.model(**self.tokenizer(texts, return_tensors='pt').to(self.args.device)).logits
+        # self.tokenizer.convert_ids_to_tokens(outputs.argsort(descending=True).squeeze()[:, :5][-6])
         return self.tokenizer.decode(outputs.argmax(-1)[0], skip_special_tokens=True).replace(' ', '')
