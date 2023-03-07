@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM, BertForMaskedLM, B
 
 from model.common import BERT
 from utils.confusions import is_confusion_char
-from utils.utils import convert_ids_to_tokens, get_top_n
+from utils.utils import convert_ids_to_tokens, get_top_n, mock_args
 
 
 class ZeroShotDetectModel(nn.Module):
@@ -47,6 +47,10 @@ class ZeroShotDetectModel(nn.Module):
         else:
             return d_outputs
 
+d_cpu_model = ZeroShotDetectModel(mock_args(device='cpu'))
+
+def cpu_d_predict(src):
+    return d_cpu_model.predict(src).bool()
 
 class ZeroShotModel(nn.Module):
 
@@ -60,7 +64,7 @@ class ZeroShotModel(nn.Module):
         self.tokenizer = BertTokenizerFast.from_pretrained('hfl/chinese-macbert-base')
         self.model = BertForMaskedLM.from_pretrained('hfl/chinese-macbert-base')
         self.d_model = ZeroShotDetectModel(args)
-        self.d_cpu_model = ZeroShotDetectModel(args, device='cpu').to('cpu')
+
 
     def predict(self, src, tgt=""):
         src_list = list(src.replace(" ", ""))
@@ -79,10 +83,7 @@ class ZeroShotModel(nn.Module):
             src_mask = self.d_model.predict(src).bool()
             inputs['input_ids'][0][1:-1][src_mask] = 103
         else:
-            if str(next(self.d_cpu_model.parameters()).device) != 'cpu':
-                self.d_cpu_model.to('cpu')
-
-            src_mask = self.d_cpu_model.predict(src).bool()
+            src_mask = cpu_d_predict(src).to(self.args.device)
             inputs['input_ids'][0][1:-1][src_mask] = 103
 
 
