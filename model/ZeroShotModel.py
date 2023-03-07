@@ -8,9 +8,12 @@ from utils.utils import convert_ids_to_tokens, get_top_n
 
 
 class ZeroShotDetectModel(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, device=None):
         super(ZeroShotDetectModel, self).__init__()
         self.args = args
+        if device:
+            self.args.device = device
+
         self.tokenizer = AutoTokenizer.from_pretrained("hfl/chinese-roberta-wwm-ext")
         self.model = AutoModelForMaskedLM.from_pretrained("hfl/chinese-roberta-wwm-ext")
 
@@ -57,7 +60,7 @@ class ZeroShotModel(nn.Module):
         self.tokenizer = BertTokenizerFast.from_pretrained('hfl/chinese-macbert-base')
         self.model = BertForMaskedLM.from_pretrained('hfl/chinese-macbert-base')
         self.d_model = ZeroShotDetectModel(args)
-        self.d_cpu_model = ZeroShotDetectModel(args).to('cpu')
+        self.d_cpu_model = ZeroShotDetectModel(args, device='cpu').to('cpu')
 
     def predict(self, src, tgt=""):
         src_list = list(src.replace(" ", ""))
