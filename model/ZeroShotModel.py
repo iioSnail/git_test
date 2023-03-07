@@ -81,11 +81,10 @@ class ZeroShotModel(nn.Module):
         if len(src_list) <= self.max_length:
             # mask src
             src_mask = self.d_model.predict(src).bool()
-            inputs['input_ids'][0][1:-1][src_mask] = 103
         else:
             src_mask = cpu_d_predict(src).to(self.args.device)
-            inputs['input_ids'][0][1:-1][src_mask] = 103
 
+        inputs['input_ids'][0][1:-1][src_mask] = 103
 
         outputs = self.model(**inputs).logits.squeeze()[1:-1, :]
         tokens_list = get_top_n(outputs, self.tokenizer, 10)
