@@ -50,13 +50,14 @@ class ZeroShotModel(nn.Module):
     def __init__(self, args):
         super(ZeroShotModel, self).__init__()
         self.args = args
-        self.max_length = 128
+        self.max_length = 76
 
         # self.tokenizer = AutoTokenizer.from_pretrained("hfl/chinese-roberta-wwm-ext")
         # self.model = AutoModelForMaskedLM.from_pretrained("hfl/chinese-roberta-wwm-ext")
         self.tokenizer = BertTokenizerFast.from_pretrained('hfl/chinese-macbert-base')
         self.model = BertForMaskedLM.from_pretrained('hfl/chinese-macbert-base')
         self.d_model = ZeroShotDetectModel(args)
+        self.d_cpu_model = ZeroShotDetectModel(args).to('cpu')
 
     def predict(self, src, tgt=""):
         src_list = list(src.replace(" ", ""))
@@ -70,10 +71,17 @@ class ZeroShotModel(nn.Module):
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
 
         # FIXME，显存不足的临时方案
-        if self.max_length <= self.max_length:
+        if len(src_list) <= self.max_length:
             # mask src
             src_mask = self.d_model.predict(src).bool()
             inputs['input_ids'][0][1:-1][src_mask] = 103
+        else:
+            if str(next(self.d_cpu_model.parameters()).device) != 'cpu':
+                self.d_cpu_model.to('cpu')
+
+            src_mask = self.d_cpu_model.predict(src).bool()
+            inputs['input_ids'][0][1:-1][src_mask] = 103
+
 
         outputs = self.model(**inputs).logits.squeeze()[1:-1, :]
         tokens_list = get_top_n(outputs, self.tokenizer, 10)
