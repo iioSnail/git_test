@@ -57,7 +57,7 @@ class ZeroShotModel(nn.Module):
     def __init__(self, args):
         super(ZeroShotModel, self).__init__()
         self.args = args
-        self.max_length = 76
+        self.max_length = 56
 
         # self.tokenizer = AutoTokenizer.from_pretrained("hfl/chinese-roberta-wwm-ext")
         # self.model = AutoModelForMaskedLM.from_pretrained("hfl/chinese-roberta-wwm-ext")

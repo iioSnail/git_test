@@ -1,6 +1,7 @@
 import argparse
 import pickle
 import random
+import traceback
 from pathlib import Path
 
 import torch
@@ -84,10 +85,14 @@ class Evaluation(object):
         for i in progress:
             src, tgt = self.test_set.__getitem__(i)
             src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
-            c_output = self.model.predict(src)
-            c_output = restore_special_tokens(src, c_output)
+            try:
+                c_output = self.model.predict(src)
+                c_output = restore_special_tokens(src, c_output)
+                csc_metrics.add_sentence(src, tgt, c_output)
+            except Exception as e:
+                traceback.print_stack()
+                print("Error Sentence:", e)
 
-            csc_metrics.add_sentence(src, tgt, c_output)
 
         csc_metrics.print_results()
         csc_metrics.print_errors()
