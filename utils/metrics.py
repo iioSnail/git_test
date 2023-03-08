@@ -46,22 +46,22 @@ class CSCMetrics:
         char_detect_acc = (self.d_tp + self.d_tn) / (self.d_tp + self.d_fp + self.d_tn + self.d_fn + 1e-8)
         char_detect_p = self.d_tp / (self.d_tp + self.d_fp + 1e-8)
         char_detect_r = self.d_tp / (self.d_tp + self.d_fn + 1e-8)
-        char_detect_f1 = (2 * char_detect_p * char_detect_r) / (char_detect_p + char_detect_r)
+        char_detect_f1 = (2 * char_detect_p * char_detect_r) / (char_detect_p + char_detect_r + 1e-8)
 
         char_correct_acc = (self.c_tp + self.c_tn) / (self.c_tp + self.c_fp + self.c_tn + self.c_fn + 1e-8)
         char_correct_p = self.c_tp / (self.c_tp + self.c_fp + 1e-8)
         char_correct_r = self.c_tp / (self.c_tp + self.c_fn + 1e-8)
-        char_correct_f1 = (2 * char_correct_p * char_correct_r) / (char_correct_p + char_correct_r)
+        char_correct_f1 = (2 * char_correct_p * char_correct_r) / (char_correct_p + char_correct_r + 1e-8)
 
         sent_detect_acc = (self.sd_tp + self.sd_tn) / (self.sd_tp + self.sd_fp + self.sd_tn + self.sd_fn + 1e-8)
         sent_detect_p = self.sd_tp / (self.sd_tp + self.sd_fp + 1e-8)
         sent_detect_r = self.sd_tp / (self.sd_tp + self.sd_fn + 1e-8)
-        sent_detect_f1 = (2 * sent_detect_p * sent_detect_r) / (sent_detect_p + sent_detect_r)
+        sent_detect_f1 = (2 * sent_detect_p * sent_detect_r) / (sent_detect_p + sent_detect_r + 1e-8)
 
         sent_correct_acc = (self.sc_tp + self.sc_tn) / (self.sc_tp + self.sc_fp + self.sc_tn + self.sc_fn + 1e-8)
         sent_correct_p = self.sc_tp / (self.sc_tp + self.sc_fp + 1e-8)
         sent_correct_r = self.sc_tp / (self.sc_tp + self.sc_fn + 1e-8)
-        sent_correct_f1 = (2 * sent_correct_p * sent_correct_r) / (sent_correct_p + sent_correct_r)
+        sent_correct_f1 = (2 * sent_correct_p * sent_correct_r) / (sent_correct_p + sent_correct_r + 1e-8)
 
         return char_detect_acc, char_detect_p, char_detect_r, char_detect_f1, \
                char_correct_acc, char_correct_p, char_correct_r, char_correct_f1, \

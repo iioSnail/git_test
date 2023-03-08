@@ -93,12 +93,12 @@ class Evaluation(object):
                 c_output = restore_special_tokens(src, c_output)
                 csc_metrics.add_sentence(src, tgt, c_output)
             except Exception as e:
-                traceback.print_stack()
+                traceback.print_exc()
                 print("Error Sentence:", e)
 
 
         csc_metrics.print_results()
-        csc_metrics.print_errors()
+        # csc_metrics.print_errors()
 
     def parse_args(self):
         parser = argparse.ArgumentParser()

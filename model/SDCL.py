@@ -29,7 +29,11 @@ class SDCLModel(nn.Module):
         word_embeddings = self.model.bert.embeddings.word_embeddings(inputs['input_ids'])
         hidden_states = self.model.bert(**inputs).last_hidden_state
         logits = self.model.cls(hidden_states * word_embeddings)
-        loss = F.cross_entropy(logits.view(logits.shape[0] * logits.shape[1], logits.shape[2]), text_labels.view(-1))
+
+        if targets:
+            loss = F.cross_entropy(logits.view(logits.shape[0] * logits.shape[1], logits.shape[2]), text_labels.view(-1))
+        else:
+            loss = 0.
 
         return logits, hidden_states, loss
 
