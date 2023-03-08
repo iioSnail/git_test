@@ -1,6 +1,8 @@
 """
 通用Model，例如LayerNorm等
 """
+import warnings
+
 import torch
 from torch import nn
 from transformers import AutoModel, AutoTokenizer, BertConfig
@@ -61,7 +63,7 @@ class BERT(nn.Module):
         return BERT.tokenizer
 
     @staticmethod
-    def get_bert_inputs(sentences, max_length=256, model_path="hfl/chinese-roberta-wwm-ext"):
+    def get_bert_inputs(sentences, tokenizer=None, max_length=256, model_path="hfl/chinese-roberta-wwm-ext"):
         """
         The model instance of Hugging Face takes in special input parameters. Therefore,
         we need to construct the input parameters in the function.
@@ -69,7 +71,10 @@ class BERT(nn.Module):
         :param max_length: The max length of a sentence. The sentence will be padded or truncated if it's
                            length is greater than or less than the max length.
         """
-        tokenizer = BERT.get_tokenizer()
+        if tokenizer is None:
+            warnings.warn('No Tokenizer Specified!!!')
+            tokenizer = BERT.get_tokenizer()
+
 
         inputs = tokenizer(sentences,
                            padding=True,

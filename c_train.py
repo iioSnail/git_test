@@ -13,6 +13,7 @@ from tqdm import tqdm
 from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
+from model.SDCL import SDCLModel
 from train_base import TrainBase
 from utils.dataloader import create_dataloader
 from utils.utils import setup_seed, mkdir
@@ -64,11 +65,14 @@ class C_Train(object):
         elif self.args.model == 'MultiModalMacBert4Csc':
             from model.multimodal_macbert4csc import MacBert4CscModel
             self.model = MacBert4CscModel(self.args).train().to(self.args.device)
+        elif self.args.model == 'SDCL':
+            self.model = SDCLModel(self.args).train().to(self.args.device)
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 
         collate_fn = self.model.get_collate_fn() if 'get_collate_fn' in dir(self.model) else None
-        self.train_loader, self.valid_loader = create_dataloader(self.args, collate_fn)
+        tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else None
+        self.train_loader, self.valid_loader = create_dataloader(self.args, collate_fn, tokenizer)
 
         if 'get_optimizer' in dir(self.model):
             self.optimizer = self.model.get_optimizer()
@@ -99,8 +103,8 @@ class C_Train(object):
                 self.args.resume = False
 
             inputs, targets, detect_targets = inputs.to(self.args.device), \
-                                                 targets.to(self.args.device), \
-                                                 detect_targets.to(self.args.device)
+                                              targets.to(self.args.device), \
+                                              detect_targets.to(self.args.device)
             self.optimizer.zero_grad()
 
             if hasattr(self.args, "multi_forward_args"):

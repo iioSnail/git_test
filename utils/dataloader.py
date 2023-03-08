@@ -7,7 +7,7 @@ from model.common import BERT
 from utils.dataset import CSCDataset, SighanTrainDataset, ConfusionMaskDataset, PhoneticProbeDataset, GlyphProbeDataset
 
 
-def create_dataloader(args, collate_fn=None):
+def create_dataloader(args, collate_fn=None, tokenizer=None):
     if 'data_type' not in dir(args) or args.data_type is None or args.data_type == 'none':
         with open(args.train_data, mode='br') as f:
             train_data = pickle.load(f)
@@ -32,8 +32,8 @@ def create_dataloader(args, collate_fn=None):
         src, tgt = zip(*batch)
         src, tgt = list(src), list(tgt)
 
-        src = BERT.get_bert_inputs(src)
-        tgt = BERT.get_bert_inputs(tgt)
+        src = BERT.get_bert_inputs(src, tokenizer=tokenizer)
+        tgt = BERT.get_bert_inputs(tgt, tokenizer=tokenizer)
 
         return src, tgt, (src['input_ids'] != tgt['input_ids']).float()
 
