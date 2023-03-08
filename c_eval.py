@@ -10,6 +10,7 @@ from tqdm import tqdm
 from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
+from model.SDCL import SDCLModel
 from model.macbert4csc import HuggingFaceMacBert4CscModel
 from utils.dataset import CSCTestDataset, CSCDataset
 from utils.metrics import CSCMetrics
@@ -63,6 +64,8 @@ class Evaluation(object):
         elif self.args.model == 'ZeroShot':
             from model.ZeroShotModel import ZeroShotModel
             self.model = ZeroShotModel(self.args).eval()
+        elif self.args.model == 'SDCL':
+            self.model = SDCLModel(self.args).eval()
         else:
             raise Exception("Unknown model: " + str(self.args.model))
 

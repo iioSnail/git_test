@@ -60,4 +60,11 @@ class SDCLModel(nn.Module):
         return loss_x + self.alpha * loss_y + self.beta * loss_c
 
     def get_optimizer(self):
-        return torch.optim.AdamW(lr=7e-5)
+        return torch.optim.AdamW(self.parameters(), lr=7e-5)
+
+    def predict(self, src):
+        src = ' '.join(src.replace(" ", ""))
+        inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
+        outputs = self.forward(inputs)
+        outputs = self.extract_outputs(outputs)[0][1:-1]
+        return self.tokenizer.decode(outputs).replace(' ', '')
