@@ -53,7 +53,7 @@ class SDCLModel(nn.Module):
         negative_sim = F.cosine_similarity(anchor_samples.unsqueeze(1), negative_samples.unsqueeze(0), dim=-1)
 
         sims = torch.concat([positive_sim.unsqueeze(1), negative_sim], dim=1) / self.temperature
-        sim_labels = torch.zeros(sims.shape[0]).long()
+        sim_labels = torch.zeros(sims.shape[0]).long().to(self.args.device)
 
         loss_c = F.cross_entropy(sims, sim_labels)
 
