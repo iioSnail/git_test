@@ -19,7 +19,6 @@ class SDCLModel(nn.Module):
         self.temperature = 0.9
 
     def forward(self, inputs, targets=None, detection_targets=None):
-        self.model.eval()
         if targets is not None:
             text_labels = targets['input_ids'].clone()
             text_labels[text_labels == 0] = -100  # -100计算损失时会忽略
