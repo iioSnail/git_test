@@ -669,3 +669,28 @@ Character-level Correct Acc: 0.9801, P: 0.5298, R: 0.5035, F1: 0.5163
 Sentence-level Detect Acc: 0.6136, P: 0.6364, R: 0.5138, F1: 0.5685
 Sentence-level Correct Acc: 0.5618, P: 0.5822, R: 0.4092, F1: 0.4806
 
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+将PlateauScheduler改为WarmupExponentialLR，学习率不变，head为2e-4，bert为2e-6
+执行情况：执行了16个epoch手动停了，感觉涨不了多少了。在Wang271K上比PlateauScheduler好了0.05个点。
+Correction Precision: 0.0, Recall: 0.0, F1-Score: 0.0
+Correction Precision: 0.9961538461500148, Recall: 0.0479363316675832, F1-Score: 0.09147095170469562
+Correction Precision: 0.9654561558897408, Recall: 0.40340488527009555, F1-Score: 0.569042025164935
+Correction Precision: 0.9568323905921534, Recall: 0.5951851851850749, F1-Score: 0.7338737294048209
+Correction Precision: 0.9626806833111793, Recall: 0.6780821917806963, F1-Score: 0.7956989242460532
+Correction Precision: 0.9718488460560558, Recall: 0.7094982410663377, F1-Score: 0.8202054789640528
+Correction Precision: 0.9702539298667544, Recall: 0.7425504349434124, F1-Score: 0.8412665124044456
+Correction Precision: 0.9647031323045897, Recall: 0.7641177559709749, F1-Score: 0.8527740464122266
+Correction Precision: 0.9611988847581409, Recall: 0.7669632925471325, F1-Score: 0.8531656006610174
+Correction Precision: 0.9645977011492034, Recall: 0.7757441301533045, F1-Score: 0.8599241720643751
+Correction Precision: 0.9683090446446985, Recall: 0.7748981858569465, F1-Score: 0.8608740354956952
+Correction Precision: 0.9566092596732371, Recall: 0.7924773022047817, F1-Score: 0.8668423181098207
+Correction Precision: 0.9649083088066639, Recall: 0.7891131271985208, F1-Score: 0.868201262491197
+Correction Precision: 0.9650555933739584, Recall: 0.7871552841012793, F1-Score: 0.867074413368382
+Correction Precision: 0.9726218097445538, Recall: 0.7764400814964295, F1-Score: 0.8635286842316247
+Epoch 15 Training: 100% 250/250 [03:42<00:00,  1.12it/s, c_precision=0.991, c_recall=0.975, c_f1_score=0.983, loss=0.0012]
+Correction Precision: 0.9726938962824752, Recall: 0.7838387573963047, F1-Score: 0.8681138639332079
+Eval情况：Eval情况相比PlateauScheduler差不多。可以得出结论，WarmupExponentialLR和PlateauScheduler在小数据量下好像区别不大。
+Character-level Detect Acc: 0.9836, P: 0.6158, R: 0.5827, F1: 0.5988
+Character-level Correct Acc: 0.9819, P: 0.5808, R: 0.5035, F1: 0.5394
+Sentence-level Detect Acc: 0.6355, P: 0.6782, R: 0.5028, F1: 0.5774
+Sentence-level Correct Acc: 0.6018, P: 0.6458, R: 0.4349, F1: 0.5197

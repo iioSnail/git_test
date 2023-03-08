@@ -22,6 +22,7 @@ Character-level Correct Acc: 0.9845, P: 0.7634, R: 0.3833, F1: 0.5104
 Sentence-level Detect Acc: 0.6833, P: 0.8505, R: 0.4385, F1: 0.5787
 Sentence-level Correct Acc: 0.6388, P: 0.8190, R: 0.3486, F1: 0.4891
 
+# FIXME 训练结果有问题
 模型：SDCL。负样本用的是该batch下的所有的其他token。batch_size用的32（48内存不够）
 增加了H=W*H
 执行情况：CL Loss降了，但不多。在Wang271K上表现比不加W好一点。
