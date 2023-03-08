@@ -131,20 +131,27 @@ class C_Train(object):
 
             correction_matrix = TrainBase.compute_matrix(*matrix)
 
-            self.set_progress_postfix(progress, loss=loss, correction_matrix=correction_matrix)
+            if hasattr(self.model, 'extra_info'):
+                self.set_progress_postfix(progress, loss=loss.item(), correction_matrix=correction_matrix, **self.model.extra_info())
+            else:
+                self.set_progress_postfix(progress, loss=loss.item(), correction_matrix=correction_matrix)
 
-            self.write_scalar(loss=loss, correction_matrix=correction_matrix)
+            self.write_scalar(loss=loss.item(), correction_matrix=correction_matrix)
 
     def set_progress_postfix(self, progress, **kwargs):
-        progress.set_postfix({
-            'loss': kwargs['loss'].item(),
+        postfix = {
             'c_precision': kwargs['correction_matrix'][0],
             'c_recall': kwargs['correction_matrix'][1],
             'c_f1_score': kwargs['correction_matrix'][2],
-        })
+        }
+        postfix.update(kwargs)
+        postfix.pop('correction_matrix')
+        progress.set_postfix(postfix)
+
+
 
     def write_scalar(self, **kwargs):
-        self.writer.add_scalar(tag="correction/loss", scalar_value=kwargs['loss'].item(),
+        self.writer.add_scalar(tag="correction/loss", scalar_value=kwargs['loss'],
                                global_step=self.total_step)
         self.writer.add_scalar(tag="correction/c_precision", scalar_value=kwargs['correction_matrix'][0],
                                global_step=self.total_step)

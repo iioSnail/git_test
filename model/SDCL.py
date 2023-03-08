@@ -19,19 +19,19 @@ class SDCLModel(nn.Module):
         self.temperature = 0.9
 
     def forward(self, inputs, targets=None, detection_targets=None):
+        self.model.eval()
         if targets is not None:
             text_labels = targets['input_ids'].clone()
             text_labels[text_labels == 0] = -100  # -100计算损失时会忽略
         else:
             text_labels = None
 
-        # TODO 需要W*H
-        bert_outputs = self.model(**inputs, labels=text_labels, return_dict=True, output_hidden_states=True)
+        word_embeddings = self.model.bert.embeddings.word_embeddings(inputs['input_ids'])
+        hidden_states = self.model.bert(**inputs).last_hidden_state
+        logits = self.model.cls(hidden_states * word_embeddings)
+        loss = F.cross_entropy(logits.view(logits.shape[0] * logits.shape[1], logits.shape[2]), text_labels.view(-1))
 
-        return bert_outputs.logits, bert_outputs.hidden_states[-1], bert_outputs.loss
-
-        # hidden_state = self.model.bert(**inputs).last_hidden_state
-        # outputs = self.model.cls(hidden_state)
+        return logits, hidden_states, loss
 
     def extract_outputs(self, outputs):
         logits, _, _ = outputs
@@ -57,10 +57,17 @@ class SDCLModel(nn.Module):
 
         loss_c = F.cross_entropy(sims, sim_labels)
 
+        self.loss_c = float(loss_c)  # 记录一下
+
         return loss_x + self.alpha * loss_y + self.beta * loss_c
 
     def get_optimizer(self):
         return torch.optim.AdamW(self.parameters(), lr=7e-5)
+
+    def extra_info(self):
+        return {
+            'loss_c': self.loss_c
+        }
 
     def predict(self, src):
         src = ' '.join(src.replace(" ", ""))

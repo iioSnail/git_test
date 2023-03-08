@@ -1,0 +1,24 @@
+模型：SDCL。没有使用H=W*H，负样本用的是该batch下的所有的其他token。batch_size用的32（48内存不够）
+执行情况：第15个epoch因为内存不够意外挂了。从Wang271K上看，感觉并不太好，和MacBert4Csc差不多。
+Correction Precision: 0.6258527199579105, Recall: 0.6629609042059175, F1-Score: 0.6438725926260859
+Correction Precision: 0.6391091614643767, Recall: 0.7018714100424862, F1-Score: 0.6690215466574589
+Correction Precision: 0.6417985012488523, Recall: 0.7143651529192373, F1-Score: 0.676140350378506
+Correction Precision: 0.6474497424820322, Recall: 0.7222016308375236, F1-Score: 0.6827858076485445
+Correction Precision: 0.6451453104358247, Recall: 0.7237865876249122, F1-Score: 0.6822070887280021
+Correction Precision: 0.6506064130253114, Recall: 0.7250509164968107, F1-Score: 0.685814360271922
+Correction Precision: 0.6515622443970797, Recall: 0.738139362490597, F1-Score: 0.6921539659628507
+Correction Precision: 0.6481813733484507, Recall: 0.7353811991116329, F1-Score: 0.689033376181537
+Correction Precision: 0.6537269613438829, Recall: 0.7423596962399069, F1-Score: 0.6952298347143837
+Correction Precision: 0.6534230832374563, Recall: 0.7362190159081139, F1-Score: 0.6923545267696374
+Correction Precision: 0.6532164709772361, Recall: 0.7320237212748828, F1-Score: 0.6903783967749398
+Correction Precision: 0.6553588987216231, Recall: 0.7402813772675415, F1-Score: 0.6952364390010348
+Correction Precision: 0.6480182678191734, Recall: 0.7369690224446787, F1-Score: 0.6896372152630953
+Correction Precision: 0.6565988181220196, Recall: 0.7410151908112743, F1-Score: 0.6962576148193703
+Epoch 14 Training: 100% 250/250 [05:26<00:00,  1.31s/it, loss=2.59, c_precision=0.728, c_recall=0.978, c_f1_score=0.834]
+Correction Precision: 0.652616279069662, Recall: 0.7480562754533971, F1-Score: 0.6970846984844333
+Eval情况：但从eval情况来看，还是很不错的。
+Character-level Detect Acc: 0.9866, P: 0.8028, R: 0.4837, F1: 0.6037
+Character-level Correct Acc: 0.9845, P: 0.7634, R: 0.3833, F1: 0.5104
+Sentence-level Detect Acc: 0.6833, P: 0.8505, R: 0.4385, F1: 0.5787
+Sentence-level Correct Acc: 0.6388, P: 0.8190, R: 0.3486, F1: 0.4891
+
