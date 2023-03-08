@@ -22,3 +22,32 @@ Character-level Correct Acc: 0.9845, P: 0.7634, R: 0.3833, F1: 0.5104
 Sentence-level Detect Acc: 0.6833, P: 0.8505, R: 0.4385, F1: 0.5787
 Sentence-level Correct Acc: 0.6388, P: 0.8190, R: 0.3486, F1: 0.4891
 
+模型：SDCL。负样本用的是该batch下的所有的其他token。batch_size用的32（48内存不够）
+增加了H=W*H
+执行情况：CL Loss降了，但不多。在Wang271K上表现比不加W好一点。
+Correction Precision: 0.3092127303181544, Recall: 0.17102093755787084, F1-Score: 0.22023383394841295
+Correction Precision: 0.7115531752101333, Recall: 0.34463590883817957, F1-Score: 0.46436150249369296
+Correction Precision: 0.868287740627873, Recall: 0.47655236329926287, F1-Score: 0.6153662034676001
+Correction Precision: 0.8873365041614485, Recall: 0.5531875463305127, F1-Score: 0.6815068488418163
+Correction Precision: 0.8878603544033621, Recall: 0.6218969988883619, F1-Score: 0.7314522274268944
+Correction Precision: 0.8947368421050266, Recall: 0.6263654878725001, F1-Score: 0.7368764970105028
+Correction Precision: 0.8966122961101891, Recall: 0.662157153446875, F1-Score: 0.7617524779249644
+Correction Precision: 0.9024077868850148, Recall: 0.6519245003699755, F1-Score: 0.7569832397362859
+Correction Precision: 0.8946193900320123, Recall: 0.668271902203988, F1-Score: 0.7650551309776702
+Correction Precision: 0.8870043000475664, Recall: 0.6868294487605092, F1-Score: 0.7741868218598871
+Correction Precision: 0.8842637151104705, Recall: 0.6810600444772644, F1-Score: 0.7694723613173101
+Correction Precision: 0.8788090253545291, Recall: 0.699370603480063, F1-Score: 0.7788887738594626
+Correction Precision: 0.8947368421050441, Recall: 0.6779818215543167, F1-Score: 0.7714225406659406
+Correction Precision: 0.8965936739657185, Recall: 0.6826602445348865, F1-Score: 0.7751367264757771
+Correction Precision: 0.8781345207403612, Recall: 0.6936319881524077, F1-Score: 0.7750542967453269
+Correction Precision: 0.8817551963046462, Recall: 0.707037037036906, F1-Score: 0.7847893109139017
+Correction Precision: 0.9005350194550338, Recall: 0.6849796522381271, F1-Score: 0.778104643341816
+Correction Precision: 0.8975715316179615, Recall: 0.6921935842757848, F1-Score: 0.7816164149185661
+Correction Precision: 0.8827700307253881, Recall: 0.6929499072354929, F1-Score: 0.7764265663920338
+Epoch 19 Training: 100% 250/250 [05:02<00:00,  1.21s/it, c_precision=0.99, c_recall=0.955, c_f1_score=0.972, loss=2.61, loss_c=5.18]
+Correction Precision: 0.8787383177568039, Recall: 0.6969977761303378, F1-Score: 0.7773873496511783
+Eval情况：Eval情况很差。因此我可以得出一个小结论：MacBert的初始化参数很重要。因为加了W，所以相当于让MacBert重新学，最终在Wang271K这个数据集上过拟合了。
+Character-level Detect Acc: 0.9811, P: 0.5864, R: 0.3409, F1: 0.4311
+Character-level Correct Acc: 0.9796, P: 0.5304, R: 0.2716, F1: 0.3592
+Sentence-level Detect Acc: 0.5745, P: 0.7151, R: 0.2349, F1: 0.3536
+Sentence-level Correct Acc: 0.5527, P: 0.6710, R: 0.1908, F1: 0.2971
