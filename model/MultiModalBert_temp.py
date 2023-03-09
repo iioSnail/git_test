@@ -325,7 +325,8 @@ class MultiModalBertModel(nn.Module):
         # bert_outputs.last_hidden_state = bert_outputs.last_hidden_state * self.hidden_forget_gate(
         #     bert_outputs.last_hidden_state).sigmoid()
 
-        bert_outputs.last_hidden_state += token_embeddings
+        # bert_outputs.last_hidden_state += token_embeddings
+        bert_outputs.fuse_hidden_state = bert_outputs.last_hidden_state + token_embeddings
 
         # bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
         #                                                pinyin_embeddings,
@@ -399,9 +400,10 @@ class MultiModalBertCorrectionModel(nn.Module):
         return optimizer
 
     def forward(self, inputs, *args, **kwargs):
-        outputs = self.bert(**inputs).last_hidden_state
+        bert_outputs = self.bert(**inputs)
+        fuse_hidden_state = bert_outputs.fuse_hidden_state
         # 把该字是否正确这个特征加到里面去。
-        return self.cls(outputs), inputs['input_ids'], outputs
+        return self.cls(fuse_hidden_state), inputs['input_ids'], bert_outputs.last_hidden_state
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
     #     targets = targets['input_ids']
