@@ -306,13 +306,13 @@ class MultiModalBertModel(nn.Module):
         else:
             bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
-        # input_pinyins = self.convert_tokens_to_pinyin_embeddings(input_ids.view(-1))
-        # pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
-        # pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
+        input_pinyins = self.convert_tokens_to_pinyin_embeddings(input_ids.view(-1))
+        pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
+        pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
 
-        # images = self.convert_tokens_to_images(input_ids.view(-1))
-        # glyph_embeddings = self.glyph_embeddings(images)
-        # glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
+        images = self.convert_tokens_to_images(input_ids.view(-1))
+        glyph_embeddings = self.glyph_embeddings(images)
+        glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
 
         # 把经过bert前的embedding加到输出上
         if inputs_embeds is not None:
@@ -325,15 +325,14 @@ class MultiModalBertModel(nn.Module):
         # bert_outputs.last_hidden_state = bert_outputs.last_hidden_state * self.hidden_forget_gate(
         #     bert_outputs.last_hidden_state).sigmoid()
 
-        # bert_outputs.last_hidden_state += token_embeddings
-        bert_outputs.fuse_hidden_state = bert_outputs.last_hidden_state + token_embeddings
+        bert_outputs.last_hidden_state += token_embeddings
 
-        # bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
-        #                                                pinyin_embeddings,
-        #                                                glyph_embeddings], dim=-1)
-        # bert_outputs.pooler_output = torch.concat([bert_outputs.pooler_output,
-        #                                            pinyin_embeddings.sum(dim=1),
-        #                                            glyph_embeddings.sum(dim=1)], dim=-1)
+        bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
+                                                       pinyin_embeddings,
+                                                       glyph_embeddings], dim=-1)
+        bert_outputs.pooler_output = torch.concat([bert_outputs.pooler_output,
+                                                   pinyin_embeddings.sum(dim=1),
+                                                   glyph_embeddings.sum(dim=1)], dim=-1)
 
         return bert_outputs
 
@@ -356,7 +355,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.args = args
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer(bert_path)
-        self.cls = BertOnlyMLMHead(768, len(self.tokenizer))
+        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
 
         # alpha = [0.75] * len(self.tokenizer)
         # alpha[0] = 0
@@ -364,8 +363,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.loss_fnt = FocalLoss(device=self.args.device)
 
         self.optimizer = self.make_optimizer()
-        self.scheduler = PlateauScheduler(self.optimizer)
-        # self.scheduler = self.build_lr_scheduler(self.optimizer)
+        # self.scheduler = PlateauScheduler(self.optimizer)
+        self.scheduler = self.build_lr_scheduler(self.optimizer)
         self.args.multi_forward_args = True
 
         for layer in self.cls.predictions:
@@ -400,10 +399,9 @@ class MultiModalBertCorrectionModel(nn.Module):
         return optimizer
 
     def forward(self, inputs, *args, **kwargs):
-        bert_outputs = self.bert(**inputs)
-        fuse_hidden_state = bert_outputs.fuse_hidden_state
+        outputs = self.bert(**inputs).last_hidden_state
         # 把该字是否正确这个特征加到里面去。
-        return self.cls(fuse_hidden_state), inputs['input_ids'], bert_outputs.last_hidden_state
+        return self.cls(outputs), inputs['input_ids']
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
     #     targets = targets['input_ids']
@@ -441,45 +439,13 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     return loss
 
     def compute_loss(self, outputs, targets, inputs, detection_targets, *args, **kwargs):
-        logits, _, _ = outputs
+        outputs, _ = outputs
         targets = targets['input_ids'].clone()
         targets[(~detection_targets.bool()) & (targets != 0)] = 1
-        loss_x = self.loss_fnt(logits.view(-1, len(self.tokenizer)), targets.view(-1))
-
-        loss_cl = self.compute_cl_loss(outputs, targets, inputs, detection_targets)
-
-        return loss_x + 0.5 * loss_cl
-
-    def compute_cl_loss(self, outputs, targets, inputs, detect_targets, *args, **kwargs):
-        _, _, hidden_states_x = outputs
-        with torch.no_grad():
-            hidden_states_y = self.bert(targets).last_hidden_state
-
-        anchor_samples = hidden_states_x[detect_targets.bool()]
-        positive_samples = hidden_states_y[detect_targets.bool()]
-        negative_samples = hidden_states_x[~detect_targets.bool() & inputs['attention_mask'].bool()]
-
-        # 错字和对应正确的字计算余弦相似度
-        positive_sim = F.cosine_similarity(anchor_samples, positive_samples)
-        # 错字与所有batch内的所有其他字计算余弦相似度
-        negative_sim = F.cosine_similarity(anchor_samples.unsqueeze(1), negative_samples.unsqueeze(0), dim=-1)
-
-        sims = torch.concat([positive_sim.unsqueeze(1), negative_sim], dim=1) / 0.05
-        sim_labels = torch.zeros(sims.shape[0]).long().to(self.args.device)
-
-        loss_c = F.cross_entropy(sims, sim_labels)
-
-        self.loss_c = float(loss_c)
-
-        return loss_c
-
-    def extra_info(self):
-        return {
-            'loss_c': self.loss_c
-        }
+        return self.loss_fnt(outputs.view(-1, len(self.tokenizer)), targets.view(-1))
 
     def extract_outputs(self, outputs):
-        outputs, input_ids, _ = outputs
+        outputs, input_ids = outputs
         outputs = outputs.argmax(-1)
 
         for i in range(len(outputs)):
@@ -488,6 +454,24 @@ class MultiModalBertCorrectionModel(nn.Module):
                     outputs[i][j] = input_ids[i][j]
 
         return outputs
+
+    # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
+    #     """
+    #     只计算错字的loss，正确字的loss只给一点点。
+    #     有潜力，但是会慢一点，最终训练的时候可以用这个
+    #     """
+    #     outputs = outputs.view(-1, outputs.size(-1))
+    #
+    #     targets = targets['input_ids']
+    #     targets_ = targets.clone()
+    #     soft_loss = self.soft_criteria(outputs, targets_.view(-1))
+    #
+    #     inputs = inputs['input_ids']
+    #     targets_ = targets.clone()
+    #     targets_[targets_ == inputs] = 0
+    #     loss = self.criteria(outputs, targets_.view(-1))
+    #
+    #     return 0.3 * loss + 0.7 * soft_loss
 
     def get_optimizer(self):
         return self.optimizer

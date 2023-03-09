@@ -740,3 +740,22 @@ Character-level Detect Acc: 0.9806, P: 0.5431, R: 0.5078, F1: 0.5249
 Character-level Correct Acc: 0.9775, P: 0.4559, R: 0.3579, F1: 0.4010
 Sentence-level Detect Acc: 0.5700, P: 0.6000, R: 0.3963, F1: 0.4773
 Sentence-level Correct Acc: 0.5145, P: 0.5184, R: 0.2844, F1: 0.3673
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+对比学习使用Bert的hidden_state(不融合word_embeddings)
+执行情况：执行了8个epoch停了，感觉上不去了，虽然对比学习的loss下降了， 但好像没借用
+Epoch 0 Training: 100% 250/250 [04:35<00:00,  1.10s/it, c_precision=0.926, c_recall=0.0596, c_f1_score=0.112, loss=2.04, loss_c=3.75]
+Correction Precision: 0.9611197511649128, Recall: 0.11601276515860408, F1-Score: 0.20703517568711802
+Correction Precision: 0.8994063324535292, Recall: 0.5122088655145544, F1-Score: 0.6527046429074957
+Correction Precision: 0.8837021046948506, Recall: 0.617109478047745, F1-Score: 0.7267280589852702
+Correction Precision: 0.89383474034257, Recall: 0.6557807807806576, F1-Score: 0.7565226800356155
+Correction Precision: 0.8969149736641844, Recall: 0.6721804511276931, F1-Score: 0.7684538514494919
+Correction Precision: 0.8991194968551197, Recall: 0.6718045112780692, F1-Score: 0.7690155992951343
+Correction Precision: 0.9002756201451014, Recall: 0.6743618618617352, F1-Score: 0.7711127798513646
+Epoch 7 Training: 100% 250/250 [04:33<00:00,  1.09s/it, c_precision=0.946, c_recall=0.649, c_f1_score=0.77, loss=0.688, loss_c=1.28]
+Correction Precision: 0.89969909729165, Recall: 0.6732970538561318, F1-Score: 0.7702050011201529
+Eval情况：很差
+Character-level Detect Acc: 0.9797, P: 0.5185, R: 0.4767, F1: 0.4967
+Character-level Correct Acc: 0.9762, P: 0.4139, R: 0.3126, F1: 0.3562
+Sentence-level Detect Acc: 0.5600, P: 0.5916, R: 0.3615, F1: 0.4487
+Sentence-level Correct Acc: 0.4927, P: 0.4749, R: 0.2257, F1: 0.3060
