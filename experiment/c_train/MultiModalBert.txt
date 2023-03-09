@@ -694,3 +694,29 @@ Character-level Detect Acc: 0.9836, P: 0.6158, R: 0.5827, F1: 0.5988
 Character-level Correct Acc: 0.9819, P: 0.5808, R: 0.5035, F1: 0.5394
 Sentence-level Detect Acc: 0.6355, P: 0.6782, R: 0.5028, F1: 0.5774
 Sentence-level Correct Acc: 0.6018, P: 0.6458, R: 0.4349, F1: 0.5197
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+去掉了MultiModalBert，仅使用MacBert（并没有使用MacBertHead的预训练参数）
+执行情况：执行了16个epoch停了，比MultiModalBert稍微差了一点，但不多
+Correction Precision: 0.989473684209832, Recall: 0.2646893185657472, F1-Score: 0.4176540281028811
+Correction Precision: 0.9650521152664117, Recall: 0.5912847483094306, F1-Score: 0.7332867453940294
+Correction Precision: 0.9682368775232926, Recall: 0.6777840587901492, F1-Score: 0.7973841715393332
+Correction Precision: 0.975891254167485, Recall: 0.7141516516515175, F1-Score: 0.8247534405002174
+Correction Precision: 0.9669162038152699, Recall: 0.7526315789472269, F1-Score: 0.8464221536139168
+Correction Precision: 0.971725471241911, Recall: 0.7558270676690308, F1-Score: 0.8502854721234043
+Correction Precision: 0.9688836104510762, Recall: 0.7655780780779343, F1-Score: 0.855315579292809
+Correction Precision: 0.9717973231355229, Recall: 0.7629949333832308, F1-Score: 0.8548302318207397
+Correction Precision: 0.9709246901808933, Recall: 0.7642093415868009, F1-Score: 0.8552534895877398
+Correction Precision: 0.970405727923396, Recall: 0.7638549690022987, F1-Score: 0.8548302318205887
+Correction Precision: 0.9703986631652015, Recall: 0.7642413987590215, F1-Score: 0.8550694147361629
+Correction Precision: 0.9706723891270932, Recall: 0.7647942889346675, F1-Score: 0.8555216975209367
+Correction Precision: 0.9711492608486, Recall: 0.7647390161470587, F1-Score: 0.8556722684144527
+Correction Precision: 0.971544715446922, Recall: 0.7640090259494614, F1-Score: 0.855368420559601
+Correction Precision: 0.9706583969463333, Recall: 0.7639879834771377, F1-Score: 0.855011556556718
+Correction Precision: 0.9704127893101955, Recall: 0.7634691195793573, F1-Score: 0.8545913002003659
+Eval情况：同样比MultiModalBert稍微差了一点，但不多
+Character-level Detect Acc: 0.9843, P: 0.6552, R: 0.5403, F1: 0.5922
+Character-level Correct Acc: 0.9827, P: 0.6193, R: 0.4625, F1: 0.5296
+Sentence-level Detect Acc: 0.6445, P: 0.7115, R: 0.4752, F1: 0.5699
+Sentence-level Correct Acc: 0.6127, P: 0.6809, R: 0.4110, F1: 0.5126
+

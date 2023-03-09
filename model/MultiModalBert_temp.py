@@ -401,7 +401,7 @@ class MultiModalBertCorrectionModel(nn.Module):
     def forward(self, inputs, *args, **kwargs):
         outputs = self.bert(**inputs).last_hidden_state
         # 把该字是否正确这个特征加到里面去。
-        return self.cls(outputs), inputs['input_ids']
+        return self.cls(outputs), inputs['input_ids'], outputs
 
     # def compute_loss(self, outputs, targets, *args, **kwargs):
     #     targets = targets['input_ids']
@@ -439,13 +439,45 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     return loss
 
     def compute_loss(self, outputs, targets, inputs, detection_targets, *args, **kwargs):
-        outputs, _ = outputs
+        logits, _, _ = outputs
         targets = targets['input_ids'].clone()
         targets[(~detection_targets.bool()) & (targets != 0)] = 1
-        return self.loss_fnt(outputs.view(-1, len(self.tokenizer)), targets.view(-1))
+        loss_x = self.loss_fnt(logits.view(-1, len(self.tokenizer)), targets.view(-1))
+
+        loss_cl = self.compute_cl_loss(outputs, targets, inputs, detection_targets)
+
+        return loss_x + 0.5 * loss_cl
+
+    def compute_cl_loss(self, outputs, targets, inputs, detect_targets, *args, **kwargs):
+        _, _, hidden_states_x = outputs
+        with torch.no_grad():
+            hidden_states_y = self.bert(targets).last_hidden_state
+
+        anchor_samples = hidden_states_x[detect_targets.bool()]
+        positive_samples = hidden_states_y[detect_targets.bool()]
+        negative_samples = hidden_states_x[~detect_targets.bool() & inputs['attention_mask'].bool()]
+
+        # 错字和对应正确的字计算余弦相似度
+        positive_sim = F.cosine_similarity(anchor_samples, positive_samples)
+        # 错字与所有batch内的所有其他字计算余弦相似度
+        negative_sim = F.cosine_similarity(anchor_samples.unsqueeze(1), negative_samples.unsqueeze(0), dim=-1)
+
+        sims = torch.concat([positive_sim.unsqueeze(1), negative_sim], dim=1) / 0.05
+        sim_labels = torch.zeros(sims.shape[0]).long().to(self.args.device)
+
+        loss_c = F.cross_entropy(sims, sim_labels)
+
+        self.loss_c = float(loss_c)
+
+        return loss_c
+
+    def extra_info(self):
+        return {
+            'loss_c': self.loss_c
+        }
 
     def extract_outputs(self, outputs):
-        outputs, input_ids = outputs
+        outputs, input_ids, _ = outputs
         outputs = outputs.argmax(-1)
 
         for i in range(len(outputs)):
