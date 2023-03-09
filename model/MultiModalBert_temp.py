@@ -14,7 +14,7 @@ from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT, BertOnlyMLMHead
 from utils.loss import CscFocalLoss, FocalLoss
-from utils.scheduler import PlateauScheduler
+from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import is_chinese
 from utils.utils import mock_args, mkdir
 
@@ -306,13 +306,13 @@ class MultiModalBertModel(nn.Module):
         else:
             bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
-        input_pinyins = self.convert_tokens_to_pinyin_embeddings(input_ids.view(-1))
-        pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
-        pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
+        # input_pinyins = self.convert_tokens_to_pinyin_embeddings(input_ids.view(-1))
+        # pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
+        # pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
 
-        images = self.convert_tokens_to_images(input_ids.view(-1))
-        glyph_embeddings = self.glyph_embeddings(images)
-        glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
+        # images = self.convert_tokens_to_images(input_ids.view(-1))
+        # glyph_embeddings = self.glyph_embeddings(images)
+        # glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
 
         # 把经过bert前的embedding加到输出上
         if inputs_embeds is not None:
@@ -325,21 +325,14 @@ class MultiModalBertModel(nn.Module):
         # bert_outputs.last_hidden_state = bert_outputs.last_hidden_state * self.hidden_forget_gate(
         #     bert_outputs.last_hidden_state).sigmoid()
 
-        left_state = bert_outputs.last_hidden_state.clone()[:, 1:, :]
-        right_state = bert_outputs.last_hidden_state.clone()[:, :-1, :]
-        pad_zeros = torch.zeros(batch_size, 1, 768, device=left_state.device)
-        left_state = torch.concat([left_state, pad_zeros], dim=1)
-        right_state = torch.concat([right_state, pad_zeros], dim=1)
-
         bert_outputs.last_hidden_state += token_embeddings
-        bert_outputs.last_hidden_state = bert_outputs.last_hidden_state + left_state + right_state
 
-        bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
-                                                       pinyin_embeddings,
-                                                       glyph_embeddings], dim=-1)
-        bert_outputs.pooler_output = torch.concat([bert_outputs.pooler_output,
-                                                   pinyin_embeddings.sum(dim=1),
-                                                   glyph_embeddings.sum(dim=1)], dim=-1)
+        # bert_outputs.last_hidden_state = torch.concat([bert_outputs.last_hidden_state,
+        #                                                pinyin_embeddings,
+        #                                                glyph_embeddings], dim=-1)
+        # bert_outputs.pooler_output = torch.concat([bert_outputs.pooler_output,
+        #                                            pinyin_embeddings.sum(dim=1),
+        #                                            glyph_embeddings.sum(dim=1)], dim=-1)
 
         return bert_outputs
 
@@ -362,7 +355,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.args = args
         self.bert = MultiModalBertModel(args)
         self.tokenizer = BERT.get_tokenizer(bert_path)
-        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
+        self.cls = BertOnlyMLMHead(768, len(self.tokenizer))
 
         # alpha = [0.75] * len(self.tokenizer)
         # alpha[0] = 0
@@ -371,6 +364,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
+        # self.scheduler = self.build_lr_scheduler(self.optimizer)
         self.args.multi_forward_args = True
 
         for layer in self.cls.predictions:
@@ -418,6 +412,21 @@ class MultiModalBertCorrectionModel(nn.Module):
     def get_lr_scheduler(self):
         return self.scheduler
 
+    def build_lr_scheduler(self, optimizer):
+        scheduler_args = {
+            "optimizer": optimizer,
+        }
+        scheduler_args.update({'warmup_factor': 0.01,
+                               'warmup_epochs': 1024,
+                               'warmup_method': 'linear',
+                               'milestones': (10,),
+                               'gamma': 0.9999,
+                               'max_iters': 10,
+                               'delay_iters': 0,
+                               'eta_min_lr': 3e-07})
+        scheduler = WarmupExponentialLR(**scheduler_args)
+        return scheduler
+
     # def compute_loss(self, outputs, targets, *args, **kwargs):
     #     """
     #     使用bce_loss。FIXME：不知道为什么不work
@@ -445,24 +454,6 @@ class MultiModalBertCorrectionModel(nn.Module):
                     outputs[i][j] = input_ids[i][j]
 
         return outputs
-
-    # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
-    #     """
-    #     只计算错字的loss，正确字的loss只给一点点。
-    #     有潜力，但是会慢一点，最终训练的时候可以用这个
-    #     """
-    #     outputs = outputs.view(-1, outputs.size(-1))
-    #
-    #     targets = targets['input_ids']
-    #     targets_ = targets.clone()
-    #     soft_loss = self.soft_criteria(outputs, targets_.view(-1))
-    #
-    #     inputs = inputs['input_ids']
-    #     targets_ = targets.clone()
-    #     targets_[targets_ == inputs] = 0
-    #     loss = self.criteria(outputs, targets_.view(-1))
-    #
-    #     return 0.3 * loss + 0.7 * soft_loss
 
     def get_optimizer(self):
         return self.optimizer
