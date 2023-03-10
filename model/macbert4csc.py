@@ -159,8 +159,16 @@ class MacBert4CscModel(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.tokenizer = BertTokenizerFast.from_pretrained('hfl/chinese-macbert-base')
         self.w = 0.3
+
+        # FIXME，临时不使用MacBert的Head初始化参数，试试效果
+        self.temp_init_head()
+
         self.optimizer = make_optimizer(self)
         self.lr_scheduler = build_lr_scheduler(self.optimizer)
+
+    def temp_init_head(self):
+        nn.init.orthogonal_(self.bert.cls.predictions.transform.dense.weight, gain=1)
+        nn.init.orthogonal_(self.bert.cls.predictions.decoder.weight, gain=1)
 
     def forward(self, inputs, targets=None, detection_targets=None):
         encoded_text = inputs
@@ -216,7 +224,6 @@ class MacBert4CscModel(nn.Module):
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
         outputs = self.forward(inputs)[1]
         return self.tokenizer.decode(outputs.argmax(-1)[0], skip_special_tokens=True).replace(' ', '')
-
 
 
 class HuggingFaceMacBert4CscModel(nn.Module):
