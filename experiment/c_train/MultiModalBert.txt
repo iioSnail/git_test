@@ -696,6 +696,23 @@ Sentence-level Detect Acc: 0.6355, P: 0.6782, R: 0.5028, F1: 0.5774
 Sentence-level Correct Acc: 0.6018, P: 0.6458, R: 0.4349, F1: 0.5197
 
 模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+将PlateauScheduler改为WarmupExponentialLR，学习率不变，head为2e-4，bert为2e-6
+全量训练：
+Epoch 0 Training: 100% 8055/8055 [1:57:18<00:00,  1.14it/s, c_precision=0.957, c_recall=0.784, c_f1_score=0.862, loss=0.0157]
+Correction Precision: 0.9588022005500776, Recall: 0.8061074319352041, F1-Score: 0.8758494655536039
+Epoch 1 Training: 100% 8055/8055 [1:57:13<00:00,  1.15it/s, c_precision=0.964, c_recall=0.843, c_f1_score=0.9, loss=0.0115]
+Correction Precision: 0.971353690497899, Recall: 0.8379515221620044, F1-Score: 0.8997346576633403
+2个全量Epoch的Eval情况：有点出乎意料
+Character-level Detect Acc: 0.9908, P: 0.8031, R: 0.7440, F1: 0.7724
+Character-level Correct Acc: 0.9901, P: 0.7965, R: 0.7143, F1: 0.7532
+Sentence-level Detect Acc: 0.7764, P: 0.8453, R: 0.6716, F1: 0.7485
+Sentence-level Correct Acc: 0.7645, P: 0.8405, R: 0.6477, F1: 0.7316
+
+
+
+
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
 去掉了MultiModalBert，仅使用MacBert（并没有使用MacBertHead的预训练参数）
 执行情况：执行了16个epoch停了，比MultiModalBert稍微差了一点，但不多
 Correction Precision: 0.989473684209832, Recall: 0.2646893185657472, F1-Score: 0.4176540281028811

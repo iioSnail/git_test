@@ -367,8 +367,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.ws_loss_fnt = nn.CrossEntropyLoss(ignore_index=0)
 
         self.optimizer = self.make_optimizer()
-        # self.scheduler = PlateauScheduler(self.optimizer)
-        self.scheduler = self.build_lr_scheduler(self.optimizer)
+        self.scheduler = PlateauScheduler(self.optimizer)
+        # self.scheduler = self.build_lr_scheduler(self.optimizer)
         self.args.multi_forward_args = True
 
         for layer in self.cls.predictions:
