@@ -91,3 +91,39 @@ Character-level Detect Acc: 0.9871, P: 0.7178, R: 0.6250, F1: 0.6682
 Character-level Correct Acc: 0.9856, P: 0.6919, R: 0.5517, F1: 0.6139
 Sentence-level Detect Acc: 0.7044, P: 0.7761, R: 0.5638, F1: 0.6531
 Sentence-level Correct Acc: 0.6734, P: 0.7549, R: 0.5009, F1: 0.6022
+
+
+模型：MacBert4Csc，完全模拟了MacBert4Csc的训练流程
+重新初始化Head的参数
+执行情况：20个epoch执行完了，比使用了head要好，看的出来是可以拟合Wang271K的，不过拟合能力有限
+Correction Precision: 1.3427504901039108e-05, Recall: 0.00018691588785043234, F1-Score: 2.50549962065292e-05
+Correction Precision: 0.01660145536987543, Recall: 0.08487567769674988, F1-Score: 0.027770980886105818
+Correction Precision: 0.3918629550320266, Recall: 0.3077354260089111, F1-Score: 0.3447409728195599
+Correction Precision: 0.6272211720224472, Recall: 0.31026743968574705, F1-Score: 0.41516516472221304
+Correction Precision: 0.6830265848667963, Recall: 0.3124415341440014, F1-Score: 0.42875481343311134
+Correction Precision: 0.7118446601938984, Recall: 0.3428090518046862, F1-Score: 0.46276192836695923
+Correction Precision: 0.7400815721168928, Recall: 0.3731538605346096, F1-Score: 0.49614715341947097
+Correction Precision: 0.7994652406414441, Recall: 0.44743733632614147, F1-Score: 0.5737586946704419
+Correction Precision: 0.8288685786319481, Recall: 0.49214071856278213, F1-Score: 0.6175883522386945
+Correction Precision: 0.8477477477474932, Recall: 0.5280583613915959, F1-Score: 0.6507607187522961
+Correction Precision: 0.8628305725077411, Recall: 0.5555763473052853, F1-Score: 0.6759248714641163
+Correction Precision: 0.8513439385625751, Recall: 0.5797534553603698, F1-Score: 0.6897777772956323
+Correction Precision: 0.8754874651808147, Recall: 0.5879161990272002, F1-Score: 0.7034467318378611
+Correction Precision: 0.8621507643645593, Recall: 0.6115161712468477, F1-Score: 0.7155200695132125
+Correction Precision: 0.8586900464154568, Recall: 0.6233620366902614, F1-Score: 0.7223427327011697
+Correction Precision: 0.8632742225646715, Recall: 0.6282027305029683, F1-Score: 0.7272136821275476
+Correction Precision: 0.8563883299796639, Recall: 0.6366866118173827, F1-Score: 0.7303732298838996
+Correction Precision: 0.8620428751574118, Recall: 0.6388785046727777, F1-Score: 0.73387010149694
+Correction Precision: 0.8556854939037433, Recall: 0.6430441286461026, F1-Score: 0.7342799183740056
+Epoch 19 Training: 100% 250/250 [02:31<00:00,  1.65it/s, c_precision=0.992, c_recall=0.928, c_f1_score=0.959, loss=0.0114]
+Correction Precision: 0.8597621407331864, Recall: 0.6487193868011499, F1-Score: 0.7394778897600285
+Eval情况：Eval情况极差，难道我的模型已经可以超过sota了？
+Character-level Detect Acc: 0.9668, P: 0.2633, R: 0.3082, F1: 0.2840
+Character-level Correct Acc: 0.9659, P: 0.2369, R: 0.2677, F1: 0.2514
+Sentence-level Detect Acc: 0.3700, P: 0.2971, R: 0.1948, F1: 0.2353
+Sentence-level Correct Acc: 0.3579, P: 0.2700, R: 0.1704, F1: 0.2090
+一次全量Eval情况：结果更差了，而且这也太差了吧
+Character-level Detect Acc: 0.9791, P: 0.4859, R: 0.0996, F1: 0.1653
+Character-level Correct Acc: 0.9788, P: 0.4511, R: 0.0866, F1: 0.1453
+Sentence-level Detect Acc: 0.5229, P: 0.6024, R: 0.0928, F1: 0.1608
+Sentence-level Correct Acc: 0.5165, P: 0.5658, R: 0.0798, F1: 0.1398

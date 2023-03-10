@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 
 from model.common import BERT
 from utils.dataset import CSCDataset, SighanTrainDataset, ConfusionMaskDataset, PhoneticProbeDataset, GlyphProbeDataset
+from utils.str_utils import word_segment_targets
 
 
 def create_dataloader(args, collate_fn=None, tokenizer=None):
@@ -35,7 +36,10 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
         src = BERT.get_bert_inputs(src, tokenizer=tokenizer)
         tgt = BERT.get_bert_inputs(tgt, tokenizer=tokenizer)
 
-        return src, tgt, (src['input_ids'] != tgt['input_ids']).float()
+        return src.to(args.device), \
+               tgt.to(args.device), \
+               (src['input_ids'] != tgt['input_ids']).float().to(args.device), \
+               {}  # 补充内容
 
     if collate_fn is None:
         collate_fn = default_collate_fn
@@ -53,3 +57,26 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
                               drop_last=True)
 
     return train_loader, valid_loader
+
+
+def get_word_segment_collate_fn(tokenizer, device):
+    def word_segment_collate_fn(batch):
+        src, tgt = zip(*batch)
+        src, tgt = list(src), list(tgt)
+
+        tgt_sents = [sent.replace(" ", "") for sent in tgt]
+
+        src = BERT.get_bert_inputs(src, tokenizer=tokenizer)
+        tgt = BERT.get_bert_inputs(tgt, tokenizer=tokenizer)
+
+        tgt_ws_labels = word_segment_targets(tgt_sents)
+
+        tgt_ws_labels = torch.concat([
+            torch.zeros(tgt_ws_labels.size(0)).unsqueeze(1),
+            tgt_ws_labels,
+            torch.zeros(tgt_ws_labels.size(0)).unsqueeze(1),
+        ], dim=1).long()
+
+        return src.to(device), tgt.to(device), (src['input_ids'] != tgt['input_ids']).float().to(device), tgt_ws_labels.to(device)
+
+    return word_segment_collate_fn

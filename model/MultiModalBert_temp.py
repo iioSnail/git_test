@@ -13,6 +13,7 @@ from torch.nn.utils.rnn import pad_sequence
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT, BertOnlyMLMHead
+from utils.dataloader import get_word_segment_collate_fn
 from utils.loss import CscFocalLoss, FocalLoss
 from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import is_chinese
@@ -357,10 +358,13 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.tokenizer = BERT.get_tokenizer(bert_path)
         self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
 
+        self.ws_cls = BertOnlyMLMHead(768 + 8 + 56, 5)
+
         # alpha = [0.75] * len(self.tokenizer)
         # alpha[0] = 0
         # alpha[1] = 0.25
         self.loss_fnt = FocalLoss(device=self.args.device)
+        self.ws_loss_fnt = nn.CrossEntropyLoss(ignore_index=0)
 
         self.optimizer = self.make_optimizer()
         # self.scheduler = PlateauScheduler(self.optimizer)
@@ -399,15 +403,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         return optimizer
 
     def forward(self, inputs, *args, **kwargs):
-        outputs = self.bert(**inputs).last_hidden_state
-        # 把该字是否正确这个特征加到里面去。
-        return self.cls(outputs), inputs['input_ids']
-
-    # def compute_loss(self, outputs, targets, *args, **kwargs):
-    #     targets = targets['input_ids']
-    #     outputs = outputs.view(-1, outputs.size(-1))
-    #     targets = targets.view(-1)
-    #     return self.criteria(outputs, targets)
+        hidden_states = self.bert(**inputs).last_hidden_state
+        return self.cls(hidden_states), inputs['input_ids'], self.ws_cls(hidden_states)
 
     def get_lr_scheduler(self):
         return self.scheduler
@@ -427,25 +424,26 @@ class MultiModalBertCorrectionModel(nn.Module):
         scheduler = WarmupExponentialLR(**scheduler_args)
         return scheduler
 
-    # def compute_loss(self, outputs, targets, *args, **kwargs):
-    #     """
-    #     使用bce_loss。FIXME：不知道为什么不work
-    #     """
-    #     outputs = outputs.sigmoid()
-    #     outputs = outputs * targets['attention_mask'].unsqueeze(-1)
-    #     targets_ = F.one_hot(targets['input_ids'], num_classes=len(self.tokenizer))
-    #     targets_ = targets_ * targets['attention_mask'].unsqueeze(-1)
-    #     loss = self.bce_criteria(outputs, targets_.float())
-    #     return loss
-
-    def compute_loss(self, outputs, targets, inputs, detection_targets, *args, **kwargs):
-        outputs, _ = outputs
+    def compute_loss(self, outputs, targets, inputs, detection_targets, ws_labels, *args, **kwargs):
+        outputs, _, ws_outputs = outputs
         targets = targets['input_ids'].clone()
         targets[(~detection_targets.bool()) & (targets != 0)] = 1
-        return self.loss_fnt(outputs.view(-1, len(self.tokenizer)), targets.view(-1))
+        loss = self.loss_fnt(outputs.view(-1, len(self.tokenizer)), targets.view(-1))
+        loss_ws = self.ws_loss_fnt(ws_outputs.view(-1, 5), ws_labels.view(-1))
+
+        self.loss_ws = float(loss_ws)
+        self.ws_acc = float((ws_outputs.argmax(-1)[ws_labels != 0] == ws_labels[ws_labels != 0]).sum() / (ws_labels != 0).sum())
+
+        return 0.7 * loss + 0.3 * loss_ws
+
+    def extra_info(self):
+        return {
+            "loss_ws": self.loss_ws,
+            "ws_acc": self.ws_acc
+        }
 
     def extract_outputs(self, outputs):
-        outputs, input_ids = outputs
+        outputs, input_ids, _ = outputs
         outputs = outputs.argmax(-1)
 
         for i in range(len(outputs)):
@@ -488,6 +486,10 @@ class MultiModalBertCorrectionModel(nn.Module):
         #     # self.tokenizer.convert_ids_to_tokens(prob[0][3].argsort(descending=True)[:5])
         #     print()
         return ''.join(outputs)
+
+    def get_collate_fn(self):
+        return get_word_segment_collate_fn(self.tokenizer, self.args.device)
+
 
 
 def merge_multi_modal_bert():

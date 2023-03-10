@@ -94,7 +94,7 @@ class C_Train(object):
 
         self.model = self.model.train()
         progress = tqdm(self.train_loader, desc="Epoch {} Training".format(self.current_epoch))
-        for i, (inputs, targets, detect_targets) in enumerate(progress):
+        for i, (inputs, targets, detect_targets, other) in enumerate(progress):
 
             if self.args.resume and self.total_step > self.current_epoch * len(self.train_loader) + i:
                 # Resume the progress of training loader.
@@ -102,16 +102,13 @@ class C_Train(object):
             else:
                 self.args.resume = False
 
-            inputs, targets, detect_targets = inputs.to(self.args.device), \
-                                              targets.to(self.args.device), \
-                                              detect_targets.to(self.args.device)
             self.optimizer.zero_grad()
 
             if hasattr(self.args, "multi_forward_args"):
-                outputs = self.model(inputs, targets, detect_targets)
+                outputs = self.model(inputs, targets, detect_targets, other)
             else:
                 outputs = self.model(inputs)
-            loss = self.model.compute_loss(outputs, targets, inputs, detect_targets)
+            loss = self.model.compute_loss(outputs, targets, inputs, detect_targets, other)
             loss.backward()
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5)
             self.optimizer.step()
@@ -132,11 +129,12 @@ class C_Train(object):
             correction_matrix = TrainBase.compute_matrix(*matrix)
 
             if hasattr(self.model, 'extra_info'):
-                self.set_progress_postfix(progress, loss=loss.item(), correction_matrix=correction_matrix, **self.model.extra_info())
+                self.set_progress_postfix(progress, loss=loss.item(), correction_matrix=correction_matrix,
+                                          **self.model.extra_info())
             else:
                 self.set_progress_postfix(progress, loss=loss.item(), correction_matrix=correction_matrix)
 
-            self.write_scalar(loss=loss.item(), correction_matrix=correction_matrix)
+            # self.write_scalar(loss=loss.item(), correction_matrix=correction_matrix)
 
     def set_progress_postfix(self, progress, **kwargs):
         postfix = {
@@ -147,8 +145,6 @@ class C_Train(object):
         postfix.update(kwargs)
         postfix.pop('correction_matrix')
         progress.set_postfix(postfix)
-
-
 
     def write_scalar(self, **kwargs):
         self.writer.add_scalar(tag="correction/loss", scalar_value=kwargs['loss'],
@@ -239,13 +235,10 @@ class C_Train(object):
         matrix = np.zeros([4])
 
         progress = tqdm(self.valid_loader, desc="Epoch {} Validation".format(self.current_epoch))
-        for inputs, targets, detection_targets in progress:
-            inputs, targets, detection_targets = inputs.to(self.args.device), \
-                                                 targets.to(self.args.device), \
-                                                 detection_targets.to(self.args.device)
+        for inputs, targets, detection_targets, other in progress:
 
             if hasattr(self.args, "multi_forward_args"):
-                outputs = self.model(inputs, targets, detection_targets)
+                outputs = self.model(inputs, targets, detection_targets, other)
             else:
                 outputs = self.model(inputs)
             outputs = outputs.argmax(dim=2) if 'extract_outputs' not in dir(self.model) else self.model.extract_outputs(
