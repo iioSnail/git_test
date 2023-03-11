@@ -434,7 +434,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.loss_ws = float(loss_ws)
         self.ws_acc = float((ws_outputs.argmax(-1)[ws_labels != 0] == ws_labels[ws_labels != 0]).sum() / (ws_labels != 0).sum())
 
-        return 0.7 * loss + 0.3 * loss_ws
+        ws_weight = min(0.3, 1 - self.ws_acc)
+        return (1-ws_weight) * loss + ws_weight * loss_ws
 
     def extra_info(self):
         return {
