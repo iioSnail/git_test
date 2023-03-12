@@ -40,8 +40,8 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
         src, tgt = zip(*batch)
         src, tgt = list(src), list(tgt)
 
-        src = BERT.get_bert_inputs(src, tokenizer=tokenizer)
-        tgt = BERT.get_bert_inputs(tgt, tokenizer=tokenizer)
+        src = BERT.get_bert_inputs(src, tokenizer=tokenizer, max_length=args.max_length)
+        tgt = BERT.get_bert_inputs(tgt, tokenizer=tokenizer, max_length=args.max_length)
 
         return src.to(args.device), \
                tgt.to(args.device), \

@@ -73,7 +73,7 @@ class BERT(nn.Module):
         """
         if tokenizer is None:
             warnings.warn('No Tokenizer Specified!!!')
-            tokenizer = BERT.get_tokenizer()
+            tokenizer = BERT.get_tokenizer(model_path)
 
 
         inputs = tokenizer(sentences,

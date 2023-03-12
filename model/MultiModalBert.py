@@ -410,6 +410,9 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     return self.criteria(outputs, targets)
 
     def get_lr_scheduler(self):
+        if self.args.data_type == 'sighan':
+            self.scheduler = PlateauScheduler(self.optimizer, reduce_times=2)
+
         return self.scheduler
 
     def build_lr_scheduler(self, optimizer):
@@ -474,6 +477,10 @@ class MultiModalBertCorrectionModel(nn.Module):
     #     return 0.3 * loss + 0.7 * soft_loss
 
     def get_optimizer(self):
+        if self.args.data_type == 'sighan':
+            print("Fine-tune model with SGD")
+            self.optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
+
         return self.optimizer
 
     def predict(self, src):

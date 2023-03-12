@@ -331,6 +331,8 @@ class C_Train(object):
                             help='When detection logit greater than {error_threshold}, '
                                  'the token will be treated as error.')
         parser.add_argument('--eval', action='store_true', default=False, help='Eval model after every epoch.')
+        parser.add_argument('--max-length', type=int, default=256,
+                            help='The max length of sentence. Sentence will be truncated if its length long than it.')
 
         args = parser.parse_known_args()[0]
         print(args)
