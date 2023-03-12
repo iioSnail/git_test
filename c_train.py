@@ -1,6 +1,7 @@
 import argparse
 import collections
 import os
+import time
 import traceback
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+from c_eval import Evaluation
 from model.BertCorrectionModel import BertCorrectionModel
 from model.MDCSpell import MDCSpellModel
 from model.MDCSpellPlus import MDCSpellPlusModel
@@ -89,6 +91,9 @@ class C_Train(object):
         self.recent_correction_f1_score = collections.deque(maxlen=5)
         self.correction_best_f1_score = 0
 
+        if self.args.eval:
+            self.eval = Evaluation(self.model)
+
     def train_epoch(self):
         matrix = np.zeros([4])
 
@@ -163,7 +168,13 @@ class C_Train(object):
         for epoch in range(self.current_epoch, self.args.epochs):
             try:
                 self.train_epoch()
-                self.validate()
+
+                if self.valid_loader is not None:
+                    self.validate()
+
+                if self.args.eval:
+                    time.sleep(0.01)
+                    self.eval.evaluate()
 
                 self.current_epoch += 1
             except KeyboardInterrupt:
@@ -304,6 +315,7 @@ class C_Train(object):
         parser.add_argument('--error-threshold', type=float, default=0.5,
                             help='When detection logit greater than {error_threshold}, '
                                  'the token will be treated as error.')
+        parser.add_argument('--eval', action='store_true', default=False, help='Eval model after every epoch.')
 
         args = parser.parse_known_args()[0]
         print(args)

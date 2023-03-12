@@ -19,8 +19,14 @@ from utils.utils import restore_special_tokens
 
 class Evaluation(object):
 
-    def __init__(self):
+    def __init__(self, model=None):
         self.args = self.parse_args()
+
+        if model is None:
+            self.model = self.load_model()
+        else:
+            self.model = model
+
         if self.args.data_type == 'Wang271K':
             # FIXME , Please use args to set filepath.
             with open('./data/Wang271K_processed.pkl', mode='br') as f:
@@ -32,43 +38,6 @@ class Evaluation(object):
         elif self.args.data_type == 'sighan':
             self.test_set = CSCTestDataset(self.args)
 
-        if self.args.model == 'MDCSpell':
-            self.model = MDCSpellModel(self.args).eval()
-        elif self.args.model == 'ChineseBertModel':
-            from model.ChineseBertModel import ChineseBertModel
-            self.model = ChineseBertModel(self.args).eval()
-        elif self.args.model == 'Bert':
-            self.model = BertCorrectionModel(self.args).eval()
-        elif self.args.model == 'MultiModalBert':
-            from model.MultiModalBert import MultiModalBertCorrectionModel
-            self.model = MultiModalBertCorrectionModel(self.args).eval()
-        elif self.args.model == 'MultiModalBert_temp':
-            from model.MultiModalBert_temp import MultiModalBertCorrectionModel
-            self.model = MultiModalBertCorrectionModel(self.args).eval()
-        elif self.args.model == 'MultiModalBertWithDetection':
-            from model.MultiModalBertWithDetection import MultiModalBertCorrectionModel
-            self.model = MultiModalBertCorrectionModel(self.args).eval()
-        elif self.args.model == 'MDCSpellPlus':
-            self.model = MDCSpellPlusModel(self.args).eval()
-        elif self.args.model == 'HuggingFaceMacBert4Csc':
-            self.model = HuggingFaceMacBert4CscModel(self.args).eval()
-        elif self.args.model == 'MacBert4Csc':
-            from model.macbert4csc import MacBert4CscModel
-            self.model = MacBert4CscModel(self.args).eval()
-        elif self.args.model == 'MacBert4CscPlus':
-            from model.macbert4csc_plus import MacBert4CscModel
-            self.model = MacBert4CscModel(self.args).eval()
-        elif self.args.model == 'MultiModalMacBert4Csc':
-            from model.multimodal_macbert4csc import MacBert4CscModel
-            self.model = MacBert4CscModel(self.args).eval()
-        elif self.args.model == 'ZeroShot':
-            from model.ZeroShotModel import ZeroShotModel
-            self.model = ZeroShotModel(self.args).eval()
-        elif self.args.model == 'SDCL':
-            self.model = SDCLModel(self.args).eval()
-        else:
-            raise Exception("Unknown model: " + str(self.args.model))
-
         try:
             self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
         except Exception as e:
@@ -78,7 +47,48 @@ class Evaluation(object):
 
         self.error_sentences = []
 
+    def load_model(self):
+        if self.args.model == 'MDCSpell':
+            model = MDCSpellModel(self.args).eval()
+        elif self.args.model == 'ChineseBertModel':
+            from model.ChineseBertModel import ChineseBertModel
+            model = ChineseBertModel(self.args).eval()
+        elif self.args.model == 'Bert':
+            model = BertCorrectionModel(self.args).eval()
+        elif self.args.model == 'MultiModalBert':
+            from model.MultiModalBert import MultiModalBertCorrectionModel
+            model = MultiModalBertCorrectionModel(self.args).eval()
+        elif self.args.model == 'MultiModalBert_temp':
+            from model.MultiModalBert_temp import MultiModalBertCorrectionModel
+            model = MultiModalBertCorrectionModel(self.args).eval()
+        elif self.args.model == 'MultiModalBertWithDetection':
+            from model.MultiModalBertWithDetection import MultiModalBertCorrectionModel
+            model = MultiModalBertCorrectionModel(self.args).eval()
+        elif self.args.model == 'MDCSpellPlus':
+            model = MDCSpellPlusModel(self.args).eval()
+        elif self.args.model == 'HuggingFaceMacBert4Csc':
+            model = HuggingFaceMacBert4CscModel(self.args).eval()
+        elif self.args.model == 'MacBert4Csc':
+            from model.macbert4csc import MacBert4CscModel
+            model = MacBert4CscModel(self.args).eval()
+        elif self.args.model == 'MacBert4CscPlus':
+            from model.macbert4csc_plus import MacBert4CscModel
+            model = MacBert4CscModel(self.args).eval()
+        elif self.args.model == 'MultiModalMacBert4Csc':
+            from model.multimodal_macbert4csc import MacBert4CscModel
+            model = MacBert4CscModel(self.args).eval()
+        elif self.args.model == 'ZeroShot':
+            from model.ZeroShotModel import ZeroShotModel
+            model = ZeroShotModel(self.args).eval()
+        elif self.args.model == 'SDCL':
+            model = SDCLModel(self.args).eval()
+        else:
+            raise Exception("Unknown model: " + str(self.args.model))
+
+        return model
+
     def evaluate(self):
+        self.model = self.model.eval()
         self.compute_metrics()
 
     def compute_metrics(self):

@@ -1,4 +1,5 @@
 import pickle
+import random
 
 import torch
 from torch.utils.data import DataLoader
@@ -27,7 +28,13 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
 
     valid_size = int(len(dataset) * args.valid_ratio)
     train_size = len(dataset) - valid_size
-    train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
+
+    if valid_size > 0:
+        train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
+    else:
+        print("No any valid data.")
+        train_dataset = dataset
+        valid_dataset = None
 
     def default_collate_fn(batch):
         src, tgt = zip(*batch)
@@ -49,6 +56,9 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
                               collate_fn=collate_fn,
                               shuffle=True,
                               drop_last=True)
+
+    if valid_dataset is None:
+        return train_loader, None
 
     valid_loader = DataLoader(valid_dataset,
                               batch_size=args.batch_size,
@@ -77,6 +87,7 @@ def get_word_segment_collate_fn(tokenizer, device):
             torch.zeros(tgt_ws_labels.size(0)).unsqueeze(1),
         ], dim=1).long()
 
-        return src.to(device), tgt.to(device), (src['input_ids'] != tgt['input_ids']).float().to(device), tgt_ws_labels.to(device)
+        return src.to(device), tgt.to(device), (src['input_ids'] != tgt['input_ids']).float().to(
+            device), tgt_ws_labels.to(device)
 
     return word_segment_collate_fn

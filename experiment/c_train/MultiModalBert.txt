@@ -704,12 +704,14 @@ Epoch 1 Training: 100% 8055/8055 [1:57:13<00:00,  1.15it/s, c_precision=0.964, c
 Correction Precision: 0.971353690497899, Recall: 0.8379515221620044, F1-Score: 0.8997346576633403
 Epoch 2 Training: 100% 8055/8055 [1:58:16<00:00,  1.14it/s, c_precision=0.974, c_recall=0.876, c_f1_score=0.922, loss=0.00844]
 Correction Precision: 0.9711907043602677, Recall: 0.8522548092084068, F1-Score: 0.9078439052184416
+Epoch 3 Training: 100% 8055/8055 [1:57:49<00:00,  1.14it/s, c_precision=0.969, c_recall=0.883, c_f1_score=0.924, loss=0.0101]
+Correction Precision: 0.9699346405228182, Recall: 0.8582995951416552, F1-Score: 0.9107088058841393
 2个全量Epoch的Eval情况：有点出乎意料
 Character-level Detect Acc: 0.9908, P: 0.8031, R: 0.7440, F1: 0.7724
 Character-level Correct Acc: 0.9901, P: 0.7965, R: 0.7143, F1: 0.7532
 Sentence-level Detect Acc: 0.7764, P: 0.8453, R: 0.6716, F1: 0.7485
 Sentence-level Correct Acc: 0.7645, P: 0.8405, R: 0.6477, F1: 0.7316
-3个全量epoch的Eval情况：3个Epoch后，结果并没有变得更好，反而变差了。从Char-level上看，还不算变差。
+4个全量epoch的Eval情况：4个Epoch后，结果并没有变得更好，反而变差了。从Char-level上看，还不算变差。
 Character-level Detect Acc: 0.9904, P: 0.7673, R: 0.7836, F1: 0.7754
 Character-level Correct Acc: 0.9898, P: 0.7600, R: 0.7525, F1: 0.7562
 Sentence-level Detect Acc: 0.7627, P: 0.8114, R: 0.6789, F1: 0.7393
