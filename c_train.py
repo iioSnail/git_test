@@ -94,6 +94,9 @@ class C_Train(object):
         if self.args.eval:
             self.eval = Evaluation(self.model)
 
+        if self.args.model_path is not None:
+            self.load_model()
+
     def train_epoch(self):
         matrix = np.zeros([4])
 
@@ -219,7 +222,14 @@ class C_Train(object):
         torch.save(self.model.state_dict(), self.args.model_path)
 
     def load_model(self):
-        self.model.load_state_dict(torch.load(self.args.model_path))
+        if not os.path.exists(self.args.model_path):
+            print("Load model failed. File is not exists.")
+
+        try:
+            self.model.load_state_dict(torch.load(self.args.model_path))
+        except Exception as e:
+            print(e)
+            print("Load model failed.")
 
     def resume(self):
         # Resume model training.
@@ -291,6 +301,8 @@ class C_Train(object):
         parser = argparse.ArgumentParser()
         parser.add_argument('--model', type=str, default='Bert',
                             help='The model name you want to evaluate.')
+        parser.add_argument('--model-path', type=str, default=None,
+                            help='The filepath of pretrain model.')
         parser.add_argument('--bert-path', type=str, default='./drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt')
         parser.add_argument('--batch-size', type=int, default=32, help='The batch size of training.')
         parser.add_argument('--data-type', type=str, default="none",
@@ -331,7 +343,6 @@ class C_Train(object):
         mkdir(args.output_path)
         args.output_path = Path(args.output_path)
         args.checkpoint_path = str(args.output_path / 'csc-model.pt')
-        args.model_path = str(args.output_path / 'csc-best-model.pt')
 
         return args
 
