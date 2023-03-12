@@ -196,11 +196,13 @@ class C_Train(object):
             # Save model at the end of every epoch.
             self.save_model_state(epoch + 1)
 
-            if self.recent_correction_f1_score[-1] > self.correction_best_f1_score:
+            if len(self.recent_correction_f1_score) > 0 \
+                    and self.recent_correction_f1_score[-1] > self.correction_best_f1_score:
                 self.correction_best_f1_score = self.recent_correction_f1_score[-1]
                 self.save_model()
 
-            if len(self.recent_correction_f1_score) == self.recent_correction_f1_score.maxlen \
+            if len(self.recent_correction_f1_score) > 0 \
+                    and len(self.recent_correction_f1_score) == self.recent_correction_f1_score.maxlen \
                     and self.correction_best_f1_score > max(self.recent_correction_f1_score):
                 print("Early stop Training. The best model is saved to", self.args.model_path)
                 break
