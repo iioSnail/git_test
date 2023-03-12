@@ -226,6 +226,7 @@ class C_Train(object):
             print("Load model failed. File is not exists.")
 
         try:
+            print("Load model from", self.args.model_path)
             self.model.load_state_dict(torch.load(self.args.model_path))
         except Exception as e:
             print(e)
