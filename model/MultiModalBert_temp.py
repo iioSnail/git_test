@@ -482,6 +482,10 @@ class MultiModalBertCorrectionModel(nn.Module):
         return ids
 
     def _convert_hids_to_ids(self, hids):
+        if not hasattr(self, 'hids_map'):
+            hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.hanzi_list)
+            self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
+
         if not hasattr(self, 'ids_map'):
             self.ids_map = {value:key for key,value in self.hids_map.items()}
 
