@@ -15,7 +15,7 @@ from model.char_cnn import CharResNet
 from model.common import BERT, BertOnlyMLMHead
 from utils.loss import CscFocalLoss, FocalLoss
 from utils.scheduler import PlateauScheduler, WarmupExponentialLR
-from utils.str_utils import is_chinese
+from utils.str_utils import is_chinese, get_common_hanzi
 from utils.utils import mock_args, mkdir
 
 font = None
@@ -452,14 +452,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def _init_hanzi_list(self):
         # 初始化汉字列表
-        hanzi_list = []
-        for item in self.tokenizer.vocab:
-            if len(item) > 1:
-                continue
-
-            if is_chinese(item):
-                hanzi_list.append(item)
-        return hanzi_list
+        return list(get_common_hanzi(4500))
 
     def _convert_ids_to_hids(self, ids):
         if not hasattr(self, 'hids_map'):
@@ -512,6 +505,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         return self.optimizer
 
     def predict(self, src):
+        src = "我特别喜换吃苹果"
         src = src.replace(" ", "")
         src = " ".join(src)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
