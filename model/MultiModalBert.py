@@ -411,7 +411,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def get_lr_scheduler(self):
         if self.args.data_type == 'sighan':
-            self.scheduler = PlateauScheduler(self.optimizer, reduce_times=2)
+            return None
 
         return self.scheduler
 
