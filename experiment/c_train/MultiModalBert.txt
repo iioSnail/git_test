@@ -794,7 +794,7 @@ Sentence-level Correct Acc: 0.4927, P: 0.4749, R: 0.2257, F1: 0.3060
 
 模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
 增加了分词预测，loss占0.7，分词loss占0.3
-执行情况：从结果删看，模型确实学会了如何分词，但整体性能下降了
+执行情况：从结果上，模型确实学会了如何分词，但整体性能下降了
 Correction Precision: 0.955414012738245, Recall: 0.27639579878380754, F1-Score: 0.428755180443576
 Correction Precision: 0.9437201907787143, Recall: 0.5461906514537088, F1-Score: 0.6919221349824555
 Correction Precision: 0.9466666666664038, Recall: 0.6277399152697314, F1-Score: 0.7549008744788172
@@ -815,3 +815,25 @@ Character-level Detect Acc: 0.9825, P: 0.5915, R: 0.5488, F1: 0.5693
 Character-level Correct Acc: 0.9807, P: 0.5496, R: 0.4625, F1: 0.5023
 Sentence-level Detect Acc: 0.6009, P: 0.6380, R: 0.4495, F1: 0.5274
 Sentence-level Correct Acc: 0.5700, P: 0.6029, R: 0.3872, F1: 0.4715
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+增加了分词预测，loss占0.7+，分词loss占0.3-，分词loss权重为min(0.3, 1-acc)
+执行情况：执行了11个epoch后手动停了。比使用分词loss0.3要好一点。即使给分词loss分配较少的权重，其一样可以学会如何分词。
+Correction Precision: 0.9572933998885428, Recall: 0.31803943246723454, F1-Score: 0.4774550480348963
+Correction Precision: 0.9403697078112879, Recall: 0.5804195804194736, F1-Score: 0.7177969954313516
+Correction Precision: 0.9513297872337896, Recall: 0.6588690366548795, F1-Score: 0.7785395576836992
+Correction Precision: 0.9512134100573052, Recall: 0.6991541007722142, F1-Score: 0.8059353466233099
+Correction Precision: 0.9407114624503741, Recall: 0.7449825078253093, F1-Score: 0.8314837644058712
+Correction Precision: 0.9410430839000132, Recall: 0.7631482162558361, F1-Score: 0.8428107224947164
+Correction Precision: 0.9574712643675959, Recall: 0.7663293468259859, F1-Score: 0.8513030143245733
+Correction Precision: 0.9624250806821202, Recall: 0.766055045871419, F1-Score: 0.8530854102132672
+Correction Precision: 0.959798994974655, Recall: 0.7727105553510899, F1-Score: 0.85615321873956
+Correction Precision: 0.9601008942900802, Recall: 0.7708026509571482, F1-Score: 0.8551005815542073
+Epoch 10 Training: 100% 250/250 [09:33<00:00,  2.29s/it, c_precision=0.979, c_recall=0.909, c_f1_score=0.943, loss=0.0172, loss_ws=0.196, ws_acc=0.94]
+Correction Precision: 0.9591044094126207, Recall: 0.7718330575472013, F1-Score: 0.8553382228145618
+Eval情况：还可以，不过没有不加Eval效果好。
+Character-level Detect Acc: 0.9833, P: 0.6178, R: 0.5488, F1: 0.5813
+Character-level Correct Acc: 0.9817, P: 0.5812, R: 0.4710, F1: 0.5203
+Sentence-level Detect Acc: 0.6264, P: 0.6763, R: 0.4716, F1: 0.5557
+Sentence-level Correct Acc: 0.5936, P: 0.6424, R: 0.4055, F1: 0.4972
+
