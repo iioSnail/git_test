@@ -13,6 +13,7 @@ from torch.nn.utils.rnn import pad_sequence
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT, BertOnlyMLMHead
+from utils.dataloader import get_word_segment_collate_fn
 from utils.loss import CscFocalLoss, FocalLoss
 from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import is_chinese
@@ -353,21 +354,21 @@ class MultiModalBertCorrectionModel(nn.Module):
     def __init__(self, args):
         super(MultiModalBertCorrectionModel, self).__init__()
         self.args = args
-        self.tokenizer = BERT.get_tokenizer(bert_path)
-
-        self.hanzi_list = self._init_hanzi_list()
-
         self.bert = MultiModalBertModel(args)
-        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.hanzi_list) + 2)
+        self.tokenizer = BERT.get_tokenizer(bert_path)
+        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.tokenizer))
+
+        self.ws_cls = BertOnlyMLMHead(768 + 8 + 56, 5)
 
         # alpha = [0.75] * len(self.tokenizer)
         # alpha[0] = 0
         # alpha[1] = 0.25
         self.loss_fnt = FocalLoss(device=self.args.device)
+        self.ws_loss_fnt = nn.CrossEntropyLoss(ignore_index=0)
 
         self.optimizer = self.make_optimizer()
-        # self.scheduler = PlateauScheduler(self.optimizer)
-        self.scheduler = self.build_lr_scheduler(self.optimizer)
+        self.scheduler = PlateauScheduler(self.optimizer)
+        # self.scheduler = self.build_lr_scheduler(self.optimizer)
         self.args.multi_forward_args = True
 
         for layer in self.cls.predictions:
@@ -402,14 +403,10 @@ class MultiModalBertCorrectionModel(nn.Module):
         return optimizer
 
     def forward(self, inputs, *args, **kwargs):
-        outputs = self.bert(**inputs).last_hidden_state
-        # 把该字是否正确这个特征加到里面去。
-        return self.cls(outputs), inputs['input_ids']
+        hidden_states = self.bert(**inputs).last_hidden_state
+        return self.cls(hidden_states), inputs['input_ids'], self.ws_cls(hidden_states)
 
     def get_lr_scheduler(self):
-        if self.args.data_type == 'sighan':
-            return None
-
         return self.scheduler
 
     def build_lr_scheduler(self, optimizer):
@@ -427,84 +424,55 @@ class MultiModalBertCorrectionModel(nn.Module):
         scheduler = WarmupExponentialLR(**scheduler_args)
         return scheduler
 
-    def compute_loss(self, outputs, targets, inputs, detection_targets, *args, **kwargs):
-        outputs, _ = outputs
+    def compute_loss(self, outputs, targets, inputs, detection_targets, ws_labels, *args, **kwargs):
+        outputs, _, ws_outputs = outputs
         targets = targets['input_ids'].clone()
         targets[(~detection_targets.bool()) & (targets != 0)] = 1
-        targets = targets.view(-1)
+        loss = self.loss_fnt(outputs.view(-1, len(self.tokenizer)), targets.view(-1))
+        loss_ws = self.ws_loss_fnt(ws_outputs.view(-1, 5), ws_labels.view(-1))
 
-        targets = self._convert_ids_to_hids(targets)
+        self.loss_ws = float(loss_ws)
+        self.ws_acc = float((ws_outputs.argmax(-1)[ws_labels != 0] == ws_labels[ws_labels != 0]).sum() / (ws_labels != 0).sum())
 
-        return self.loss_fnt(outputs.view(-1, outputs.size(-1)), targets)
+        ws_weight = min(0.3, 1 - self.ws_acc)
+        return (1-ws_weight) * loss + ws_weight * loss_ws
+
+    def extra_info(self):
+        return {
+            "loss_ws": self.loss_ws,
+            "ws_acc": self.ws_acc
+        }
 
     def extract_outputs(self, outputs):
-        outputs, input_ids = outputs
+        outputs, input_ids, _ = outputs
         outputs = outputs.argmax(-1)
-
-        outputs = self._convert_hids_to_ids(outputs)
 
         for i in range(len(outputs)):
             for j in range(len(outputs[i])):
-                if outputs[i][j] == 1 or outputs[i][j] == 0:
+                if outputs[i][j] == 1:
                     outputs[i][j] = input_ids[i][j]
 
         return outputs
 
-    def _init_hanzi_list(self):
-        # 初始化汉字列表
-        hanzi_list = []
-        for item in self.tokenizer.vocab:
-            if len(item) > 1:
-                continue
-
-            if is_chinese(item):
-                hanzi_list.append(item)
-        return hanzi_list
-
-    def _convert_ids_to_hids(self, ids):
-        if not hasattr(self, 'hids_map'):
-            hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.hanzi_list)
-            self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
-
-        # 把targets的input_ids转成hanzi_list中对应的“index”
-        for i in range(len(ids)):
-            tid = int(ids[i]) # token id
-            if tid == 0 or tid == 1:
-                continue
-
-            if tid in self.hids_map:
-                ids[i] = self.hids_map[tid]
-                continue
-
-            # 若targets的input_id为错字，但又不是汉字（通常是数据出了问题），则不计算loss
-            ids[i] = 0
-
-        return ids
-
-    def _convert_hids_to_ids(self, hids):
-        if not hasattr(self, 'ids_map'):
-            self.ids_map = {value:key for key,value in self.hids_map.items()}
-
-        batch_size, token_num = None, None
-        if len(hids.shape) == 2:
-            batch_size, token_num = hids.shape
-            hids = hids.view(-1)
-
-        for i in range(len(hids)):
-            hid = int(hids[i])
-            if hid in self.ids_map:
-                hids[i] = self.ids_map[hid]
-
-        if batch_size and token_num:
-            hids = hids.view(batch_size, token_num)
-
-        return hids
+    # def compute_loss(self, outputs, targets, inputs, *args, **kwargs):
+    #     """
+    #     只计算错字的loss，正确字的loss只给一点点。
+    #     有潜力，但是会慢一点，最终训练的时候可以用这个
+    #     """
+    #     outputs = outputs.view(-1, outputs.size(-1))
+    #
+    #     targets = targets['input_ids']
+    #     targets_ = targets.clone()
+    #     soft_loss = self.soft_criteria(outputs, targets_.view(-1))
+    #
+    #     inputs = inputs['input_ids']
+    #     targets_ = targets.clone()
+    #     targets_[targets_ == inputs] = 0
+    #     loss = self.criteria(outputs, targets_.view(-1))
+    #
+    #     return 0.3 * loss + 0.7 * soft_loss
 
     def get_optimizer(self):
-        if self.args.data_type == 'sighan':
-            print("Fine-tune model with SGD")
-            self.optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
-
         return self.optimizer
 
     def predict(self, src):
@@ -519,6 +487,10 @@ class MultiModalBertCorrectionModel(nn.Module):
         #     # self.tokenizer.convert_ids_to_tokens(prob[0][3].argsort(descending=True)[:5])
         #     print()
         return ''.join(outputs)
+
+    def get_collate_fn(self):
+        return get_word_segment_collate_fn(self.tokenizer, self.args.device)
+
 
 
 def merge_multi_modal_bert():

@@ -818,6 +818,7 @@ Sentence-level Correct Acc: 0.5700, P: 0.6029, R: 0.3872, F1: 0.4715
 
 模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
 增加了分词预测，loss占0.7+，分词loss占0.3-，分词loss权重为min(0.3, 1-acc)
+代码：MultiModalBertWS.py
 执行情况：执行了11个epoch后手动停了。比使用分词loss0.3要好一点。即使给分词loss分配较少的权重，其一样可以学会如何分词。
 Correction Precision: 0.9572933998885428, Recall: 0.31803943246723454, F1-Score: 0.4774550480348963
 Correction Precision: 0.9403697078112879, Recall: 0.5804195804194736, F1-Score: 0.7177969954313516
