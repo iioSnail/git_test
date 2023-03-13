@@ -716,6 +716,12 @@ Character-level Detect Acc: 0.9904, P: 0.7673, R: 0.7836, F1: 0.7754
 Character-level Correct Acc: 0.9898, P: 0.7600, R: 0.7525, F1: 0.7562
 Sentence-level Detect Acc: 0.7627, P: 0.8114, R: 0.6789, F1: 0.7393
 Sentence-level Correct Acc: 0.7509, P: 0.8059, R: 0.6550, F1: 0.7227
+FineTune方式：使用SIGHAN训练集进行finetune，SGD优化器(lr=0.001, momentum=0.9, weight_decay=0.001)，无scheduler
+finetue结果：最好结果为78.2，其他基本都保持在77.5左右。
+Character-level Detect Acc: 0.9926, P: 0.8791, R: 0.7511, F1: 0.8101
+Character-level Correct Acc: 0.9922, P: 0.8765, R: 0.7327, F1: 0.7982
+Sentence-level Detect Acc: 0.8164, P: 0.9074, R: 0.7009, F1: 0.7909
+Sentence-level Correct Acc: 0.8100, P: 0.9058, R: 0.6881, F1: 0.7821
 
 
 
