@@ -204,10 +204,10 @@ class C_Train(object):
             if len(self.recent_correction_f1_score) > 0 \
                     and len(self.recent_correction_f1_score) == self.recent_correction_f1_score.maxlen \
                     and self.correction_best_f1_score > max(self.recent_correction_f1_score):
-                print("Early stop Training. The best model is saved to", self.args.model_path)
+                print("Early stop Training. The best model is saved to", self.args.best_model_path)
                 break
 
-        print("Finish Training. The best model is saved to", self.args.model_path)
+        print("Finish Training. The best model is saved to", self.args.best_model_path)
 
     def save_model_state(self, epoch):
         torch.save({
@@ -221,7 +221,7 @@ class C_Train(object):
         }, self.args.checkpoint_path)
 
     def save_model(self):
-        torch.save(self.model.state_dict(), self.args.model_path)
+        torch.save(self.model.state_dict(), self.args.best_model_path)
 
     def load_model(self):
         if not os.path.exists(self.args.model_path):
@@ -348,6 +348,7 @@ class C_Train(object):
         mkdir(args.output_path)
         args.output_path = Path(args.output_path)
         args.checkpoint_path = str(args.output_path / 'csc-model.pt')
+        args.best_model_path = str(args.output_path / 'csc-best-model.pt')
 
         return args
 
