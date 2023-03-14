@@ -11,8 +11,8 @@ from tqdm import tqdm
 
 from model.common import BERT
 from utils.confusions import confuse_char
-from utils.str_utils import is_chinese
-from utils.utils import preprocess_text, mkdir, load_obj, save_obj
+from utils.str_utils import is_chinese, get_common_hanzi
+from utils.utils import preprocess_text, mkdir, load_obj, save_obj, convert_char_to_image
 from pathlib import Path
 
 FILE = Path(__file__).resolve()
@@ -168,7 +168,6 @@ class PhoneticProbeDataset(Dataset):
 
 
 class GlyphProbeDataset(Dataset):
-
     chinese_chars_components = None
 
     def __init__(self, cache=True):
@@ -204,8 +203,8 @@ class GlyphProbeDataset(Dataset):
 
         negative_samples = set()
         while True:
-            u = chinese_chars_components[random.randint(0, len(chinese_chars_components)-1)]
-            w = chinese_chars[random.randint(0, len(chinese_chars)-1)]
+            u = chinese_chars_components[random.randint(0, len(chinese_chars_components) - 1)]
+            w = chinese_chars[random.randint(0, len(chinese_chars) - 1)]
 
             if (u, w) not in positive_samples:
                 negative_samples.add((u, w))
@@ -221,7 +220,7 @@ class GlyphProbeDataset(Dataset):
         random.shuffle(dataset)
         self.dataset = dataset
         if cache:
-            mkdir('./cache') # FIXME
+            mkdir('./cache')  # FIXME
             save_obj(self.dataset, cache_path)
 
     @staticmethod
@@ -245,3 +244,17 @@ class GlyphProbeDataset(Dataset):
     def __len__(self):
         return len(self.dataset)
 
+
+class HanziImageDataset(Dataset):
+
+    def __init__(self):
+        self.all_hanzi = get_common_hanzi()
+        self.image_map = dict(zip(self.all_hanzi, [convert_char_to_image(hanzi) for hanzi in self.all_hanzi]))
+
+    def __getitem__(self, index):
+        hanzi = self.all_hanzi[index]
+        image = self.image_map[hanzi]
+        return hanzi, image
+
+    def __len__(self):
+        return len(self.all_hanzi)

@@ -4,6 +4,7 @@ import random
 
 import numpy as np
 import torch
+from PIL import ImageFont
 from matplotlib import pyplot as plt
 
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
@@ -209,3 +210,26 @@ def convert_ids_to_tokens(tokenizer, ids):
 def get_top_n(outputs, tokenizer, n):
     ids = outputs.argsort(descending=True)[:, :n]
     return convert_ids_to_tokens(tokenizer, ids)
+
+
+font = None
+
+
+def convert_char_to_image(character, font_size=32):
+    global font
+    if font is None:
+        font = ImageFont.truetype("./assets/font/ms_yahei.ttf", size=font_size)
+
+    image = font.getmask(character)
+    image = np.asarray(image).astype(np.float32).reshape(image.size[::-1])
+
+    image = image[:font_size, :font_size]
+
+    if image.size != (font_size, font_size):
+        back_image = np.zeros((font_size, font_size)).astype(np.float32)
+        offset0 = (font_size - image.shape[0]) // 2
+        offset1 = (font_size - image.shape[1]) // 2
+        back_image[offset0:offset0 + image.shape[0], offset1:offset1 + image.shape[1]] = image
+        image = back_image
+
+    return torch.tensor(image)

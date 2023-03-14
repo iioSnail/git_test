@@ -862,3 +862,53 @@ Character-level Detect Acc: 0.9844, P: 0.6602, R: 0.5332, F1: 0.5900
 Character-level Correct Acc: 0.9831, P: 0.6333, R: 0.4738, F1: 0.5421
 Sentence-level Detect Acc: 0.6509, P: 0.7182, R: 0.4862, F1: 0.5799
 Sentence-level Correct Acc: 0.6227, P: 0.6923, R: 0.4294, F1: 0.5300
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+只让模型预测6000个字。
+执行情况：执行了9个epoch手动停了，感觉上不去了。
+Correction Precision: 0.9632690541777028, Recall: 0.3909802459932182, F1-Score: 0.5562036051034585
+Correction Precision: 0.9646282973618212, Recall: 0.5994783904618853, F1-Score: 0.7394301465859043
+Correction Precision: 0.9539524174978373, Recall: 0.6945427453900735, F1-Score: 0.8038370333557087
+Correction Precision: 0.9643124532066473, Recall: 0.7200894521057174, F1-Score: 0.8244958919673926
+Correction Precision: 0.9599904739221338, Recall: 0.750791581299916, F1-Score: 0.8426003339554609
+Correction Precision: 0.9676352468696036, Recall: 0.7628981188301801, F1-Score: 0.8531555920916988
+Correction Precision: 0.9620312136033164, Recall: 0.7692307692306259, F1-Score: 0.8548954662830887
+Correction Precision: 0.9652599673581335, Recall: 0.7710933134660511, F1-Score: 0.8573203556874788
+Epoch 8 Training: 100% 250/250 [03:45<00:00,  1.11it/s, c_precision=0.99, c_recall=0.944, c_f1_score=0.967, loss=0.00406]
+Correction Precision: 0.9741092636577258, Recall: 0.7641140301843181, F1-Score: 0.8564268555163072
+Eval情况：首次突破53大关，又一次达到了我的sota
+Character-level Detect Acc: 0.9846, P: 0.6616, R: 0.5502, F1: 0.6008
+Character-level Correct Acc: 0.9834, P: 0.6369, R: 0.4936, F1: 0.5562
+Sentence-level Detect Acc: 0.6409, P: 0.6995, R: 0.4826, F1: 0.5711
+Sentence-level Correct Acc: 0.6200, P: 0.6799, R: 0.4404, F1: 0.5345
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+只让模型预测6000个字。使用WarmupScheduler
+执行情况：执行了18个epoch后手动停了。Warmup确实可以稳步上涨。
+Correction Precision: 0.9999999989999999, Recall: 0.0001863585538575873, F1-Score: 0.00037264766126320607
+Correction Precision: 0.9812834224572693, Recall: 0.06836810730252078, F1-Score: 0.12783002425992065
+Correction Precision: 0.9597834493422429, Recall: 0.46228347923254565, F1-Score: 0.6240100561292341
+Correction Precision: 0.9583457304370847, Recall: 0.6002609019752888, F1-Score: 0.7381689006377156
+Correction Precision: 0.957552083333084, Recall: 0.6848575153658624, F1-Score: 0.7985666191248599
+Correction Precision: 0.956138201420986, Recall: 0.7267647606629303, F1-Score: 0.8258201053292192
+Correction Precision: 0.9589596754948797, Recall: 0.7485565282174057, F1-Score: 0.8407949785869138
+Correction Precision: 0.9628050225062869, Recall: 0.7569379772768193, F1-Score: 0.8475495302681977
+Correction Precision: 0.9666904591955824, Recall: 0.7570337246132369, F1-Score: 0.8491118072397167
+Correction Precision: 0.957304408031166, Recall: 0.7727272727271287, F1-Score: 0.8551695696529225
+Correction Precision: 0.9608161372592253, Recall: 0.7719821162442675, F1-Score: 0.8561099055072071
+Correction Precision: 0.971293001186009, Recall: 0.7635210742258925, F1-Score: 0.8549650198682753
+Correction Precision: 0.9754059216807603, Recall: 0.7611328488912313, F1-Score: 0.855049711700003
+Correction Precision: 0.971273840357671, Recall: 0.7682994971129132, F1-Score: 0.8579450910207718
+Correction Precision: 0.9707822808668777, Recall: 0.7705255283335009, F1-Score: 0.8591387754422067
+Correction Precision: 0.9681274900396136, Recall: 0.7699906803353643, F1-Score: 0.8577657802372162
+Correction Precision: 0.9760493241638661, Recall: 0.7664804469272315, F1-Score: 0.8586627720114859
+Epoch 17 Training: 100% 250/250 [03:51<00:00,  1.08it/s, c_precision=0.995, c_recall=0.98, c_f1_score=0.988, loss=0.000652]
+Correction Precision: 0.9683163737278055, Recall: 0.779992548435026, F1-Score: 0.8640115554280332
+Eval情况：和PlateauScheduler差不多
+Character-level Detect Acc: 0.9847, P: 0.6690, R: 0.5403, F1: 0.5978
+Character-level Correct Acc: 0.9836, P: 0.6467, R: 0.4894, F1: 0.5572
+Sentence-level Detect Acc: 0.6445, P: 0.7104, R: 0.4771, F1: 0.5708
+Sentence-level Correct Acc: 0.6236, P: 0.6910, R: 0.4349, F1: 0.5338
+
+
+
