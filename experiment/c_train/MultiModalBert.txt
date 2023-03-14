@@ -838,3 +838,27 @@ Character-level Correct Acc: 0.9817, P: 0.5812, R: 0.4710, F1: 0.5203
 Sentence-level Detect Acc: 0.6264, P: 0.6763, R: 0.4716, F1: 0.5557
 Sentence-level Correct Acc: 0.5936, P: 0.6424, R: 0.4055, F1: 0.4972
 
+
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+只让模型预测4500个字。
+执行情况：执行了13个epoch就early stop了。在Wang271K上比预测所有token要差那么一点点，我觉得这应该是随机波动的原因。
+Correction Precision: 0.9726027397255976, Recall: 0.4107109535360308, F1-Score: 0.5775387033346406
+Correction Precision: 0.9660818713447468, Recall: 0.6159582401191991, F1-Score: 0.7522768665552835
+Correction Precision: 0.9598971722362571, Recall: 0.6963819470345586, F1-Score: 0.8071768261445615
+Correction Precision: 0.9644259077524621, Recall: 0.7331219694142608, F1-Score: 0.8330154688882121
+Correction Precision: 0.9681159420287515, Recall: 0.7466467958269846, F1-Score: 0.8430795114980663
+Correction Precision: 0.9751807228913312, Recall: 0.7547556881759129, F1-Score: 0.8509251466904448
+Correction Precision: 0.9737470167062114, Recall: 0.7613360701622016, F1-Score: 0.8545397418887156
+Correction Precision: 0.9688372093021002, Recall: 0.775646993111008, F1-Score: 0.8615448242396938
+Correction Precision: 0.9747403210573713, Recall: 0.7703358208953786, F1-Score: 0.8605669023828788
+Correction Precision: 0.9746685606058297, Recall: 0.7683837252704799, F1-Score: 0.8593195570104761
+Correction Precision: 0.9747224190878868, Recall: 0.7700634565134807, F1-Score: 0.8603899484171367
+Correction Precision: 0.974486180013944, Recall: 0.7687290346625477, F1-Score: 0.8594645270617404
+Epoch 12 Training: 100% 250/250 [03:39<00:00,  1.14it/s, c_precision=0.992, c_recall=0.945, c_f1_score=0.968, loss=0.00336]
+Correction Precision: 0.9742255852445082, Recall: 0.7688001492814389, F1-Score: 0.8594075923311295
+Eval情况：从Char-level上看，变差了一点，但在Sent-level上看，好了一点。结论：有效，但不多。 不过这可以极大的减少参数量。
+Character-level Detect Acc: 0.9844, P: 0.6602, R: 0.5332, F1: 0.5900
+Character-level Correct Acc: 0.9831, P: 0.6333, R: 0.4738, F1: 0.5421
+Sentence-level Detect Acc: 0.6509, P: 0.7182, R: 0.4862, F1: 0.5799
+Sentence-level Correct Acc: 0.6227, P: 0.6923, R: 0.4294, F1: 0.5300

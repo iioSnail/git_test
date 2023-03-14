@@ -452,7 +452,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def _init_hanzi_list(self):
         # 初始化汉字列表
-        return list(get_common_hanzi(4500))
+        return list(get_common_hanzi(6000))
 
     def _convert_ids_to_hids(self, ids):
         if not hasattr(self, 'hids_map'):
@@ -505,7 +505,6 @@ class MultiModalBertCorrectionModel(nn.Module):
         return self.optimizer
 
     def predict(self, src):
-        src = "我特别喜换吃苹果"
         src = src.replace(" ", "")
         src = " ".join(src)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
