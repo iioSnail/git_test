@@ -360,14 +360,14 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.bert = MultiModalBertModel(args)
         self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.hanzi_list) + 2)
 
-        # alpha = [0.75] * len(self.tokenizer)
-        # alpha[0] = 0
-        # alpha[1] = 0.25
-        self.loss_fnt = FocalLoss(device=self.args.device)
+        alpha = [0.95] * (len(self.hanzi_list) + 2)
+        alpha[0] = 0
+        alpha[1] = 0.05
+        self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
 
         self.optimizer = self.make_optimizer()
-        # self.scheduler = PlateauScheduler(self.optimizer)
-        self.scheduler = self.build_lr_scheduler(self.optimizer)
+        self.scheduler = PlateauScheduler(self.optimizer)
+        # self.scheduler = self.build_lr_scheduler(self.optimizer)
         self.args.multi_forward_args = True
 
         for layer in self.cls.predictions:

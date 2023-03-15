@@ -909,6 +909,89 @@ Character-level Detect Acc: 0.9847, P: 0.6690, R: 0.5403, F1: 0.5978
 Character-level Correct Acc: 0.9836, P: 0.6467, R: 0.4894, F1: 0.5572
 Sentence-level Detect Acc: 0.6445, P: 0.7104, R: 0.4771, F1: 0.5708
 Sentence-level Correct Acc: 0.6236, P: 0.6910, R: 0.4349, F1: 0.5338
+全量训练情况：
+[Errno 2] No such file or directory: './c_output/csc-best-model.pt'
+Load model failed.
+Epoch 0 Training: 100% 8055/8055 [2:03:57<00:00,  1.08it/s, c_precision=0.96, c_recall=0.783, c_f1_score=0.863, loss=0.0165]
+Epoch 0 Validation: 100% 423/423 [03:34<00:00,  1.97it/s, c_precision=0.958, c_recall=0.81, c_f1_score=0.878]
+Correction Precision: 0.9580782786124431, Recall: 0.8098149890247303, F1-Score: 0.8777296281889966
+Character-level Detect Acc: 0.9892, P: 0.7447, R: 0.7383, F1: 0.7415
+Character-level Correct Acc: 0.9886, P: 0.7372, R: 0.7100, F1: 0.7233
+Sentence-level Detect Acc: 0.7418, P: 0.7881, R: 0.6550, F1: 0.7154
+Sentence-level Correct Acc: 0.7309, P: 0.7823, R: 0.6330, F1: 0.6998
+Epoch 1 Training: 100% 8055/8055 [2:01:16<00:00,  1.11it/s, c_precision=0.967, c_recall=0.849, c_f1_score=0.904, loss=0.005]
+Epoch 1 Validation: 100% 423/423 [03:26<00:00,  2.05it/s, c_precision=0.965, c_recall=0.85, c_f1_score=0.904]
+Correction Precision: 0.9649934733593826, Recall: 0.8499608048078992, F1-Score: 0.9038317258627907
+Character-level Detect Acc: 0.9903, P: 0.7620, R: 0.7878, F1: 0.7747
+Character-level Correct Acc: 0.9897, P: 0.7542, R: 0.7553, F1: 0.7548
+Sentence-level Detect Acc: 0.7582, P: 0.8039, R: 0.6771, F1: 0.7351
+Sentence-level Correct Acc: 0.7455, P: 0.7978, R: 0.6514, F1: 0.7172
+Epoch 2 Training: 100% 8055/8055 [1:59:26<00:00,  1.12it/s, c_precision=0.968, c_recall=0.859, c_f1_score=0.91, loss=0.00469]
+Epoch 2 Validation: 100% 423/423 [03:26<00:00,  2.05it/s, c_precision=0.97, c_recall=0.856, c_f1_score=0.909]
+Correction Precision: 0.9697418285172329, Recall: 0.8560004181475613, F1-Score: 0.909328150529097
+Character-level Detect Acc: 0.9915, P: 0.8073, R: 0.7822, F1: 0.7945
+Character-level Correct Acc: 0.9909, P: 0.8015, R: 0.7539, F1: 0.7770
+Sentence-level Detect Acc: 0.7845, P: 0.8422, R: 0.6954, F1: 0.7618
+Sentence-level Correct Acc: 0.7736, P: 0.8379, R: 0.6734, F1: 0.7467
+Epoch 3 Training: 100% 8055/8055 [2:01:40<00:00,  1.10it/s, c_precision=0.976, c_recall=0.882, c_f1_score=0.927, loss=0.00963]
+Epoch 3 Validation: 100% 423/423 [03:31<00:00,  2.00it/s, c_precision=0.967, c_recall=0.865, c_f1_score=0.913]
+Correction Precision: 0.9667484805983539, Recall: 0.8645865997699976, F1-Score: 0.912817965621905
+Character-level Detect Acc: 0.9904, P: 0.7594, R: 0.7992, F1: 0.7788
+Character-level Correct Acc: 0.9899, P: 0.7531, R: 0.7723, F1: 0.7626
+Sentence-level Detect Acc: 0.7655, P: 0.8073, R: 0.6917, F1: 0.7451
+Sentence-level Correct Acc: 0.7555, P: 0.8026, R: 0.6716, F1: 0.7313
+
+FineTune情况：最高到78，再多两个点就好了
+Epoch 0 Training: 100% 202/202 [02:59<00:00,  1.12it/s, c_precision=0.687, c_recall=0.496, c_f1_score=0.576, loss=0.0215]
+Character-level Detect Acc: 0.9915, P: 0.8003, R: 0.7935, F1: 0.7969
+Character-level Correct Acc: 0.9911, P: 0.7962, R: 0.7737, F1: 0.7848
+Sentence-level Detect Acc: 0.7873, P: 0.8418, R: 0.7028, F1: 0.7660
+Sentence-level Correct Acc: 0.7800, P: 0.8389, R: 0.6881, F1: 0.7560
+Epoch 1 Training: 100% 202/202 [03:01<00:00,  1.11it/s, c_precision=0.724, c_recall=0.499, c_f1_score=0.591, loss=0.0205]
+Character-level Detect Acc: 0.9917, P: 0.8194, R: 0.7765, F1: 0.7974
+Character-level Correct Acc: 0.9913, P: 0.8158, R: 0.7581, F1: 0.7859
+Sentence-level Detect Acc: 0.7936, P: 0.8549, R: 0.7028, F1: 0.7714
+Sentence-level Correct Acc: 0.7873, P: 0.8526, R: 0.6899, F1: 0.7627
+Epoch 2 Training: 100% 202/202 [02:59<00:00,  1.13it/s, c_precision=0.72, c_recall=0.517, c_f1_score=0.602, loss=0.0101]
+Character-level Detect Acc: 0.9921, P: 0.8379, R: 0.7751, F1: 0.8053
+Character-level Correct Acc: 0.9917, P: 0.8346, R: 0.7567, F1: 0.7938
+Sentence-level Detect Acc: 0.8055, P: 0.8787, R: 0.7046, F1: 0.7821
+Sentence-level Correct Acc: 0.7991, P: 0.8767, R: 0.6917, F1: 0.7733
+Epoch 3 Training: 100% 202/202 [03:00<00:00,  1.12it/s, c_precision=0.719, c_recall=0.512, c_f1_score=0.598, loss=0.0258]
+Character-level Detect Acc: 0.9920, P: 0.8333, R: 0.7779, F1: 0.8047
+Character-level Correct Acc: 0.9917, P: 0.8302, R: 0.7610, F1: 0.7941
+Sentence-level Detect Acc: 0.8036, P: 0.8764, R: 0.7028, F1: 0.7800
+Sentence-level Correct Acc: 0.7973, P: 0.8744, R: 0.6899, F1: 0.7713
+Epoch 4 Training: 100% 202/202 [03:02<00:00,  1.11it/s, c_precision=0.72, c_recall=0.498, c_f1_score=0.589, loss=0.0249]
+Character-level Detect Acc: 0.9922, P: 0.8528, R: 0.7624, F1: 0.8051
+Character-level Correct Acc: 0.9919, P: 0.8500, R: 0.7454, F1: 0.7943
+Sentence-level Detect Acc: 0.8082, P: 0.8884, R: 0.7009, F1: 0.7836
+Sentence-level Correct Acc: 0.8009, P: 0.8863, R: 0.6862, F1: 0.7735
+Epoch 5 Training: 100% 202/202 [03:00<00:00,  1.12it/s, c_precision=0.744, c_recall=0.518, c_f1_score=0.61, loss=0.0188]
+Character-level Detect Acc: 0.9923, P: 0.8516, R: 0.7709, F1: 0.8092
+Character-level Correct Acc: 0.9920, P: 0.8485, R: 0.7525, F1: 0.7976
+Sentence-level Detect Acc: 0.8091, P: 0.8851, R: 0.7064, F1: 0.7857
+Sentence-level Correct Acc: 0.8018, P: 0.8829, R: 0.6917, F1: 0.7757
+Epoch 6 Training: 100% 202/202 [03:00<00:00,  1.12it/s, c_precision=0.752, c_recall=0.523, c_f1_score=0.617, loss=0.0168]
+Character-level Detect Acc: 0.9924, P: 0.8545, R: 0.7723, F1: 0.8113
+Character-level Correct Acc: 0.9920, P: 0.8514, R: 0.7539, F1: 0.7997
+Sentence-level Detect Acc: 0.8127, P: 0.8915, R: 0.7083, F1: 0.7894
+Sentence-level Correct Acc: 0.8055, P: 0.8894, R: 0.6936, F1: 0.7794
+Epoch 7 Training: 100% 202/202 [03:02<00:00,  1.11it/s, c_precision=0.743, c_recall=0.51, c_f1_score=0.605, loss=0.026]
+Character-level Detect Acc: 0.9924, P: 0.8485, R: 0.7765, F1: 0.8109
+Character-level Correct Acc: 0.9920, P: 0.8452, R: 0.7567, F1: 0.7985
+Sentence-level Detect Acc: 0.8118, P: 0.8858, R: 0.7119, F1: 0.7894
+Sentence-level Correct Acc: 0.8045, P: 0.8837, R: 0.6972, F1: 0.7795
+Epoch 8 Training: 100% 202/202 [03:02<00:00,  1.11it/s, c_precision=0.729, c_recall=0.504, c_f1_score=0.596, loss=0.0113]
+Character-level Detect Acc: 0.9923, P: 0.8457, R: 0.7751, F1: 0.8089
+Character-level Correct Acc: 0.9919, P: 0.8423, R: 0.7553, F1: 0.7964
+Sentence-level Detect Acc: 0.8109, P: 0.8821, R: 0.7138, F1: 0.7890
+Sentence-level Correct Acc: 0.8036, P: 0.8799, R: 0.6991, F1: 0.7791
+Epoch 9 Training: 100% 202/202 [03:02<00:00,  1.11it/s, c_precision=0.766, c_recall=0.53, c_f1_score=0.627, loss=0.0161]
+Character-level Detect Acc: 0.9922, P: 0.8592, R: 0.7511, F1: 0.8015
+Character-level Correct Acc: 0.9919, P: 0.8569, R: 0.7369, F1: 0.7924
+Sentence-level Detect Acc: 0.8109, P: 0.8910, R: 0.7046, F1: 0.7869
+Sentence-level Correct Acc: 0.8064, P: 0.8897, R: 0.6954, F1: 0.7806
 
 
 
