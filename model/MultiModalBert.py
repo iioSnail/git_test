@@ -360,9 +360,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.bert = MultiModalBertModel(args)
         self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.hanzi_list) + 2)
 
-        alpha = [0.95] * (len(self.hanzi_list) + 2)
+        alpha = [1] * (len(self.hanzi_list) + 2)
         alpha[0] = 0
-        alpha[1] = 0.05
         self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
 
         self.optimizer = self.make_optimizer()
@@ -461,7 +460,7 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         # 把targets的input_ids转成hanzi_list中对应的“index”
         for i in range(len(ids)):
-            tid = int(ids[i]) # token id
+            tid = int(ids[i])  # token id
             if tid == 0 or tid == 1:
                 continue
 
@@ -480,7 +479,7 @@ class MultiModalBertCorrectionModel(nn.Module):
             self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
 
         if not hasattr(self, 'ids_map'):
-            self.ids_map = {value:key for key,value in self.hids_map.items()}
+            self.ids_map = {value: key for key, value in self.hids_map.items()}
 
         batch_size, token_num = None, None
         if len(hids.shape) == 2:
@@ -503,6 +502,11 @@ class MultiModalBertCorrectionModel(nn.Module):
             self.optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
 
         return self.optimizer
+
+    def observe_train_performance(self, precision, recall, f1):
+        alpha = self.loss_fnt.get_alpha()
+        alpha[1] = 1 - precision
+        self.loss_fnt.set_alpha(alpha)
 
     def predict(self, src):
         src = src.replace(" ", "")

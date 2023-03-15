@@ -136,6 +136,9 @@ class C_Train(object):
 
             correction_matrix = TrainBase.compute_matrix(*matrix)
 
+            if hasattr(self.model, "observe_train_performance"):
+                self.model.observe_train_performance(*correction_matrix)
+
             if hasattr(self.model, 'extra_info'):
                 self.set_progress_postfix(progress, loss=loss.item(), correction_matrix=correction_matrix,
                                           **self.model.extra_info())
