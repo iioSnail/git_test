@@ -995,3 +995,52 @@ Sentence-level Correct Acc: 0.8064, P: 0.8897, R: 0.6954, F1: 0.7806
 
 
 
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。只让模型预测6000个字。
+Focal的alpha比例为0.05：0.95
+执行情况：14个epoch后early stop了，但并没有过拟合训练集，还行
+Correction Precision: 0.7124546037170022, Recall: 0.6215057771150537, F1-Score: 0.6638797646062031
+Correction Precision: 0.7874233735414697, Recall: 0.7418032786883864, F1-Score: 0.7639328532173246
+Correction Precision: 0.7328401857903435, Recall: 0.7934438442911541, F1-Score: 0.7619388297635745
+Correction Precision: 0.8332687838882972, Recall: 0.8019008572491982, F1-Score: 0.8172839501173126
+Correction Precision: 0.7689499304588371, Recall: 0.8238033153285855, F1-Score: 0.795432064962189
+Correction Precision: 0.8405213724361049, Recall: 0.8167256472339697, F1-Score: 0.8284526728420966
+Correction Precision: 0.8395884930461345, Recall: 0.8208232445519051, F1-Score: 0.8300998299764566
+Correction Precision: 0.834813834813677, Recall: 0.8226857887873305, F1-Score: 0.8287054404004341
+Correction Precision: 0.8729336785499157, Recall: 0.8166573504749736, F1-Score: 0.8438582975365877
+Correction Precision: 0.8628335949762828, Recall: 0.8191132637852423, F1-Score: 0.8404051982769356
+Correction Precision: 0.8625759654967922, Recall: 0.8196721311473882, F1-Score: 0.840576940946339
+Correction Precision: 0.8633503735743484, Recall: 0.8189108541587431, F1-Score: 0.8405436442168801
+Correction Precision: 0.863484580632319, Recall: 0.8190795602756066, F1-Score: 0.8406961173047389
+Epoch 13 Training: 100% 250/250 [03:55<00:00,  1.06it/s, c_precision=0.875, c_recall=0.987, c_f1_score=0.928, loss=0.00102]
+Correction Precision: 0.8644767899290196, Recall: 0.8185881914693949, F1-Score: 0.8409069161748496
+Eval情况：Char-level的Recall增加了许多，但因为Pre的下降，导致Sent-level整体的下降。所以对于Sent-level，Pre好像更重要一点。
+Character-level Detect Acc: 0.9732, P: 0.4190, R: 0.7058, F1: 0.5258
+Character-level Correct Acc: 0.9708, P: 0.3771, R: 0.5926, F1: 0.4609
+Sentence-level Detect Acc: 0.4809, P: 0.4734, R: 0.4239, F1: 0.4472
+Sentence-level Correct Acc: 0.4473, P: 0.4302, R: 0.3560, F1: 0.3896
+
+
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。只让模型预测6000个字。
+Focal的alpha比例按照训练情况。index1的alpha为1-Precision，其他固定为1
+训练情况：12个epoch后手动停了。确实比固定的alpha要好一点。但是固定的Recall Alpha好像还是有点高了。
+Correction Precision: 0.829090909090635, Recall: 0.467387253074829, F1-Score: 0.5977833388308736
+Correction Precision: 0.8651603498540171, Recall: 0.6633755588672385, F1-Score: 0.7509489661892805
+Correction Precision: 0.8544249679348322, Recall: 0.7444589308994701, F1-Score: 0.7956603956403573
+Correction Precision: 0.8747359526825359, Recall: 0.7717107715242691, F1-Score: 0.8199999995017953
+Correction Precision: 0.8690960912050347, Recall: 0.7951201341030368, F1-Score: 0.8304639621503741
+Correction Precision: 0.8378067484660969, Recall: 0.8139318308808318, F1-Score: 0.8256967401707089
+Correction Precision: 0.8762803775856846, Recall: 0.8126280499160341, F1-Score: 0.8432547347150815
+Correction Precision: 0.8906633906632082, Recall: 0.8102067424099813, F1-Score: 0.8485321364364842
+Correction Precision: 0.8951812191101944, Recall: 0.8099496925655282, F1-Score: 0.8504352924679223
+Correction Precision: 0.8859577922076124, Recall: 0.8133383010430675, F1-Score: 0.8480963475970963
+Correction Precision: 0.8882783882782075, Recall: 0.8131520119223522, F1-Score: 0.8490566032743946
+Correction Precision: 0.8895467537768702, Recall: 0.8125699365906727, F1-Score: 0.84931773829228
+Epoch 12 Training: 100% 250/250 [03:47<00:00,  1.10it/s, c_precision=0.908, c_recall=0.978, c_f1_score=0.942, loss=0.00208]
+Correction Precision: 0.8896143644152438, Recall: 0.8123719023661612, F1-Score: 0.8492403578958779
+Eval情况：Char-level的Recall比之前的Sota好了很多，但由于Pre下降了，所以整体的F1下降了许多
+Character-level Detect Acc: 0.9755, P: 0.4466, R: 0.6860, F1: 0.5410
+Character-level Correct Acc: 0.9732, P: 0.4044, R: 0.5771, F1: 0.4755
+Sentence-level Detect Acc: 0.5127, P: 0.5094, R: 0.4477, F1: 0.4766
+Sentence-level Correct Acc: 0.4773, P: 0.4659, R: 0.3761, F1: 0.4162
+
+

@@ -505,7 +505,11 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def observe_train_performance(self, precision, recall, f1):
         alpha = self.loss_fnt.get_alpha()
-        alpha[1] = 1 - precision
+        if recall > precision:
+            alpha[1] = 1.
+        else:
+            alpha[1] = 1 - precision
+
         self.loss_fnt.set_alpha(alpha)
 
     def predict(self, src):
