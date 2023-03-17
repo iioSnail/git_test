@@ -13,9 +13,11 @@ from torch.nn.utils.rnn import pad_sequence
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT, BertOnlyMLMHead
+from utils.dataloader import get_word_segment_collate_fn
 from utils.loss import CscFocalLoss, FocalLoss
 from utils.scheduler import PlateauScheduler, WarmupExponentialLR
-from utils.str_utils import is_chinese, get_common_hanzi
+from utils.str_utils import is_chinese, get_common_hanzi, get_common_words, word_segment_targets, word_segment_labels, \
+    word_segment
 from utils.utils import mock_args, mkdir
 
 font = None
@@ -356,14 +358,15 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.tokenizer = BERT.get_tokenizer(bert_path)
 
         self.hanzi_list = self._init_hanzi_list()
+        # self.words_list = get_common_words()
+        self.token_list = self.hanzi_list  # + self.words_list
 
         self.bert = MultiModalBertModel(args)
-        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.hanzi_list) + 2)
+        self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.token_list) + 2)
 
-        # alpha = [0.75] * len(self.tokenizer)
-        # alpha[0] = 0
-        # alpha[1] = 0.25
-        self.loss_fnt = FocalLoss(device=self.args.device)
+        alpha = [1] * (len(self.token_list) + 2)
+        alpha[0] = 0
+        self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
 
         self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
@@ -427,10 +430,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         scheduler = WarmupExponentialLR(**scheduler_args)
         return scheduler
 
-    def compute_loss(self, outputs, targets, inputs, detection_targets, *args, **kwargs):
+    def compute_loss(self, outputs, _, inputs, detection_targets, targets, *args, **kwargs):
         outputs, _ = outputs
-        targets = targets['input_ids'].clone()
-        targets[(~detection_targets.bool()) & (targets != 0)] = 1
         targets = targets.view(-1)
 
         targets = self._convert_ids_to_hids(targets)
@@ -456,12 +457,12 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def _convert_ids_to_hids(self, ids):
         if not hasattr(self, 'hids_map'):
-            hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.hanzi_list)
+            hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.token_list)
             self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
 
         # 把targets的input_ids转成hanzi_list中对应的“index”
         for i in range(len(ids)):
-            tid = int(ids[i]) # token id
+            tid = int(ids[i])  # token id
             if tid == 0 or tid == 1:
                 continue
 
@@ -476,11 +477,11 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def _convert_hids_to_ids(self, hids):
         if not hasattr(self, 'hids_map'):
-            hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.hanzi_list)
+            hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.token_list)
             self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
 
         if not hasattr(self, 'ids_map'):
-            self.ids_map = {value:key for key,value in self.hids_map.items()}
+            self.ids_map = {value: key for key, value in self.hids_map.items()}
 
         batch_size, token_num = None, None
         if len(hids.shape) == 2:
@@ -504,6 +505,15 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         return self.optimizer
 
+    def observe_train_performance(self, precision, recall, f1):
+        alpha = self.loss_fnt.get_alpha()
+        if recall > precision:
+            alpha[1] = 1.
+        else:
+            alpha[1] = 1 - precision
+
+        self.loss_fnt.set_alpha(alpha)
+
     def predict(self, src):
         src = src.replace(" ", "")
         src = " ".join(src)
@@ -516,6 +526,62 @@ class MultiModalBertCorrectionModel(nn.Module):
         #     # self.tokenizer.convert_ids_to_tokens(prob[0][3].argsort(descending=True)[:5])
         #     print()
         return ''.join(outputs)
+
+    def get_collate_fn(self):
+        def word_segment_collate_fn(batch):
+            src, tgt = zip(*batch)
+            src, tgt = list(src), list(tgt)
+
+            tgt_sents = [sent.replace(" ", "") for sent in tgt]
+
+            src = BERT.get_bert_inputs(src, tokenizer=self.tokenizer)
+            tgt = BERT.get_bert_inputs(tgt, tokenizer=self.tokenizer)
+
+            batch_size, length = src['input_ids'].shape
+
+            tgt_ws_labels = word_segment_targets(tgt_sents)
+
+            targets = tgt.input_ids.clone()
+
+            d_targets = (src['input_ids'] != tgt['input_ids']).bool()
+
+            # 将没有出错的单个字变为1
+            # targets[(~detection_targets) & (targets != 0) & (tgt_ws_labels == 1)] = 1
+
+            # 逐个遍历每个字
+            for i in range(batch_size):
+                for j in range(length):
+                    if targets[i, j] == 0:
+                        break
+
+                    # 单字token
+                    if not d_targets[i, j] and (tgt_ws_labels[i, j] == 0 or tgt_ws_labels[i, j] == 1):
+                        targets[i, j] = 1
+                        continue
+
+                    if tgt_ws_labels[i, j] == 2:
+                        # 找一下词尾在哪
+                        for k in range(j + 1, length):
+                            if tgt_ws_labels[i, k] == 4:
+                                break
+
+                        # 该词没有错
+                        if not d_targets[i, j:k + 1].any():
+                            targets[i, j:k + 1] = 1
+
+                    # # 双字词
+                    # if tgt_ws_labels[i, j] == 2 and tgt_ws_labels[i, j+1] == 4:
+                    #     # 该词没有错误
+                    #     if not d_targets[i, j] and not d_targets[i, j+1]:
+                    #         targets[i, j] = 1
+                    #         targets[i, j+1] = 1
+                    #     else: # 该词存在错字
+                    #         print()
+
+            device = self.args.device
+            return src.to(device), tgt.to(device), d_targets.float().to(device), targets.to(device)
+
+        return word_segment_collate_fn
 
 
 def merge_multi_modal_bert():

@@ -81,12 +81,6 @@ def get_word_segment_collate_fn(tokenizer, device):
 
         tgt_ws_labels = word_segment_targets(tgt_sents)
 
-        tgt_ws_labels = torch.concat([
-            torch.zeros(tgt_ws_labels.size(0)).unsqueeze(1),
-            tgt_ws_labels,
-            torch.zeros(tgt_ws_labels.size(0)).unsqueeze(1),
-        ], dim=1).long()
-
         return src.to(device), tgt.to(device), (src['input_ids'] != tgt['input_ids']).float().to(
             device), tgt_ws_labels.to(device)
 

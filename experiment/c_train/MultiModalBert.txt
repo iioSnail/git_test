@@ -1043,4 +1043,37 @@ Character-level Correct Acc: 0.9732, P: 0.4044, R: 0.5771, F1: 0.4755
 Sentence-level Detect Acc: 0.5127, P: 0.5094, R: 0.4477, F1: 0.4766
 Sentence-level Correct Acc: 0.4773, P: 0.4659, R: 0.3761, F1: 0.4162
 
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。只让模型预测6000个字。
+Focal的alpha比例按照训练情况。index1的alpha为1-Precision，若recall>Precision，则alpha重新调成1。
+执行情况：对于训练集，基本Precision和Recall处于一个始终持平的状态。但在验证集上还是Pre占上风。
+Correction Precision: 0.829090909090635, Recall: 0.467387253074829, F1-Score: 0.5977833388308736
+Correction Precision: 0.8651603498540171, Recall: 0.6633755588672385, F1-Score: 0.7509489661892805
+Correction Precision: 0.8544249679348322, Recall: 0.7444589308994701, F1-Score: 0.7956603956403573
+Correction Precision: 0.8747359526825359, Recall: 0.7717107715242691, F1-Score: 0.8199999995017953
+Correction Precision: 0.8359798605730371, Recall: 0.804060346433078, F1-Score: 0.8197094839773905
+Correction Precision: 0.8966315789471796, Recall: 0.7932575898676115, F1-Score: 0.8417827843618686
+Correction Precision: 0.871396895786964, Recall: 0.8051778729743331, F1-Score: 0.836979670362186
+Correction Precision: 0.9468255787300144, Recall: 0.7694170236541684, F1-Score: 0.8489519107258834
+Correction Precision: 0.9171686746985978, Recall: 0.7942984907768224, F1-Score: 0.8513230149791917
+Correction Precision: 0.9249781277338308, Recall: 0.7878166915050693, F1-Score: 0.8509054320986086
+Correction Precision: 0.9190125595493894, Recall: 0.790611028315799, F1-Score: 0.8499899854830225
+Correction Precision: 0.9205658324263502, Recall: 0.7888847444981744, F1-Score: 0.8496535095961978
+Correction Precision: 0.9197571025805855, Recall: 0.7901993664988279, F1-Score: 0.8500701538422468
+Epoch 13 Training: 100% 250/250 [03:48<00:00,  1.09it/s, c_precision=0.935, c_recall=0.936, c_f1_score=0.935, loss=0.0112]
+Correction Precision: 0.920503909643588, Recall: 0.7893462469732185, F1-Score: 0.8498947152352492
+Eval情况：对于SIGHAN反倒是Recall占上风
+Character-level Detect Acc: 0.9785, P: 0.4919, R: 0.6478, F1: 0.5592
+Character-level Correct Acc: 0.9762, P: 0.4455, R: 0.5375, F1: 0.4872
+Sentence-level Detect Acc: 0.5527, P: 0.5588, R: 0.4624, F1: 0.5060
+Sentence-level Correct Acc: 0.5136, P: 0.5123, R: 0.3835, F1: 0.4386
+全量训练后的Eval情况：SIGHAN的Recall很好，但Pre差的太多了。证明模型现在是顾此失彼，精准率高召回率就低，反之亦然。
+Character-level Detect Acc: 0.9858, P: 0.6155, R: 0.8741, F1: 0.7224
+Character-level Correct Acc: 0.9849, P: 0.6029, R: 0.8289, F1: 0.6980
+Sentence-level Detect Acc: 0.6545, P: 0.6577, R: 0.6312, F1: 0.6442
+Sentence-level Correct Acc: 0.6391, P: 0.6462, R: 0.6000, F1: 0.6223
+FineTune后：感觉我的模型也就这样了。上不去了，只能另辟蹊径，调参无用了。
+Character-level Detect Acc: 0.9922, P: 0.8604, R: 0.7496, F1: 0.8012
+Character-level Correct Acc: 0.9918, P: 0.8579, R: 0.7341, F1: 0.7912
+Sentence-level Detect Acc: 0.8109, P: 0.8928, R: 0.7028, F1: 0.7864
+Sentence-level Correct Acc: 0.8055, P: 0.8913, R: 0.6917, F1: 0.7789
 

@@ -1,10 +1,15 @@
 # -*- coding:utf-8 -*-
+import os
+from pathlib import Path
 
 import torch
 from ltp import LTP
 from torch.nn.utils.rnn import pad_sequence
 
 ltp = None
+
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[1]
 
 
 def Q2B(uchar):
@@ -68,7 +73,15 @@ def word_segment_targets(sentences):
     for label in labels:
         targets.append(torch.LongTensor([word2idx[c] for c in label]))
 
-    return pad_sequence(targets, batch_first=True)
+    tgt_ws_labels = pad_sequence(targets, batch_first=True)
+
+    tgt_ws_labels = torch.concat([
+        torch.zeros(tgt_ws_labels.size(0)).unsqueeze(1),
+        tgt_ws_labels,
+        torch.zeros(tgt_ws_labels.size(0)).unsqueeze(1),
+    ], dim=1).long()
+
+    return tgt_ws_labels
 
 
 def get_common_hanzi(num=None):
@@ -79,10 +92,23 @@ def get_common_hanzi(num=None):
 
     return hanzi_with_frequency[:num]
 
+def get_common_words(num=None):
+    word_txt = ROOT / 'data' / 'common_words.txt'
+    with open(word_txt, mode='r', encoding='UTF-8') as f:
+        words = f.read()
+
+    words = words.split(',')
+
+    if num is None:
+        return words
+
+    return words[:num]
+
 
 if __name__ == '__main__':
     # sentences = ["我 很 喜 欢 看 你 跳 无 ， 你 干 嘛 ！ ", "李 四 想 去 负 担 大 学 的 夜 市 摊 吃 甜 橘 子", "惊 弓 之 鸟"]
     # print(word_segment(sentences))
     # print(word_segment_labels(sentences))
     # print(word_segment_targets(sentences))
-    print(get_common_hanzi(4500))
+    # print(get_common_hanzi(4500))
+    print(get_common_words())

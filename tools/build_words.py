@@ -1,16 +1,15 @@
 import sys, os
 
-import torch
-from tqdm import tqdm
-
-from utils.utils import save_obj
-
 sys.path.insert(1, os.path.abspath("."))
 sys.path.insert(1, os.path.abspath(".."))
 
 import pickle
+import torch
 from ltp import LTP
 from collections import Counter
+from tqdm import tqdm
+from utils.utils import save_obj
+
 
 def load_sentences():
     train_data = '../data/Wang271K_processed.pkl'
