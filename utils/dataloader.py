@@ -51,11 +51,16 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
     if collate_fn is None:
         collate_fn = default_collate_fn
 
+    workers = 0
+    if hasattr(args, 'workers'):
+        workers = args.workers
+
     train_loader = DataLoader(train_dataset,
                               batch_size=args.batch_size,
                               collate_fn=collate_fn,
                               shuffle=True,
-                              drop_last=True)
+                              drop_last=True,
+                              num_workers=workers)
 
     if valid_dataset is None:
         return train_loader, None
@@ -64,7 +69,8 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
                               batch_size=args.batch_size,
                               collate_fn=collate_fn,
                               shuffle=True,
-                              drop_last=True)
+                              drop_last=True,
+                              num_workers=workers)
 
     return train_loader, valid_loader
 
