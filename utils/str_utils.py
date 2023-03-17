@@ -33,6 +33,9 @@ def word_segment(sentences):
     if ltp is None:
         ltp = LTP("LTP/small")
 
+    if torch.cuda.is_available():
+        ltp.to("cuda")
+
     outputs = ltp.pipeline(sentences, tasks=["cws"])
     return outputs.cws
 

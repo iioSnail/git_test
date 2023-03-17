@@ -364,9 +364,11 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.bert = MultiModalBertModel(args)
         self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.token_list) + 2)
 
-        alpha = [1] * (len(self.token_list) + 2)
-        alpha[0] = 0
-        self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
+        # alpha = [1] * (len(self.token_list) + 2)
+        # alpha[0] = 0
+        # self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
+
+        self.loss_fnt = FocalLoss(device=self.args.device)
 
         self.optimizer = self.make_optimizer()
         self.scheduler = PlateauScheduler(self.optimizer)
@@ -505,14 +507,14 @@ class MultiModalBertCorrectionModel(nn.Module):
 
         return self.optimizer
 
-    def observe_train_performance(self, precision, recall, f1):
-        alpha = self.loss_fnt.get_alpha()
-        if recall > precision:
-            alpha[1] = 1.
-        else:
-            alpha[1] = 1 - precision
-
-        self.loss_fnt.set_alpha(alpha)
+    # def observe_train_performance(self, precision, recall, f1):
+    #     alpha = self.loss_fnt.get_alpha()
+    #     if recall > precision:
+    #         alpha[1] = 1.
+    #     else:
+    #         alpha[1] = 1 - precision
+    #
+    #     self.loss_fnt.set_alpha(alpha)
 
     def predict(self, src):
         src = src.replace(" ", "")
