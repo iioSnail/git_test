@@ -364,11 +364,13 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.bert = MultiModalBertModel(args)
         self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.token_list) + 2)
 
-        # alpha = [1] * (len(self.token_list) + 2)
-        # alpha[0] = 0
-        # self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
+        alpha = [1] * (len(self.token_list) + 2)
+        alpha[0] = 0
+        alpha = torch.tensor(alpha)
+        alpha[2:15] = 2   # 给那几个比较容易错的字更高的权重
+        self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
 
-        self.loss_fnt = FocalLoss(device=self.args.device)
+        # self.loss_fnt = FocalLoss(device=self.args.device)
 
         self.optimizer = self.make_optimizer()
         # self.scheduler = PlateauScheduler(self.optimizer)
