@@ -106,9 +106,10 @@ class Evaluation(object):
                 traceback.print_exc()
                 print("Error Sentence:", e)
 
-
         csc_metrics.print_results()
-        # csc_metrics.print_errors()
+
+        if self.args.print_errors:
+            csc_metrics.print_errors()
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
@@ -127,6 +128,7 @@ class Evaluation(object):
                             help='The model file path. e.g. "./output/csc-best-model.pt"')
         parser.add_argument('--output-path', type=str, default='./output',
                             help='The model file path. e.g. "./output')
+        parser.add_argument('--print-errors', action='store_true', default=False)
 
         args = parser.parse_known_args()[0]
         print(args)
@@ -147,4 +149,3 @@ class Evaluation(object):
 if __name__ == '__main__':
     evaluation = Evaluation()
     evaluation.evaluate()
-

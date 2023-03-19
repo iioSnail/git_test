@@ -233,3 +233,7 @@ def convert_char_to_image(character, font_size=32):
         image = back_image
 
     return torch.tensor(image)
+
+
+def random_true(prob):
+    return random.random() < prob

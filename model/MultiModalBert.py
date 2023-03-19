@@ -13,6 +13,7 @@ from torch.nn.utils.rnn import pad_sequence
 from model.BertCorrectionModel import BertCorrectionModel
 from model.char_cnn import CharResNet
 from model.common import BERT, BertOnlyMLMHead
+from utils.data_augment import special_hanzi_augment
 from utils.dataloader import get_word_segment_collate_fn
 from utils.loss import CscFocalLoss, FocalLoss
 from utils.scheduler import PlateauScheduler, WarmupExponentialLR
@@ -364,13 +365,13 @@ class MultiModalBertCorrectionModel(nn.Module):
         self.bert = MultiModalBertModel(args)
         self.cls = BertOnlyMLMHead(768 + 8 + 56, len(self.token_list) + 2)
 
-        alpha = [1] * (len(self.token_list) + 2)
-        alpha[0] = 0
-        alpha = torch.tensor(alpha)
-        alpha[2:15] = 2   # 给那几个比较容易错的字更高的权重
-        self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
+        # alpha = [1] * (len(self.token_list) + 2)
+        # alpha[0] = 0
+        # alpha = torch.tensor(alpha).to(self.args.device)
+        # alpha[2:15] = 2   # 给那几个比较容易错的字更高的权重
+        # self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
 
-        # self.loss_fnt = FocalLoss(device=self.args.device)
+        self.loss_fnt = FocalLoss(device=self.args.device)
 
         self.optimizer = self.make_optimizer()
         # self.scheduler = PlateauScheduler(self.optimizer)
@@ -414,7 +415,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         return self.cls(outputs), inputs['input_ids']
 
     def get_lr_scheduler(self):
-        if self.args.data_type == 'sighan':
+        if self.args.finetune:
             return None
 
         return self.scheduler
@@ -503,7 +504,7 @@ class MultiModalBertCorrectionModel(nn.Module):
         return hids
 
     def get_optimizer(self):
-        if self.args.data_type == 'sighan':
+        if self.args.finetune:
             print("Fine-tune model with SGD")
             self.optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
 
@@ -535,6 +536,8 @@ class MultiModalBertCorrectionModel(nn.Module):
         def word_segment_collate_fn(batch):
             src, tgt = zip(*batch)
             src, tgt = list(src), list(tgt)
+
+            src, tgt = special_hanzi_augment(src, tgt)
 
             tgt_sents = [sent.replace(" ", "") for sent in tgt]
 
