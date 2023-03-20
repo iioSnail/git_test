@@ -1098,6 +1098,57 @@ Character-level Correct Acc: 0.9807, P: 0.5440, R: 0.5248, F1: 0.5342
 Sentence-level Detect Acc: 0.6018, P: 0.6328, R: 0.4679, F1: 0.5380
 Sentence-level Correct Acc: 0.5764, P: 0.6053, R: 0.4165, F1: 0.4935
 
+模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。只让模型预测6000个字。Focal的alpha比例按照训练情况。index1的alpha为1-Precision，其他固定为1
+考虑词，若一个词中某个字错了，那么这个词的两个字都需要输出，但若词没错，则就正常输出1即可。
+不设置alpha
+执行情况：15个epoch后early stop了。不设置alpha精准率确实偏高
+Correction Precision: 0.8996827914350121, Recall: 0.4228475587028656, F1-Score: 0.5753042591997397
+Correction Precision: 0.9321550741160398, Recall: 0.6087118391659329, F1-Score: 0.7364864860083518
+Correction Precision: 0.9469716662331825, Recall: 0.6787777156697077, F1-Score: 0.7907532011630989
+Correction Precision: 0.959408669506149, Recall: 0.7143656716416578, F1-Score: 0.818949844446912
+Correction Precision: 0.9614638875421808, Recall: 0.7392843831530489, F1-Score: 0.8358617778480111
+Correction Precision: 0.9612109744557801, Recall: 0.7566561161793415, F1-Score: 0.8467548698059022
+Correction Precision: 0.9629629629627371, Recall: 0.7659891851574182, F1-Score: 0.8532557893079531
+Correction Precision: 0.9633348902379814, Recall: 0.7681564245808625, F1-Score: 0.8547451300490686
+Correction Precision: 0.9639513108611975, Recall: 0.767281535308223, F1-Score: 0.8544454814027376
+Correction Precision: 0.9612259113069511, Recall: 0.7715244129704115, F1-Score: 0.8559909020179631
+Correction Precision: 0.9646204311150504, Recall: 0.7673811742775829, F1-Score: 0.8547700607541008
+Correction Precision: 0.9644693782138932, Recall: 0.7692020879938909, F1-Score: 0.8558390370502434
+Correction Precision: 0.9653558052432196, Recall: 0.7683994782931305, F1-Score: 0.8556904238241503
+Correction Precision: 0.9642188961644143, Recall: 0.7683563175548325, F1-Score: 0.8552167595145093
+Epoch 14 Training: 100% 250/250 [04:14<00:00,  1.02s/it, c_precision=0.986, c_recall=0.904, c_f1_score=0.943, loss=0.0105]
+Correction Precision: 0.9641937748652084, Recall: 0.7679403541471075, F1-Score: 0.8549491590829168
+Eval情况：f1首次突破55，说明有效。又一次达到了我的sota
+Character-level Detect Acc: 0.9857, P: 0.7030, R: 0.5559, F1: 0.6209
+Character-level Correct Acc: 0.9844, P: 0.6789, R: 0.4965, F1: 0.5735
+Sentence-level Detect Acc: 0.6627, P: 0.7458, R: 0.4844, F1: 0.5873
+Sentence-level Correct Acc: 0.6436, P: 0.7297, R: 0.4459, F1: 0.5535
+全量训练情况：比之前要好。
+Epoch 0 Training: 100% 8055/8055 [2:19:29<00:00,  1.04s/it, c_precision=0.952, c_recall=0.756, c_f1_score=0.842, loss=0.021]
+Correction Precision: 0.9596218855639814, Recall: 0.8032804066446154, F1-Score: 0.8745186405741394
+Character-level Detect Acc: 0.9900, P: 0.7891, R: 0.7199, F1: 0.7530
+Character-level Correct Acc: 0.9893, P: 0.7806, R: 0.6846, F1: 0.7295
+Sentence-level Detect Acc: 0.7609, P: 0.8325, R: 0.6477, F1: 0.7286
+Sentence-level Correct Acc: 0.7482, P: 0.8268, R: 0.6220, F1: 0.7099
+Epoch 1 Training: 100% 8055/8055 [2:18:53<00:00,  1.03s/it, c_precision=0.973, c_recall=0.851, c_f1_score=0.908, loss=0.0185]
+Correction Precision: 0.9724474245656219, Recall: 0.8362425957959408, F1-Score: 0.8992165036457305
+Character-level Detect Acc: 0.9914, P: 0.8315, R: 0.7397, F1: 0.7829
+Character-level Correct Acc: 0.9907, P: 0.8251, R: 0.7072, F1: 0.7616
+Sentence-level Detect Acc: 0.7900, P: 0.8756, R: 0.6716, F1: 0.7601
+Sentence-level Correct Acc: 0.7791, P: 0.8719, R: 0.6495, F1: 0.7445
+Epoch 2 Training: 100% 8055/8055 [2:16:13<00:00,  1.01s/it, c_precision=0.966, c_recall=0.846, c_f1_score=0.902, loss=0.0121]
+Correction Precision: 0.9694852502089473, Recall: 0.8507126388597333, F1-Score: 0.9062238342774063
+Character-level Detect Acc: 0.9912, P: 0.7963, R: 0.7850, F1: 0.7906
+Character-level Correct Acc: 0.9906, P: 0.7903, R: 0.7567, F1: 0.7731
+Sentence-level Detect Acc: 0.7827, P: 0.8326, R: 0.7028, F1: 0.7622
+Sentence-level Correct Acc: 0.7736, P: 0.8289, R: 0.6844, F1: 0.7497
+FineTune情况：和之前一样，最高到78.2
+但是，在我对数据又一次进行清洗之后（修复了一些错误数据），得到了如下的准确率，正式超过sota。
+Character-level Detect Acc: 0.9931, P: 0.9228, R: 0.7388, F1: 0.8206
+Character-level Correct Acc: 0.9928, P: 0.9210, R: 0.7205, F1: 0.8085
+Sentence-level Detect Acc: 0.8327, P: 0.9395, R: 0.7093, F1: 0.8083
+Sentence-level Correct Acc: 0.8291, P: 0.9389, R: 0.7020, F1: 0.8033
+
 
 模型：MultiModalBert，使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。在此基础上，0.01的loss和0.99的soft_loss。训练head，微调BERT。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。只让模型预测6000个字。考虑词，若一个词中某个字错了，那么这个词的两个字都需要输出，但若词没错，则就正常输出1即可。
 增加了数据增强，对特殊字符进行增强
