@@ -1,9 +1,10 @@
 import sys, os
 from collections import Counter
 
+import pandas as pd
 from tqdm import tqdm
 
-from utils.utils import load_obj
+from utils.utils import load_obj, preprocess_text
 
 sys.path.insert(1, os.path.abspath("."))
 sys.path.insert(1, os.path.abspath(".."))
@@ -33,6 +34,7 @@ def analyse_dataset(datasets):
     correct_sentence_num = 0
 
     invalid_sentence_num = 0
+    invalid_sentences = []
 
     total_char_num = 0
     error_char_num = 0
@@ -55,6 +57,7 @@ def analyse_dataset(datasets):
 
         if len(src) != len(tgt):
             invalid_sentence_num += 1
+            invalid_sentences.append(item)
             continue
 
         if src == tgt:
@@ -113,6 +116,10 @@ def analyse_dataset(datasets):
     print("“的地得”错字数量：", de_error_char_num)
     print("连续错字分布：", continuous_error_counter)
 
+    if invalid_sentence_num > 0:
+        print("-" * 20)
+        print("异常句子如下：", invalid_sentences)
+
 
 def analysis_wang271k():
     dataset = load_obj("../data/Wang271K_processed.pkl")
@@ -120,5 +127,55 @@ def analysis_wang271k():
 
     analyse_dataset(dataset)
 
+
+def analysis_cscd_ime(filepath):
+    with open(filepath, mode='r', encoding='UTF-8') as f:
+        lines = f.readlines()
+
+    dataset = []
+    for line in lines:
+        line = line.strip()
+        items = line.split("\t")
+        if len(items) < 3:
+            continue
+
+        dataset.append((items[1], items[2]))
+
+    analyse_dataset(dataset)
+
+
+def analysis_sighan(filepath):
+    if type(filepath) == list:
+        df_list = []
+        for path in filepath:
+            df_list.append(pd.read_csv(path))
+        df = pd.concat(df_list)
+    else:
+        df = pd.read_csv(filepath)
+
+    dataset = []
+    for index in range(len(df)):
+        src = df.iloc[index]['src']
+        tgt = df.iloc[index]['tgt']
+
+        src = preprocess_text(src)
+        tgt = preprocess_text(tgt)
+
+        dataset.append((src, tgt))
+
+    analyse_dataset(dataset)
+
+
 if __name__ == '__main__':
-    analysis_wang271k()
+    # analysis_wang271k()
+    # analysis_cscd_ime("../datasets/cscd-ime/all.tsv")
+    # analysis_cscd_ime("../datasets/cscd-ime/train.tsv")
+    # analysis_cscd_ime("../datasets/cscd-ime/dev.tsv")
+    # analysis_cscd_ime("../datasets/cscd-ime/test.tsv")
+    # analysis_cscd_ime("../datasets/cscd-ime/lcsts-ime-2m.tsv")
+    # analysis_sighan(["../datasets/sighan_2015_train.csv",
+    #                  "../datasets/sighan_2014_train.csv",
+    #                  "../datasets/sighan_2013_train.csv", ])
+    # analysis_sighan("../datasets/sighan_2015_train.csv")
+    # analysis_sighan("../datasets/sighan_2014_train.csv")
+    analysis_sighan("../datasets/sighan_2013_train.csv")
