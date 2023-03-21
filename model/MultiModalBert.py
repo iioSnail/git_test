@@ -387,12 +387,15 @@ class MultiModalBertCorrectionModel(nn.Module):
         for key, value in self.bert.named_parameters():
             if not value.requires_grad:
                 continue
+
             lr = 2e-6
             weight_decay = 0.01
-            # 感觉用处不是很大
-            # if "bias" in key:
-            #     lr = 4e-6
-            #     weight_decay = 0
+            if "bias" in key:
+                lr = 4e-6
+                weight_decay = 0
+
+            if 'token_forget_gate' in key:
+                lr = 2e-4
 
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
@@ -401,9 +404,9 @@ class MultiModalBertCorrectionModel(nn.Module):
                 continue
             lr = 2e-4
             weight_decay = 0.01
-            # if "bias" in key:
-            #     lr = 4e-4
-            #     weight_decay = 0
+            if "bias" in key:
+                lr = 4e-4
+                weight_decay = 0
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
         optimizer = torch.optim.AdamW(params)
@@ -537,7 +540,8 @@ class MultiModalBertCorrectionModel(nn.Module):
             src, tgt = zip(*batch)
             src, tgt = list(src), list(tgt)
 
-            src, tgt = special_hanzi_augment(src, tgt)
+            # 这个数据增强作用不是特别大
+            # src, tgt = special_hanzi_augment(src, tgt)
 
             tgt_sents = [sent.replace(" ", "") for sent in tgt]
 
