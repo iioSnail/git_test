@@ -178,4 +178,7 @@ if __name__ == '__main__':
     #                  "../datasets/sighan_2013_train.csv", ])
     # analysis_sighan("../datasets/sighan_2015_train.csv")
     # analysis_sighan("../datasets/sighan_2014_train.csv")
-    analysis_sighan("../datasets/sighan_2013_train.csv")
+    # analysis_sighan("../datasets/sighan_2013_train.csv")
+    # analysis_sighan("../datasets/sighan_2015_test.csv")
+    # analysis_sighan("../datasets/sighan_2014_test.csv")
+    analysis_sighan("../datasets/sighan_2013_test.csv")
