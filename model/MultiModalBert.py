@@ -522,18 +522,29 @@ class MultiModalBertCorrectionModel(nn.Module):
     #
     #     self.loss_fnt.set_alpha(alpha)
 
-    def predict(self, src):
-        src = src.replace(" ", "")
+    def _predict(self, src):
         src = " ".join(src)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
         outputs = self.forward(inputs)
         outputs = self.extract_outputs(outputs)
         outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
         outputs = [outputs[i] if len(outputs[i]) == 1 else src[i] for i in range(len(outputs))]
-        # if ''.join(outputs) != tgt:   # 最后配合Detector，让softmax前5，用Detector来确定用哪一个
-        #     # self.tokenizer.convert_ids_to_tokens(prob[0][3].argsort(descending=True)[:5])
-        #     print()
+
         return ''.join(outputs)
+
+    def predict(self, src):
+        src = src.replace(" ", "")
+
+        past_pred = [src]
+
+        for i in range(5):
+            pred = self._predict(src)
+            if pred in past_pred:
+                return pred
+            else:
+                past_pred.append(pred)
+
+        return pred
 
     def get_collate_fn(self):
         def word_segment_collate_fn(batch):

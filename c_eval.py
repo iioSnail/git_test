@@ -39,7 +39,11 @@ class Evaluation(object):
             self.test_set = CSCTestDataset(self.args)
 
         try:
-            self.model.load_state_dict(torch.load(self.args.model_path, map_location='cpu'))
+            model_state = torch.load(self.args.model_path, map_location='cpu')
+            if type(model_state) == dict:
+                self.model.load_state_dict(model_state['model'])
+            else:
+                self.model.load_state_dict(model_state)
         except Exception as e:
             print(e)
             print("Load model failed.")
@@ -100,7 +104,7 @@ class Evaluation(object):
             src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
             try:
                 c_output = self.model.predict(src)
-                c_output = restore_special_tokens(src, c_output)
+                # c_output = restore_special_tokens(src, c_output)
                 csc_metrics.add_sentence(src, tgt, c_output)
             except Exception as e:
                 traceback.print_exc()

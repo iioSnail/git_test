@@ -102,8 +102,8 @@ def restore_special_tokens(src, output):
         if not is_chinese(src[i]) or not is_chinese(output[i]):
             output[i] = src[i]
 
-        if src[i] in exclude_chars:
-            output[i] = src[i]
+        # if src[i] in exclude_chars:
+        #     output[i] = src[i]
 
     return ''.join(output)
 
