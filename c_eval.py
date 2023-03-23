@@ -133,8 +133,16 @@ class Evaluation(object):
         parser.add_argument('--output-path', type=str, default='./output',
                             help='The model file path. e.g. "./output')
         parser.add_argument('--print-errors', action='store_true', default=False)
+        parser.add_argument('--more-args', type=str, default=None, help='e.g. layer=3,dropout=0.5')
 
         args = parser.parse_known_args()[0]
+
+        if args.more_args:
+            items = args.more_args.split(",")
+            for item in items:
+                key, value = item.split("=")
+                args.__dict__[key] = value
+
         print(args)
 
         if args.device == 'auto':
