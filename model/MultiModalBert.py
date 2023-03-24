@@ -469,25 +469,26 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def extract_outputs(self, outputs):
         outputs, input_ids = outputs
-        outputs = outputs.softmax(-1)
-        probs, hids = outputs.topk(2, dim=-1)
+        # outputs = outputs.softmax(-1)
+        # probs, hids = outputs.topk(2, dim=-1)
 
-        for batch in range(probs.size(0)):
-            for i in range(probs.size(1)):
-                # 若模型认为该字正确的概率小于0.8(TODO, 超参数需要调一下)，则采用正常token
-                # 第二个字占比要大于0.9(TODO, 超参数需要调一下)，才选第二个字。
-                """
-                例如：对于预测结果为hids为[1, 123], prob为[0.6, 0.1]
-                则0.6<0.8，这个置信度比较低，然后再看0.1/(1-0.6)=0.25，候选字在剩下的占比也不算高，所以不采纳。
-                """
-                if hids[batch, i, 0] == 1 and probs[batch, i, 0] < float(self.args.threshold):
-                    # and probs[batch, i, 1] / (1 - probs[batch, i, 0]) > 0.5:
-                    if hids[batch, i, 1] in [5, 6, 7]:  # 忽略“他她它“
-                        continue
+        # for batch in range(probs.size(0)):
+        #     for i in range(probs.size(1)):
+        #         # 若模型认为该字正确的概率小于0.8(TODO, 超参数需要调一下)，则采用正常token
+        #         # 第二个字占比要大于0.9(TODO, 超参数需要调一下)，才选第二个字。
+        #         """
+        #         例如：对于预测结果为hids为[1, 123], prob为[0.6, 0.1]
+        #         则0.6<0.8，这个置信度比较低，然后再看0.1/(1-0.6)=0.25，候选字在剩下的占比也不算高，所以不采纳。
+        #         """
+        #         if hids[batch, i, 0] == 1 and probs[batch, i, 0] < float(self.args.threshold):
+        #             # and probs[batch, i, 1] / (1 - probs[batch, i, 0]) > 0.5:
+        #             if hids[batch, i, 1] in [5, 6, 7]:  # 忽略“他她它“
+        #                 continue
+        #
+        #             hids[batch, i, 0] = int(hids[batch, i, 1])
+        # outputs = hids[:, :, 0]
 
-                    hids[batch, i, 0] = int(hids[batch, i, 1])
-
-        outputs = hids[:, :, 0]
+        outputs = outputs.argmax(-1)
 
         outputs = self._convert_hids_to_ids(outputs)
 
