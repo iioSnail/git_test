@@ -104,7 +104,7 @@ class Evaluation(object):
             src, tgt = src.replace(" ", ""), tgt.replace(" ", "")
             try:
                 c_output = self.model.predict(src)
-                # c_output = restore_special_tokens(src, c_output)
+                c_output = restore_special_tokens(src, c_output)
                 csc_metrics.add_sentence(src, tgt, c_output)
             except Exception as e:
                 traceback.print_exc()
