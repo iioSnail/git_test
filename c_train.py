@@ -32,7 +32,7 @@ class C_Train(object):
         ckpt_path = None
         if self.args.resume:
             if not os.path.exists(checkpoint_callback.ckpt_path):
-                log.warning("Resume failed due to can't find checkpoint file at ", str(checkpoint_callback.ckpt_path))
+                log.warning("Resume failed due to can't find checkpoint file at " + str(checkpoint_callback.ckpt_path))
                 log.warning("Training without resuming!")
             else:
                 ckpt_path = checkpoint_callback.ckpt_path
@@ -99,7 +99,7 @@ class C_Train(object):
 
         parser.add_argument('--model-path', type=str, default=None,
                             help='The filepath of pretrain model.')
-        parser.add_argument('--bert-path', type=str, default='./drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt')
+        parser.add_argument('--bert-path', type=str, default='../drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt')
 
         parser.add_argument('--data-type', type=str, default="none",
                             help='The type of training data.')
