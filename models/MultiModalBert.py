@@ -472,26 +472,29 @@ class MultiModalBertCscModel(pl.LightningModule):
 
         d_targets = (src['input_ids'] != tgt['input_ids']).bool()
 
-        # 逐个遍历每个字
-        for i in range(batch_size):
-            for j in range(length):
-                if targets[i, j] == 0:
-                    break
+        # 将没有出错的单个字变为1
+        targets[(~d_targets) & (targets != 0) & (tgt_ws_labels == 1)] = 1
 
-                # 单字token
-                if not d_targets[i, j] and (tgt_ws_labels[i, j] == 0 or tgt_ws_labels[i, j] == 1):
-                    targets[i, j] = 1
-                    continue
-
-                if tgt_ws_labels[i, j] == 2:
-                    # 找一下词尾在哪
-                    for k in range(j + 1, length):
-                        if tgt_ws_labels[i, k] == 4:
-                            break
-
-                    # 该词没有错
-                    if not d_targets[i, j:k + 1].any():
-                        targets[i, j:k + 1] = 1
+        # # 逐个遍历每个字
+        # for i in range(batch_size):
+        #     for j in range(length):
+        #         if targets[i, j] == 0:
+        #             break
+        #
+        #         # 单字token
+        #         if not d_targets[i, j] and (tgt_ws_labels[i, j] == 0 or tgt_ws_labels[i, j] == 1):
+        #             targets[i, j] = 1
+        #             continue
+        #
+        #         if tgt_ws_labels[i, j] == 2:
+        #             # 找一下词尾在哪
+        #             for k in range(j + 1, length):
+        #                 if tgt_ws_labels[i, k] == 4:
+        #                     break
+        #
+        #             # 该词没有错
+        #             if not d_targets[i, j:k + 1].any():
+        #                 targets[i, j:k + 1] = 1
 
         device = MultiModalBertCscModel.device
         return src.to(device), tgt.to(device), (src['input_ids'] != tgt['input_ids']).float().to(
