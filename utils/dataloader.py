@@ -58,7 +58,6 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
                               batch_size=args.batch_size,
                               collate_fn=collate_fn,
                               shuffle=False,
-                              drop_last=True,
                               num_workers=args.workers)
 
     return train_loader, valid_loader

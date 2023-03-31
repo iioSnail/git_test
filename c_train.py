@@ -45,11 +45,16 @@ class C_Train(object):
             mode='max',
         )
 
+        limit_train_batches = None
+        limit_val_batches = None
+        if self.args.limit_batches > 0:
+            limit_train_batches = self.args.limit_batches
+            limit_val_batches = int(self.args.limit_batches * self.args.valid_ratio)
+
         trainer = pl.Trainer(
             default_root_dir=self.args.work_dir,
-            limit_train_batches=3,
-            limit_val_batches=3,
-            limit_test_batches=3,
+            limit_train_batches=limit_train_batches,
+            limit_val_batches=limit_val_batches,
             callbacks=[checkpoint_callback, early_stop_callback],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
@@ -77,7 +82,8 @@ class C_Train(object):
                             help='The ratio of splitting validation set.')
         parser.add_argument('--batch-size', type=int, default=32,
                             help='The batch size of training, validation and test.')
-        parser.add_argument('--workers', type=int, default=0)
+        parser.add_argument('--workers', type=int, default=-1,
+                            help="The num_workers of dataloader. -1 means auto select.")
         parser.add_argument('--work-dir', type=str, default='./outputs',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
@@ -85,6 +91,9 @@ class C_Train(object):
         parser.add_argument('--resume', action='store_true', help='Resume training.')
         parser.add_argument('--no-resume', dest='resume', action='store_false', help='Not Resume training.')
         parser.set_defaults(resume=True)
+        parser.add_argument('--limit-batches', type=int, default=-1,
+                            help='Limit the batches of datasets for quickly testing if your model works.'
+                                 '-1 means that there\'s no limit.')
 
         ###############################################################################################################
 
@@ -104,9 +113,7 @@ class C_Train(object):
         parser.add_argument('--output-path', type=str, default='./c_output',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
-        parser.add_argument('--limit-data-size', type=int, default=-1,
-                            help='Limit the data size of the Wang271K for quickly testing if your model works.'
-                                 '-1 means that there\'s no limit.')
+
         parser.add_argument('--error-threshold', type=float, default=0.5,
                             help='When detection logit greater than {error_threshold}, '
                                  'the token will be treated as error.')
@@ -128,6 +135,12 @@ class C_Train(object):
         setup_seed(args.seed)
         mkdir(args.work_dir)
         args.work_dir = Path(args.work_dir)
+
+        if args.workers < 0:
+            if args.device == 'cpu':
+                args.workers = 0
+            else:
+                args.workers = os.cpu_count()
 
         return args
 

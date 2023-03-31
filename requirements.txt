@@ -6,6 +6,6 @@ pillow==9.4.0
 matplotlib==3.7.1
 scikit-learn==1.2.2
 ltp==4.2.13
-torch==1.12.1
+torch==1.13.1
 torchvision==0.13.1
-lightning[extra]==
+lightning[extra]
