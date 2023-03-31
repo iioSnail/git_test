@@ -4,10 +4,12 @@ from pathlib import Path
 
 import lightning.pytorch as pl
 import torch
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 
+from common.callbacks import CheckpointCallback
 from models.MultiModalBert import MultiModalBertCscModel
 from utils.dataloader import create_dataloader, create_test_dataloader
+from utils.log_utils import log
 from utils.utils import setup_seed, mkdir
 
 
@@ -18,29 +20,39 @@ class C_Train(object):
         self.args = self.parse_args()
 
         self.model = MultiModalBertCscModel(self.args)
+        self.module_class = MultiModalBertCscModel
 
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
         tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else None
         train_loader, valid_loader = create_dataloader(self.args, collate_fn, tokenizer)
 
-        last_checkpoint_callback = ModelCheckpoint(
-            dirpath=self.args.work_dir,
-            filename='last_checkpoint',
-            every_n_epochs=1
-        )
+        checkpoint_callback = CheckpointCallback(dir_path=self.args.work_dir)
 
         ckpt_path = None
-        if os.path.exists(self.args.work_dir / 'last_checkpoint.ckpt'):
-            ckpt_path = str(self.args.work_dir / 'last_checkpoint.ckpt')
+        if self.args.resume:
+            if not os.path.exists(checkpoint_callback.ckpt_path):
+                log.warning("Resume failed due to can't find checkpoint file at ", str(checkpoint_callback.ckpt_path))
+                log.warning("Training without resuming!")
+            else:
+                ckpt_path = checkpoint_callback.ckpt_path
+                log.info("Resume training from last checkpoint.")
+
+        early_stop_callback = EarlyStopping(
+            monitor="val_f1",
+            min_delta=0.02,
+            patience=3,
+            mode='max',
+        )
 
         trainer = pl.Trainer(
             default_root_dir=self.args.work_dir,
             limit_train_batches=3,
             limit_val_batches=3,
             limit_test_batches=3,
-            callbacks=[last_checkpoint_callback],
+            callbacks=[checkpoint_callback, early_stop_callback],
             max_epochs=self.args.epochs,
+            num_sanity_val_steps=0,
         )
 
         trainer.fit(self.model,
@@ -66,11 +78,15 @@ class C_Train(object):
         parser.add_argument('--batch-size', type=int, default=32,
                             help='The batch size of training, validation and test.')
         parser.add_argument('--workers', type=int, default=0)
-        parser.add_argument('--work-dir', type=str, default='./root',
+        parser.add_argument('--work-dir', type=str, default='./outputs',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
         parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
+        parser.add_argument('--resume', action='store_true', help='Resume training.')
+        parser.add_argument('--no-resume', dest='resume', action='store_false', help='Not Resume training.')
+        parser.set_defaults(resume=True)
 
+        ###############################################################################################################
 
         parser.add_argument('--model-path', type=str, default=None,
                             help='The filepath of pretrain model.')
@@ -88,9 +104,6 @@ class C_Train(object):
         parser.add_argument('--output-path', type=str, default='./c_output',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
-        parser.add_argument('--resume', action='store_true', help='Resume training.')
-        parser.add_argument('--no-resume', dest='resume', action='store_false', help='Not Resume training.')
-        parser.set_defaults(resume=True)
         parser.add_argument('--limit-data-size', type=int, default=-1,
                             help='Limit the data size of the Wang271K for quickly testing if your model works.'
                                  '-1 means that there\'s no limit.')
