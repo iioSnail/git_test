@@ -27,5 +27,5 @@ class CheckpointCallback(Callback):
         trainer.save_checkpoint(self.ckpt_path)
 
     def on_exception(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", exception: BaseException) -> None:
-        log.error("Program occurred exception, save the last checkpoint at ", str(self.ckpt_path))
+        log.error("Program occurred exception, save the last checkpoint at " + str(self.ckpt_path))
         trainer.save_checkpoint(self.ckpt_path)

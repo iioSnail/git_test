@@ -466,14 +466,15 @@ class MultiModalBertCscModel(pl.LightningModule):
 
         batch_size, length = src['input_ids'].shape
 
-        tgt_ws_labels = word_segment_targets(tgt_sents)
+        # tgt_ws_labels = word_segment_targets(tgt_sents)
 
         targets = tgt.input_ids.clone()
 
         d_targets = (src['input_ids'] != tgt['input_ids']).bool()
 
         # 将没有出错的单个字变为1
-        targets[(~d_targets) & (targets != 0) & (tgt_ws_labels == 1)] = 1
+        # targets[(~d_targets) & (targets != 0) & (tgt_ws_labels == 1)] = 1
+        targets[(~d_targets) & (targets != 0)] = 1
 
         # # 逐个遍历每个字
         # for i in range(batch_size):

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import lightning.pytorch as pl
 import torch
-from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping, ProgressBar, TQDMProgressBar
+from lightning.pytorch.callbacks import EarlyStopping, TQDMProgressBar, RichProgressBar
 
 from common.callbacks import CheckpointCallback
 from models.MultiModalBert import MultiModalBertCscModel
@@ -55,7 +55,7 @@ class C_Train(object):
             default_root_dir=self.args.work_dir,
             limit_train_batches=limit_train_batches,
             limit_val_batches=limit_val_batches,
-            callbacks=[checkpoint_callback, early_stop_callback, TQDMProgressBar()],
+            callbacks=[checkpoint_callback, early_stop_callback, RichProgressBar()],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
         )
