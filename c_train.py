@@ -8,6 +8,7 @@ from lightning.pytorch.callbacks import EarlyStopping, TQDMProgressBar, RichProg
 
 from common.callbacks import CheckpointCallback
 from models.MultiModalBert import MultiModalBertCscModel
+from models.SimpleModel import SimpleModel
 from utils.dataloader import create_dataloader, create_test_dataloader
 from utils.log_utils import log
 from utils.utils import setup_seed, mkdir
@@ -19,8 +20,10 @@ class C_Train(object):
         super(C_Train, self).__init__()
         self.args = self.parse_args()
 
-        self.model = MultiModalBertCscModel(self.args)
-        self.module_class = MultiModalBertCscModel
+        # self.model = MultiModalBertCscModel(self.args)
+        # self.module_class = MultiModalBertCscModel
+        self.model = SimpleModel(self.args)
+        self.module_class = SimpleModel
 
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
@@ -55,7 +58,7 @@ class C_Train(object):
             default_root_dir=self.args.work_dir,
             limit_train_batches=limit_train_batches,
             limit_val_batches=limit_val_batches,
-            callbacks=[checkpoint_callback, early_stop_callback, RichProgressBar()],
+            callbacks=[checkpoint_callback, early_stop_callback, RichProgressBar(leave=True)],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
         )
@@ -137,7 +140,7 @@ class C_Train(object):
         args.work_dir = Path(args.work_dir)
 
         if args.workers < 0:
-            if args.device == 'cpu':
+            if str(args.device) == 'cpu':
                 args.workers = 0
             else:
                 args.workers = os.cpu_count()
