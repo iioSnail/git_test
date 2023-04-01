@@ -58,7 +58,7 @@ class C_Train(object):
             default_root_dir=self.args.work_dir,
             limit_train_batches=limit_train_batches,
             limit_val_batches=limit_val_batches,
-            callbacks=[checkpoint_callback, early_stop_callback, TQDMProgressBar(refresh_rate=1)],
+            callbacks=[checkpoint_callback, early_stop_callback, TQDMProgressBar(refresh_rate=2)],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
         )
