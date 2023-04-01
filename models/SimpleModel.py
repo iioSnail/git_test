@@ -1,6 +1,7 @@
 """
 Use to test this code framework
 """
+import random
 import time
 
 import torch
@@ -23,18 +24,15 @@ class SimpleModel(pl.LightningModule):
         inputs = inputs['input_ids'].view(-1, 1).float()
         targets = targets['input_ids'].view(-1, 1).float()
         outputs = self.predict_layer(inputs)
-        loss = nn.functional.mse_loss(outputs, targets)
+        loss = nn.functional.mse_loss(outputs, targets) / 1e+10
 
-        time.sleep(0.1)
+        time.sleep(0.2)
 
         return loss
 
     def validation_step(self, batch, batch_idx, *args, **kwargs):
-        inputs, targets, d_targets, _ = batch
-        outputs = self.model(inputs)
-        loss = nn.functional.mse_loss(outputs, targets)
-
-        self.log("val_loss", loss)
+        self.log("val_f1", random.random() * 100)
+        time.sleep(0.2)
 
     def test_step(self, batch, batch_idx):
         pass

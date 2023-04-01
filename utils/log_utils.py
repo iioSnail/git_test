@@ -1,5 +1,6 @@
 import logging
 import sys
+import warnings
 
 log = None
 
@@ -17,4 +18,12 @@ def init_log():
     log.addHandler(sh)
 
 
+def ignore_warning():
+    warnings.filterwarnings("ignore", message=".*The dirpath has changed from.*")
+    warnings.filterwarnings("ignore", message=".*does not have many workers which may be a bottleneck.*")
+    warnings.filterwarnings("ignore", message=".*You're resuming from a checkpoint that ended before the epoch ended.*")
+    warnings.filterwarnings("ignore", message=".*UserWarning: Detected KeyboardInterrupt, attempting graceful shutdown.*")
+
+
 init_log()
+ignore_warning()

@@ -20,10 +20,10 @@ class C_Train(object):
         super(C_Train, self).__init__()
         self.args = self.parse_args()
 
-        # self.model = MultiModalBertCscModel(self.args)
-        # self.module_class = MultiModalBertCscModel
-        self.model = SimpleModel(self.args)
-        self.module_class = SimpleModel
+        self.model = MultiModalBertCscModel(self.args)
+        self.module_class = MultiModalBertCscModel
+        # self.model = SimpleModel(self.args)
+        # self.module_class = SimpleModel
 
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
@@ -58,7 +58,7 @@ class C_Train(object):
             default_root_dir=self.args.work_dir,
             limit_train_batches=limit_train_batches,
             limit_val_batches=limit_val_batches,
-            callbacks=[checkpoint_callback, early_stop_callback, RichProgressBar(leave=True)],
+            callbacks=[checkpoint_callback, early_stop_callback, TQDMProgressBar()],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
         )
