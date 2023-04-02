@@ -98,8 +98,6 @@ class CSCMetrics:
             print("tgt : %s" % render_color_for_text(tgt, tgt_detects, 'green'))
             print("pred: %s" % render_color_for_text(pred, pred_detects, 'red'))
 
-
-
     def _char_detect_metrics(self, src_tokens, tgt_tokens, pred_tokens):
         for src, tgt, pred in zip(src_tokens, tgt_tokens, pred_tokens):
             # 该纠的字，纠了，纠没纠对不管

@@ -4,11 +4,9 @@ from pathlib import Path
 
 import lightning.pytorch as pl
 import torch
-from lightning.pytorch.callbacks import EarlyStopping, TQDMProgressBar, RichProgressBar
+from lightning.pytorch.callbacks import EarlyStopping
 
-from common.callbacks import CheckpointCallback
-from models.MultiModalBert import MultiModalBertCscModel
-from models.SimpleModel import SimpleModel
+from common.callbacks import CheckpointCallback, MetricsProgressBar
 from utils.dataloader import create_dataloader, create_test_dataloader
 from utils.log_utils import log
 from utils.utils import setup_seed, mkdir
@@ -20,10 +18,13 @@ class C_Train(object):
         super(C_Train, self).__init__()
         self.args = self.parse_args()
 
-        self.model = MultiModalBertCscModel(self.args)
-        self.module_class = MultiModalBertCscModel
-        # self.model = SimpleModel(self.args)
-        # self.module_class = SimpleModel
+        self.model = self.model_select()
+
+    def model_select(self):
+        model = self.args.model.lower()
+        if model == 'bert':
+            from models.BertCorrectionModel import BertCSCModel
+            return BertCSCModel(self.args)
 
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
@@ -58,7 +59,7 @@ class C_Train(object):
             default_root_dir=self.args.work_dir,
             limit_train_batches=limit_train_batches,
             limit_val_batches=limit_val_batches,
-            callbacks=[checkpoint_callback, early_stop_callback, TQDMProgressBar(refresh_rate=2)],
+            callbacks=[checkpoint_callback, early_stop_callback, MetricsProgressBar(refresh_rate=2)],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
         )
@@ -76,7 +77,7 @@ class C_Train(object):
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--model', type=str, default='Bert',
+        parser.add_argument('--model', type=str, default='bert',
                             help='The model name you want to evaluate.')
         parser.add_argument('--data', type=str, default=None, help='The data you want to load. e.g. wang271k.')
         parser.add_argument('--datas', type=str, default=None,
