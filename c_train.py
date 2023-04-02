@@ -1,4 +1,5 @@
 import argparse
+import multiprocessing
 import os.path
 from pathlib import Path
 
@@ -149,6 +150,8 @@ class C_Train(object):
                 args.workers = 0
             else:
                 args.workers = os.cpu_count()
+
+        multiprocessing.set_start_method("spawn", force=True)
 
         return args
 

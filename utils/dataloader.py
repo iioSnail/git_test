@@ -6,7 +6,25 @@ from torch.utils.data import DataLoader, ConcatDataset
 from models.common import BERT
 from utils.dataset import CSCDataset
 from utils.log_utils import log
-from utils.str_utils import word_segment_targets
+
+
+class DefaultCollateFn(object):
+
+    def __init__(self, args, tokenizer):
+        self.args = args
+        self.tokenizer = tokenizer
+
+    def __call__(self, batch):
+        src, tgt = zip(*batch)
+        src, tgt = list(src), list(tgt)
+
+        src = BERT.get_bert_inputs(src, tokenizer=self.tokenizer, max_length=self.args.max_length)
+        tgt = BERT.get_bert_inputs(tgt, tokenizer=self.tokenizer, max_length=self.args.max_length)
+
+        return src, \
+               tgt, \
+               (src['input_ids'] != tgt['input_ids']).float(), \
+               {}  # 补充内容
 
 
 def create_dataloader(args, collate_fn=None, tokenizer=None):
@@ -29,20 +47,8 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
         train_dataset = dataset
         valid_dataset = None
 
-    def default_collate_fn(batch):
-        src, tgt = zip(*batch)
-        src, tgt = list(src), list(tgt)
-
-        src = BERT.get_bert_inputs(src, tokenizer=tokenizer, max_length=args.max_length)
-        tgt = BERT.get_bert_inputs(tgt, tokenizer=tokenizer, max_length=args.max_length)
-
-        return src.to(args.device), \
-               tgt.to(args.device), \
-               (src['input_ids'] != tgt['input_ids']).float().to(args.device), \
-               {}  # 补充内容
-
     if collate_fn is None:
-        collate_fn = default_collate_fn
+        collate_fn = DefaultCollateFn(args, tokenizer)
 
     train_loader = DataLoader(train_dataset,
                               batch_size=args.batch_size,
@@ -70,4 +76,3 @@ def create_test_dataloader(args):
                       batch_size=args.batch_size,
                       shuffle=False,
                       num_workers=args.workers)
-
