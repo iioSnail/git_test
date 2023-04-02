@@ -4,7 +4,7 @@ from pathlib import Path
 
 import lightning.pytorch as pl
 import torch
-from lightning.pytorch.callbacks import EarlyStopping
+from lightning.pytorch.callbacks import EarlyStopping, TQDMProgressBar
 
 from common.callbacks import CheckpointCallback, MetricsProgressBar
 from utils.dataloader import create_dataloader, create_test_dataloader
@@ -61,10 +61,11 @@ class C_Train(object):
             limit_val_batches=limit_val_batches,
             callbacks=[checkpoint_callback,
                        early_stop_callback,
-                       MetricsProgressBar()],
+                       MetricsProgressBar(),
+                       ],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
-            enable_progress_bar=False,
+            enable_progress_bar=False,  # Use custom progress bar
         )
 
         trainer.fit(self.model,
