@@ -51,10 +51,17 @@ class BertCSCModel(pl.LightningModule):
         }
 
     def validation_step(self, batch, batch_idx, *args, **kwargs):
-        inputs, targets, _, _ = batch
+        inputs, targets, d_targets, _ = batch
 
         loss, outputs = self.forward(inputs, targets)
-        self.log("val_loss", loss)
+
+        return {
+            'loss': loss,
+            'outputs': outputs.argmax(-1),
+            'targets': targets['input_ids'],
+            'd_targets': d_targets,
+            'attention_mask': inputs['attention_mask']
+        }
 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=2e-5)

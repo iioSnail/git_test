@@ -43,25 +43,28 @@ class C_Train(object):
                 log.info("Resume training from last checkpoint.")
 
         early_stop_callback = EarlyStopping(
-            monitor="val_f1",
+            monitor="val_loss",
             min_delta=0.02,
             patience=3,
-            mode='max',
+            mode='min',
         )
 
         limit_train_batches = None
         limit_val_batches = None
         if self.args.limit_batches > 0:
             limit_train_batches = self.args.limit_batches
-            limit_val_batches = int(self.args.limit_batches * self.args.valid_ratio)
+            limit_val_batches = int(self.args.limit_batches * self.args.valid_ratio / (1 - self.args.valid_ratio))
 
         trainer = pl.Trainer(
             default_root_dir=self.args.work_dir,
             limit_train_batches=limit_train_batches,
             limit_val_batches=limit_val_batches,
-            callbacks=[checkpoint_callback, early_stop_callback, MetricsProgressBar(refresh_rate=2)],
+            callbacks=[checkpoint_callback,
+                       early_stop_callback,
+                       MetricsProgressBar()],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
+            enable_progress_bar=False,
         )
 
         trainer.fit(self.model,
