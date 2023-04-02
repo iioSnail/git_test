@@ -170,6 +170,9 @@ class MetricsProgressBar(Callback):
             total = trainer.limit_val_batches
 
         self.val_progress_bar = tqdm(None, desc="Epoch {} Validation".format(trainer.current_epoch), total=total)
+        # If you run the program in Colab or Pycharm, you must set tqdm.pos to 0.
+        # Otherwise, the progress bar will be printed many times.
+        self.val_progress_bar.pos = 0
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         c_p, c_r, c_f1 = self.compute_matrix(*self.valid_matrix)
@@ -232,8 +235,6 @@ class MetricsProgressBar(Callback):
         })
 
         self.val_progress_bar.update(1)
-
-        time.sleep(0.01)
 
         pl_module.log("val_loss", loss)
 
