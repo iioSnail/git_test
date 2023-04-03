@@ -95,9 +95,9 @@ class MetricsProgressBar(Callback):
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         c_p, c_r, c_f1 = self.compute_matrix(*self.valid_matrix)
-        log.info("Correction Precision: {}, Recall: {}, F1-Score: {}".format(c_p, c_r, c_f1))
         self.valid_matrix = np.zeros([4])
         self.val_progress_bar.close()
+        log.info("Correction Precision: {}, Recall: {}, F1-Score: {}".format(c_p, c_r, c_f1))
 
     def on_train_batch_end(
             self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any,

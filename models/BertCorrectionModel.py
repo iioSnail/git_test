@@ -64,4 +64,4 @@ class BertCSCModel(pl.LightningModule):
         }
 
     def configure_optimizers(self):
-        return torch.optim.AdamW(self.parameters(), lr=2e-5)
+        return torch.optim.Adam(self.parameters(), lr=2e-5)
