@@ -330,11 +330,10 @@ class MultiModalBertCorrectionModel(nn.Module):
 
 
 class MultiModalBertCscModel(pl.LightningModule):
-
     tokenizer = None
     device = None
 
-    def __init__(self, args):
+    def __init__(self, args: object):
         super(MultiModalBertCscModel, self).__init__()
 
         self.args = args
@@ -353,53 +352,31 @@ class MultiModalBertCscModel(pl.LightningModule):
         inputs, targets, d_targets, loss_targets = batch
         outputs = self.model(inputs)
         loss = self.compute_loss(outputs, loss_targets)
-        self.log("loss", loss.item(), prog_bar=True)
 
         outputs = self.model.extract_outputs(outputs)
 
-        self.train_matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], d_targets,
-                                                                   inputs.attention_mask)
-
-        precision, recall, f1_score = self.compute_matrix(*self.train_matrix)
-
-        self.log("pre", precision, prog_bar=True)
-        self.log("rec", recall, prog_bar=True)
-        self.log("f1", f1_score, prog_bar=True)
-
-        return loss
-
-    def compute_matrix(self, tp, fp, tn, fn):
-        precision = tp / (tp + fp + 1e-9)
-        recall = tp / (tp + fn + 1e-9)
-        f1_score = 2 * (precision * recall) / (precision + recall + 1e-9)
-        return precision, recall, f1_score
-
-    def character_level_confusion_matrix(self, outputs, targets, detection_targets, mask):
-        detection_targets[mask == 0] = -1
-
-        c_tp = (outputs[detection_targets == 1] == targets[detection_targets == 1]).sum().item()
-        c_fp = (outputs != targets)[detection_targets == 0].sum().item()
-        c_tn = (outputs == targets)[detection_targets == 0].sum().item()
-        c_fn = (outputs[detection_targets == 1] != targets[detection_targets == 1]).sum().item()
-
-        return np.array([c_tp, c_fp, c_tn, c_fn])
+        return {
+            'loss': loss,
+            'outputs': outputs,
+            'targets': targets['input_ids'],
+            'd_targets': d_targets,
+            'attention_mask': inputs['attention_mask']
+        }
 
     def validation_step(self, batch, batch_idx, *args, **kwargs):
         inputs, targets, d_targets, loss_targets = batch
         outputs = self.model(inputs)
         loss = self.compute_loss(outputs, loss_targets)
-        self.log("val_loss", loss.item(), prog_bar=True)
 
         outputs = self.model.extract_outputs(outputs)
 
-        self.train_matrix += self.character_level_confusion_matrix(outputs, targets['input_ids'], d_targets,
-                                                                   inputs.attention_mask)
-
-        precision, recall, f1_score = self.compute_matrix(*self.train_matrix)
-
-        self.log("val_pre", precision, prog_bar=True)
-        self.log("val_rec", recall, prog_bar=True)
-        self.log("val_f1", f1_score, prog_bar=True)
+        return {
+            'loss': loss,
+            'outputs': outputs,
+            'targets': targets['input_ids'],
+            'd_targets': d_targets,
+            'attention_mask': inputs['attention_mask']
+        }
 
     def test_step(self, batch, batch_idx):
         for src, tgt in zip(*batch):

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import lightning.pytorch as pl
 import torch
-from lightning.pytorch.callbacks import EarlyStopping, TQDMProgressBar
+from lightning.pytorch.callbacks import EarlyStopping
 
 from common.callbacks import CheckpointCallback, MetricsProgressBar
 from utils.dataloader import create_dataloader, create_test_dataloader
@@ -27,6 +27,9 @@ class C_Train(object):
             from models.BertCorrectionModel import BertCSCModel
             return BertCSCModel(self.args)
 
+        if model == 'multimodalbert':
+            from models.MultiModalBert import MultiModalBertCscModel
+            return MultiModalBertCscModel(self.args)
 
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
@@ -57,6 +60,10 @@ class C_Train(object):
             limit_train_batches = self.args.limit_batches
             limit_val_batches = int(self.args.limit_batches * self.args.valid_ratio / (1 - self.args.valid_ratio))
 
+        precision = '16'
+        if str(self.args.device) == 'cpu':
+            precision = '32-true'
+
         trainer = pl.Trainer(
             default_root_dir=self.args.work_dir,
             limit_train_batches=limit_train_batches,
@@ -68,6 +75,7 @@ class C_Train(object):
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
             enable_progress_bar=False,  # Use custom progress bar
+            precision=precision,
         )
 
         trainer.fit(self.model,
