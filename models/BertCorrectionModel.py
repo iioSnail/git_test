@@ -65,3 +65,6 @@ class BertCSCModel(pl.LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=2e-5)
+
+    def on_after_backward(self) -> None:
+        nn.utils.clip_grad_norm_(self.parameters(), max_norm=5)
