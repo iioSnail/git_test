@@ -76,6 +76,8 @@ class C_Train(object):
             num_sanity_val_steps=0,
             enable_progress_bar=False,  # Use custom progress bar
             precision=precision,
+            gradient_clip_val=0.5,
+            gradient_clip_algorithm="norm"
         )
 
         trainer.fit(self.model,
