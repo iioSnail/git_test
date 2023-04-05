@@ -146,9 +146,9 @@ class C_Train(object):
         print(args)
 
         if args.device == 'auto':
-            args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         else:
-            args.device = torch.device(args.device)
+            args.device = args.device
 
         print("Device:", args.device)
 
@@ -157,7 +157,7 @@ class C_Train(object):
         args.work_dir = Path(args.work_dir)
 
         if args.workers < 0:
-            if str(args.device) == 'cpu':
+            if args.device == 'cpu':
                 args.workers = 0
             else:
                 args.workers = os.cpu_count()
