@@ -396,7 +396,11 @@ class MultiModalBertCscModel(pl.LightningModule):
             log.info("Fine-tune model with SGD")
             return torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
 
-        return self.make_optimizer()
+        optimizer = self.make_optimizer()
+
+        scheduler = PlateauScheduler(optimizer)
+
+        return [optimizer], [scheduler]
 
     def make_optimizer(self):
         params = []
