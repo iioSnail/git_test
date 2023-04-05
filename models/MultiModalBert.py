@@ -340,10 +340,6 @@ class MultiModalBertCscModel(pl.LightningModule):
         self.model = MultiModalBertCorrectionModel(args)
         self.tokenizer = self.model.tokenizer
 
-        self.train_matrix = np.zeros([4])
-
-        self.csc_metrics = CSCMetrics()
-
         MultiModalBertCscModel.tokenizer = self.tokenizer
 
     def training_step(self, batch, batch_idx, *args, **kwargs):
@@ -438,12 +434,12 @@ class MultiModalBertCscModel(pl.LightningModule):
         # 这个数据增强作用不是特别大
         # src, tgt = special_hanzi_augment(src, tgt)
 
-        tgt_sents = [sent.replace(" ", "") for sent in tgt]
+        # tgt_sents = [sent.replace(" ", "") for sent in tgt]
 
         src = BERT.get_bert_inputs(src, tokenizer=MultiModalBertCscModel.tokenizer)
         tgt = BERT.get_bert_inputs(tgt, tokenizer=MultiModalBertCscModel.tokenizer)
 
-        batch_size, length = src['input_ids'].shape
+        # batch_size, length = src['input_ids'].shape
 
         # tgt_ws_labels = word_segment_targets(tgt_sents)
 

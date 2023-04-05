@@ -31,6 +31,10 @@ class C_Train(object):
             from models.MultiModalBert import MultiModalBertCscModel
             return MultiModalBertCscModel(self.args)
 
+        if model == 'mymodel':
+            from models.MyModel import MyModel
+            return MyModel(self.args)
+
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
         tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else None
