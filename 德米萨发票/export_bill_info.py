@@ -1,7 +1,4 @@
 import sys, os
-
-from utils import pattern_extract
-
 sys.path.insert(1, os.path.abspath(".."))
 
 import session
@@ -11,6 +8,7 @@ import pandas as pd
 from pyquery import PyQuery as pq
 from pandas import DataFrame
 from tqdm import tqdm
+from utils import pattern_extract
 
 tt_map = {
     "38": "工惠",
