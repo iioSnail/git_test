@@ -1,4 +1,7 @@
 import sys, os
+
+from utils import pattern_extract
+
 sys.path.insert(1, os.path.abspath(".."))
 
 import session
@@ -20,6 +23,7 @@ tt_map = {
     "45": "缤乐",
     "46": "诚光",
 }
+
 
 def request_bill_table(DWTT):
     """
@@ -126,6 +130,67 @@ def request_bill_content(id):
     return text.text()
 
 
+def format_transfer(df, df_details):
+    # 格式调整，调整成导出发票的格式
+
+    # 主要内容调整
+    df.insert(loc=len(df.columns), column='是否纸质', value="")
+    df.insert(loc=len(df.columns), column='发票序号', value="")
+    df.insert(loc=len(df.columns), column='购买方名称', value="")
+    df.insert(loc=len(df.columns), column='识别号', value="")
+    df.insert(loc=len(df.columns), column='地址、电话', value="")
+    df.insert(loc=len(df.columns), column='开户行及账号', value="")
+    df.insert(loc=len(df.columns), column='备注', value="")
+
+    for i, row in df.iterrows():
+        comments = row['通知内容']
+        if '纸质' in comments:
+            row['是否纸质'] = '1'
+
+        row['发票序号'] = str(row['id'])
+        row['购买方名称'] = pattern_extract(comments, ['抬头', '名称']).replace(" ", "")
+        row['识别号'] = pattern_extract(comments, ['税号', '信用代码']).replace(" ", "")
+
+        address = pattern_extract(comments, ['地址']).replace(" ", "")
+        phone = pattern_extract(comments, ['电话'])
+        row['地址、电话'] = "%s %s" % (address, phone)
+
+        bank_and_account = pattern_extract(comments, ['开户行及账号'])
+        if len(bank_and_account) > 3:
+            row['开户行及账号'] = bank_and_account
+        else:
+            bank = pattern_extract(comments, ['开户行', '开户银行', "银行"]).replace(" ", "")
+            account = pattern_extract(comments, ['银行账号', '账号'])
+            row['开户行及账号'] = "%s %s" % (bank, account)
+
+        row['备注'] = pattern_extract(comments, ['备注'])
+
+    # 明细内容调整
+    df_details.insert(loc=len(df_details.columns), column='发票序号', value="")
+    df_details.insert(loc=len(df_details.columns), column='商品名称', value="")
+    df_details.insert(loc=len(df_details.columns), column='规格型号', value="")
+    df_details.insert(loc=len(df_details.columns), column='计量单位', value="")
+    df_details.insert(loc=len(df_details.columns), column='单价', value="")
+    df_details.insert(loc=len(df_details.columns), column='金额（含税）', value="")
+    df_details.insert(loc=len(df_details.columns), column='税率', value="")
+    df_details.insert(loc=len(df_details.columns), column='税收分类编码', value="")
+    df_details.insert(loc=len(df_details.columns), column='使用优惠政策标识', value="")
+    df_details.insert(loc=len(df_details.columns), column='零税率标识', value="")
+
+    for i in range(20):
+        df_details.insert(loc=len(df_details.columns), column='Pad %d' % i, value="")
+
+    for i, row in df_details.iterrows():
+        row['发票序号'] = str(row['id'])
+        row['商品名称'] = str(row['产品名称'])
+        row['规格型号'] = str(row['产品型号'])
+        row['计量单位'] = str(row['单位'])
+        row['单价'] = str(row['含税单价'])
+        row['金额（含税）'] = str(row['合计'])
+
+    return df, df_details
+
+
 if __name__ == '__main__':
     """
     DWTT: 单位抬头
@@ -183,11 +248,17 @@ if __name__ == '__main__':
     else:
         filename = '发票明细(全部).xlsx'
 
+    df, df_details = format_transfer(df, df_details)
+
     writer = pd.ExcelWriter(filename)
     df.to_excel(writer, '普票', index=False,
-                columns=['id', '单号', '客户', '业务员', '总金额', '通知内容'])
-    df_details.to_excel(writer, "明细", index=False, columns=['id', '单号', '产品名称', '产品型号', '单位', '数量', '含税单价', '合计'])
+                columns=['是否纸质', '发票序号', '购买方名称', '识别号', '地址、电话', '开户行及账号', '备注', '通知内容', '业务员', '总金额', 'id', '单号', '客户'])
 
-    writer.save()
+    df_details.to_excel(writer, "明细", index=False,
+                        columns=['发票序号', '商品名称', '规格型号', 'Pad 1', 'Pad 2', 'Pad 3', 'Pad 4', 'Pad 5', 'Pad 6', '计量单位',
+                                 'Pad 7', '数量', '单价', '金额（含税）', '税率', '税收分类编码', '使用优惠政策标识',
+                                 '零税率标识', 'id'])
+
+    writer.close()
 
     print("导出成功，文件为：", filename)

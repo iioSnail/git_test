@@ -1,3 +1,4 @@
+import re
 import time
 import tkinter as tk
 import tkinter.messagebox
@@ -7,6 +8,11 @@ import pandas as pd
 import openpyxl
 import random
 import os
+
+import warnings
+
+warnings.filterwarnings("ignore")
+
 
 def columns_strip(df):
     i = 1
@@ -165,3 +171,25 @@ def unmerge_cell(filename):
     xlBook.Close()
 
     return filename
+
+
+def pattern_extract(text: str, names: list):
+    lines = text.split("\n")
+    for line in lines:
+        line = line.replace(" ", "").replace("：", ":").strip()
+        if len(line) <= 1:
+            continue
+
+        for name in names:
+            match_group = re.search(r"%s.*" % name, line, flags=0)
+            if match_group is None:
+                continue
+            line = match_group.group()
+            items = line.split(":")
+            if len(items) != 2:
+                continue
+
+            if items[1].strip() != '':
+                return items[1].strip()
+
+    return ''
