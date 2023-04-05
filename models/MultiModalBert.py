@@ -331,7 +331,6 @@ class MultiModalBertCorrectionModel(nn.Module):
 
 class MultiModalBertCscModel(pl.LightningModule):
     tokenizer = None
-    device = None
 
     def __init__(self, args: object):
         super(MultiModalBertCscModel, self).__init__()
@@ -346,7 +345,6 @@ class MultiModalBertCscModel(pl.LightningModule):
         self.csc_metrics = CSCMetrics()
 
         MultiModalBertCscModel.tokenizer = self.tokenizer
-        MultiModalBertCscModel.device = self.args.device
 
     def training_step(self, batch, batch_idx, *args, **kwargs):
         inputs, targets, d_targets, loss_targets = batch
@@ -478,6 +476,4 @@ class MultiModalBertCscModel(pl.LightningModule):
         #             if not d_targets[i, j:k + 1].any():
         #                 targets[i, j:k + 1] = 1
 
-        device = MultiModalBertCscModel.device
-        return src.to(device), tgt.to(device), (src['input_ids'] != tgt['input_ids']).float().to(
-            device), targets.to(device)
+        return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), targets
