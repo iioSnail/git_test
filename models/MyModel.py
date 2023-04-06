@@ -147,7 +147,7 @@ class MyModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
         src, tgt = batch
-        inputs = BERT.get_bert_inputs(src, tokenizer=MyModel.tokenizer)
+        inputs = BERT.get_bert_inputs(src, tokenizer=MyModel.tokenizer, max_length=9999)
         mask = inputs['attention_mask'].bool()
 
         outputs = self.forward(inputs)

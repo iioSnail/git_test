@@ -1,0 +1,68 @@
+模型：MacBert, 使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
+执行情况：平均5分钟一个epoch，最后loss还在下降，感觉可以到86%。
+2023-04-06 02:03:53,513 - NumExpr defaulting to 2 threads.
+Epoch 0 Training: 100% 250/250 [03:45<00:00,  1.11it/s, loss=0.0944, c_precision=0.985, c_recall=0.266, c_f1_score=0.418]
+Epoch 0 Validation: 100% 62/62 [00:29<00:00,  2.08it/s, loss=0.0487, c_precision=0.972, c_recall=0.292, c_f1_score=0.449]
+2023-04-06 02:08:33,444 - Correction Precision: 0.9723889555810655, Recall: 0.291786743515745, F1-Score: 0.44887780513096
+Epoch 1 Training: 100% 250/250 [03:58<00:00,  1.05it/s, loss=0.0791, c_precision=0.961, c_recall=0.411, c_f1_score=0.576]
+Epoch 1 Validation: 100% 62/62 [00:28<00:00,  2.14it/s, loss=0.0371, c_precision=0.966, c_recall=0.436, c_f1_score=0.6]
+2023-04-06 02:13:51,640 - Correction Precision: 0.965654952075906, Recall: 0.43551873198831575, F1-Score: 0.6002979141690922
+Epoch 2 Training: 100% 250/250 [03:55<00:00,  1.06it/s, loss=0.0574, c_precision=0.958, c_recall=0.503, c_f1_score=0.66]
+Epoch 2 Validation: 100% 62/62 [00:29<00:00,  2.10it/s, loss=0.0287, c_precision=0.957, c_recall=0.522, c_f1_score=0.676]
+2023-04-06 02:18:29,626 - Correction Precision: 0.9570673712014814, Recall: 0.5219740634003883, F1-Score: 0.6755244750674293
+Epoch 3 Training: 100% 250/250 [03:55<00:00,  1.06it/s, loss=0.0347, c_precision=0.948, c_recall=0.536, c_f1_score=0.684]
+Epoch 3 Validation: 100% 62/62 [00:30<00:00,  2.06it/s, loss=0.0257, c_precision=0.933, c_recall=0.597, c_f1_score=0.728]
+2023-04-06 02:23:08,976 - Correction Precision: 0.9329577464783476, Recall: 0.5965417867433009, F1-Score: 0.7277521419101581
+Epoch 4 Training: 100% 250/250 [03:55<00:00,  1.06it/s, loss=0.0388, c_precision=0.949, c_recall=0.627, c_f1_score=0.755]
+Epoch 4 Validation: 100% 62/62 [00:29<00:00,  2.11it/s, loss=0.021, c_precision=0.952, c_recall=0.624, c_f1_score=0.754]
+2023-04-06 02:27:47,488 - Correction Precision: 0.9521452145209284, Recall: 0.6235590778095736, F1-Score: 0.7535916407926382
+Epoch 5 Training: 100% 250/250 [03:58<00:00,  1.05it/s, loss=0.0372, c_precision=0.944, c_recall=0.639, c_f1_score=0.762]
+Epoch 5 Validation: 100% 62/62 [00:29<00:00,  2.11it/s, loss=0.0204, c_precision=0.958, c_recall=0.637, c_f1_score=0.765]
+2023-04-06 02:32:28,736 - Correction Precision: 0.9582429501079403, Recall: 0.6365273775213846, F1-Score: 0.7649350644550815
+Epoch 6 Training: 100% 250/250 [03:58<00:00,  1.05it/s, loss=0.0267, c_precision=0.951, c_recall=0.662, c_f1_score=0.781]
+Epoch 6 Validation: 100% 62/62 [00:29<00:00,  2.09it/s, loss=0.0169, c_precision=0.936, c_recall=0.686, c_f1_score=0.791]
+2023-04-06 02:37:10,119 - Correction Precision: 0.9360550909980639, Recall: 0.6855187319882257, F1-Score: 0.7914327298089654
+Epoch 7 Training: 100% 250/250 [03:54<00:00,  1.06it/s, loss=0.0245, c_precision=0.94, c_recall=0.672, c_f1_score=0.784]
+Epoch 7 Validation: 100% 62/62 [00:29<00:00,  2.10it/s, loss=0.0173, c_precision=0.948, c_recall=0.696, c_f1_score=0.803]
+2023-04-06 02:41:47,971 - Correction Precision: 0.9479882237483082, Recall: 0.6959654178671845, F1-Score: 0.8026589110195188
+Epoch 8 Training: 100% 250/250 [03:56<00:00,  1.06it/s, loss=0.0259, c_precision=0.946, c_recall=0.691, c_f1_score=0.799]
+Epoch 8 Validation: 100% 62/62 [00:28<00:00,  2.17it/s, loss=0.0159, c_precision=0.928, c_recall=0.702, c_f1_score=0.799]
+2023-04-06 02:46:26,131 - Correction Precision: 0.927653498333685, Recall: 0.7020893371755396, F1-Score: 0.7992618408051286
+Epoch 9 Training: 100% 250/250 [03:55<00:00,  1.06it/s, loss=0.0143, c_precision=0.946, c_recall=0.721, c_f1_score=0.819]
+Epoch 9 Validation: 100% 62/62 [00:28<00:00,  2.16it/s, loss=0.0146, c_precision=0.941, c_recall=0.724, c_f1_score=0.818]
+2023-04-06 02:51:03,021 - Correction Precision: 0.9409836065569364, Recall: 0.7237031700285578, F1-Score: 0.8181633063703312
+Epoch 10 Training: 100% 250/250 [03:50<00:00,  1.08it/s, loss=0.0336, c_precision=0.941, c_recall=0.716, c_f1_score=0.813]
+Epoch 10 Validation: 100% 62/62 [00:28<00:00,  2.15it/s, loss=0.0145, c_precision=0.946, c_recall=0.726, c_f1_score=0.822]
+2023-04-06 02:55:35,786 - Correction Precision: 0.9455909943710387, Recall: 0.7262247838614099, F1-Score: 0.8215158919288117
+Epoch 11 Training: 100% 250/250 [03:54<00:00,  1.07it/s, loss=0.016, c_precision=0.948, c_recall=0.717, c_f1_score=0.817]
+Epoch 11 Validation: 100% 62/62 [00:28<00:00,  2.14it/s, loss=0.0127, c_precision=0.943, c_recall=0.743, c_f1_score=0.831]
+2023-04-06 03:00:12,574 - Correction Precision: 0.943301326016944, Recall: 0.7431556195962741, F1-Score: 0.831352004342492
+Epoch 12 Training: 100% 250/250 [04:00<00:00,  1.04it/s, loss=0.0372, c_precision=0.938, c_recall=0.725, c_f1_score=0.817]
+Epoch 12 Validation: 100% 62/62 [00:29<00:00,  2.09it/s, loss=0.0123, c_precision=0.952, c_recall=0.747, c_f1_score=0.837]
+2023-04-06 03:04:55,929 - Correction Precision: 0.9518127581455017, Recall: 0.7471181556193274, F1-Score: 0.8371342073777579
+Epoch 13 Training: 100% 250/250 [03:58<00:00,  1.05it/s, loss=0.0165, c_precision=0.945, c_recall=0.748, c_f1_score=0.835]
+Epoch 13 Validation: 100% 62/62 [00:29<00:00,  2.09it/s, loss=0.0106, c_precision=0.959, c_recall=0.751, c_f1_score=0.842]
+2023-04-06 03:09:36,699 - Correction Precision: 0.9586016559333217, Recall: 0.7507204610948305, F1-Score: 0.842020201527257
+Epoch 14 Training: 100% 250/250 [03:59<00:00,  1.04it/s, loss=0.00948, c_precision=0.933, c_recall=0.758, c_f1_score=0.837]
+Epoch 14 Validation: 100% 62/62 [00:29<00:00,  2.10it/s, loss=0.0114, c_precision=0.952, c_recall=0.767, c_f1_score=0.85]
+2023-04-06 03:14:18,784 - Correction Precision: 0.9517426273454193, Recall: 0.7672910662821444, F1-Score: 0.8496210605345361
+Epoch 15 Training: 100% 250/250 [03:59<00:00,  1.05it/s, loss=0.0152, c_precision=0.95, c_recall=0.762, c_f1_score=0.846]
+Epoch 15 Validation: 100% 62/62 [00:29<00:00,  2.13it/s, loss=0.0116, c_precision=0.952, c_recall=0.76, c_f1_score=0.845]
+2023-04-06 03:19:00,009 - Correction Precision: 0.9517148014436139, Recall: 0.759726224783588, F1-Score: 0.8449519225828765
+Epoch 16 Training: 100% 250/250 [03:57<00:00,  1.05it/s, loss=0.0124, c_precision=0.941, c_recall=0.761, c_f1_score=0.842]
+Epoch 16 Validation: 100% 62/62 [00:28<00:00,  2.15it/s, loss=0.0123, c_precision=0.921, c_recall=0.785, c_f1_score=0.848]
+2023-04-06 03:23:39,060 - Correction Precision: 0.9209970426696574, Recall: 0.7853025936596595, F1-Score: 0.8477542285520256
+Epoch 17 Training: 100% 250/250 [03:51<00:00,  1.08it/s, loss=0.0137, c_precision=0.945, c_recall=0.78, c_f1_score=0.855]
+Epoch 17 Validation: 100% 62/62 [00:28<00:00,  2.14it/s, loss=0.0114, c_precision=0.94, c_recall=0.776, c_f1_score=0.85]
+2023-04-06 03:28:13,179 - Correction Precision: 0.9402268760903402, Recall: 0.7762968299709019, F1-Score: 0.8504340957946745
+Epoch 18 Training: 100% 250/250 [03:55<00:00,  1.06it/s, loss=0.0113, c_precision=0.95, c_recall=0.783, c_f1_score=0.859]
+Epoch 18 Validation: 100% 62/62 [00:29<00:00,  2.12it/s, loss=0.0113, c_precision=0.944, c_recall=0.782, c_f1_score=0.856]
+2023-04-06 03:32:51,380 - Correction Precision: 0.944347826086546, Recall: 0.7824207492792571, F1-Score: 0.8557919616790006
+Epoch 19 Training: 100% 250/250 [03:56<00:00,  1.06it/s, loss=0.00973, c_precision=0.944, c_recall=0.79, c_f1_score=0.86]
+Epoch 19 Validation: 100% 62/62 [00:29<00:00,  2.12it/s, loss=0.00987, c_precision=0.955, c_recall=0.781, c_f1_score=0.86]
+2023-04-06 03:37:30,876 - Correction Precision: 0.9550858652571752, Recall: 0.7813400576366062, F1-Score: 0.8595205067366842
+Eval情况：居然超过了之前所有的情况。到底怎么回事，bug？还是pytorch lightning确实牛逼，或者说MultiModalBert其反作用？
+Character-level Detect Acc: 0.9857, P: 0.6476, R: 0.6927, F1: 0.6694
+Character-level Correct Acc: 0.9850, P: 0.6360, R: 0.6586, F1: 0.6471
+Sentence-level Detect Acc: 0.6582, P: 0.6829, R: 0.5693, F1: 0.6210
+Sentence-level Correct Acc: 0.6473, P: 0.6743, R: 0.5471, F1: 0.6041
