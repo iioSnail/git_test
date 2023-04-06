@@ -40,7 +40,7 @@ class C_Train(object):
         tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else None
         train_loader, valid_loader = create_dataloader(self.args, collate_fn, tokenizer)
 
-        checkpoint_callback = CheckpointCallback(dir_path=self.args.ckpt_path)
+        checkpoint_callback = CheckpointCallback(dir_path=self.args.ckpt_dir)
 
         ckpt_path = None
         if self.args.resume:
@@ -96,10 +96,10 @@ class C_Train(object):
             callbacks=[TestMetricsCallback()]
         )
 
-        ckpt_path = './outputs/last.ckpt'
-        trainer.test(self.model, dataloaders=create_test_dataloader(self.args), ckpt_path=ckpt_path)
+        assert self.args.ckpt_path and os.path.exists(self.args.ckpt_path), \
+            "Checkpoint file is not found! ckpt_path:%s" % self.args.ckpt_path
 
-        # self.model.csc_metrics.print_results()
+        trainer.test(self.model, dataloaders=create_test_dataloader(self.args), ckpt_path=self.args.ckpt_path)
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
@@ -117,8 +117,8 @@ class C_Train(object):
         parser.add_argument('--work-dir', type=str, default='./outputs',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
-        parser.add_argument('--ckpt-path', type=str, default=None,
-                            help='The path of last checkpoint and best checkpoint. '
+        parser.add_argument('--ckpt-dir', type=str, default=None,
+                            help='The filepath of last checkpoint and best checkpoint. '
                                  'The default value is ${work_dir}')
         parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
         parser.add_argument('--resume', action='store_true', help='Resume training.')
@@ -128,6 +128,9 @@ class C_Train(object):
                             help='Limit the batches of datasets for quickly testing if your model works.'
                                  '-1 means that there\'s no limit.')
         parser.add_argument('--test', action='store_true', default=False, help='Test model.')
+        parser.add_argument('--ckpt-path', type=str, default=None,
+                            help='The filepath of checkpoint for test. '
+                                 'Default: ${ckpt_dir}/last.ckpt')
 
         ###############################################################################################################
 
@@ -170,11 +173,11 @@ class C_Train(object):
         mkdir(args.work_dir)
         args.work_dir = Path(args.work_dir)
 
-        if args.ckpt_path is None:
-            args.ckpt_path = args.work_dir
+        if args.ckpt_dir is None:
+            args.ckpt_dir = args.work_dir
         else:
-            mkdir(args.ckpt_path)
-            args.ckpt_path = Path(args.ckpt_path)
+            mkdir(args.ckpt_dir)
+            args.ckpt_dir = Path(args.ckpt_dir)
 
         if args.workers < 0:
             if args.device == 'cpu':
