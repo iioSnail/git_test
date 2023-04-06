@@ -40,7 +40,7 @@ class C_Train(object):
         tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else None
         train_loader, valid_loader = create_dataloader(self.args, collate_fn, tokenizer)
 
-        checkpoint_callback = CheckpointCallback(dir_path=self.args.work_dir)
+        checkpoint_callback = CheckpointCallback(dir_path=self.args.ckpt_path)
 
         ckpt_path = None
         if self.args.resume:
@@ -53,7 +53,7 @@ class C_Train(object):
 
         early_stop_callback = EarlyStopping(
             monitor="val_loss",
-            min_delta=0.02,
+            # min_delta=0.02,
             patience=3,
             mode='min',
         )
@@ -111,6 +111,9 @@ class C_Train(object):
         parser.add_argument('--work-dir', type=str, default='./outputs',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
+        parser.add_argument('--ckpt-dir', type=str, default=None,
+                            help='The path of last checkpoint and best checkpoint. '
+                                 'The default value is ${work_dir}')
         parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
         parser.add_argument('--resume', action='store_true', help='Resume training.')
         parser.add_argument('--no-resume', dest='resume', action='store_false', help='Not Resume training.')
@@ -159,6 +162,12 @@ class C_Train(object):
         setup_seed(args.seed)
         mkdir(args.work_dir)
         args.work_dir = Path(args.work_dir)
+
+        if args.ckpt_path is None:
+            args.ckpt_path = args.work_dir
+        else:
+            mkdir(args.ckpt_path)
+            args.ckpt_path = Path(args.ckpt_path)
 
         if args.workers < 0:
             if args.device == 'cpu':
