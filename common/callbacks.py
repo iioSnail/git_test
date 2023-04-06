@@ -56,6 +56,10 @@ class CheckpointCallback(Callback):
         super().__init__()
         self.dir_path = dir_path
         self.ckpt_path = dir_path / 'last.ckpt'
+        self.best_ckpt_path = dir_path / 'best.ckpt'
+
+        self.val_loss = 0.
+        self.best_val_loss = 9999999.
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         trainer.save_checkpoint(self.ckpt_path)
@@ -63,6 +67,28 @@ class CheckpointCallback(Callback):
     def on_exception(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", exception: BaseException) -> None:
         log.error("Program occurred exception, save the last checkpoint at " + str(self.ckpt_path))
         trainer.save_checkpoint(self.ckpt_path)
+
+    def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        self.val_loss = 0.
+
+    def on_validation_batch_end(
+            self,
+            trainer: "pl.Trainer",
+            pl_module: "pl.LightningModule",
+            outputs: Optional[STEP_OUTPUT],
+            batch: Any,
+            batch_idx: int,
+            dataloader_idx: int = 0,
+    ) -> None:
+        loss = outputs['loss']
+        self.val_loss += loss.item()
+
+    def on_validation_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        if self.val_loss >= self.best_val_loss:
+            return
+
+        self.best_val_loss = self.val_loss
+        trainer.save_checkpoint(self.best_ckpt_path)
 
 
 class MetricsProgressBar(Callback):
@@ -74,6 +100,8 @@ class MetricsProgressBar(Callback):
 
         self.train_matrix = np.zeros([4])
         self.valid_matrix = np.zeros([4])
+
+        self.val_total_loss = 0.
 
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         total = len(trainer.train_dataloader)
@@ -126,6 +154,9 @@ class MetricsProgressBar(Callback):
 
         self.train_progress_bar.update(1)
 
+    def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        self.val_total_loss = 0.
+
     def on_validation_batch_end(
             self,
             trainer: "pl.Trainer",
@@ -147,8 +178,10 @@ class MetricsProgressBar(Callback):
 
         c_p, c_r, c_f1 = self.compute_matrix(*self.valid_matrix)
 
+        self.val_total_loss += loss.item()
+
         self.val_progress_bar.set_postfix({
-            'loss': loss.item(),
+            'loss': self.val_total_loss / (batch_idx + 1),
             'c_precision': c_p,
             'c_recall': c_r,
             'c_f1_score': c_f1,
