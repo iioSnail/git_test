@@ -37,6 +37,9 @@ class CSCDataset(Dataset):
             src = items[0].strip()
             tgt = items[1].strip()
 
+            src = ' '.join(src.replace(" ", ""))
+            tgt = ' '.join(tgt.replace(" ", ""))
+
             if len(src) == len(tgt):
                 data.append((src, tgt))
             else:

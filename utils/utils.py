@@ -250,3 +250,14 @@ def random_true(prob):
     return random.random() < prob
 
 
+def predict_process(src_tokens, pred_tokens):
+    if len(src_tokens) != len(pred_tokens):
+        return ''.join(pred_tokens)
+
+    for i in range(len(src_tokens)):
+        if not is_chinese(src_tokens[i]) \
+                or len(pred_tokens[i]) > 1 \
+                or len(pred_tokens[i]) <= 0:
+            pred_tokens[i] = src_tokens[i]
+
+    return ''.join(pred_tokens)

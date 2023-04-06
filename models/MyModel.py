@@ -9,6 +9,7 @@ from models.common import BertOnlyMLMHead, BERT
 from utils.loss import FocalLoss
 from utils.scheduler import PlateauScheduler
 from utils.str_utils import get_common_hanzi
+from utils.utils import predict_process
 
 
 class MyModel(pl.LightningModule):
@@ -143,6 +144,22 @@ class MyModel(pl.LightningModule):
             'd_targets': d_targets,
             'attention_mask': inputs['attention_mask']
         }
+
+    def test_step(self, batch, batch_idx, *args, **kwargs):
+        src, tgt = batch
+        inputs = BERT.get_bert_inputs(src, tokenizer=MyModel.tokenizer)
+        mask = inputs['attention_mask'].bool()
+
+        outputs = self.forward(inputs)
+        ids_list = self.extract_outputs(outputs, inputs['input_ids'])
+
+        pred = []
+
+        for i in range(len(ids_list)):
+            pred_tokens = self.tokenizer.convert_ids_to_tokens(ids_list[i][mask[i]][1:-1])
+            pred.append(predict_process(list(src[i].replace(" ", "")), pred_tokens))
+
+        return pred
 
     def configure_optimizers(self):
         optimizer = self.make_optimizer()

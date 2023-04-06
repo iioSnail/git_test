@@ -12,6 +12,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from tqdm import tqdm
 
 from utils.log_utils import log
+from utils.metrics import CSCMetrics
 
 
 class TestCallback(Callback):
@@ -174,3 +175,35 @@ class MetricsProgressBar(Callback):
         recall = tp / (tp + fn + 1e-9)
         f1_score = 2 * (precision * recall) / (precision + recall + 1e-9)
         return precision, recall, f1_score
+
+
+class TestMetricsCallback(Callback):
+
+    def __init__(self, print_errors=False):
+        super().__init__()
+        self.print_errors = print_errors
+
+        self.csc_metrics = CSCMetrics()
+
+    def on_test_batch_end(
+            self,
+            trainer: "pl.Trainer",
+            pl_module: "pl.LightningModule",
+            outputs: Optional[STEP_OUTPUT],
+            batch: Any,
+            batch_idx: int,
+            dataloader_idx: int = 0,
+    ) -> None:
+        src, tgt = batch
+        pred = outputs
+
+        assert len(src) == len(tgt) == len(pred)
+
+        for i in range(len(src)):
+            self.csc_metrics.add_sentence(src[i].replace(" ", ""), tgt[i].replace(" ", ""), pred[i].replace(" ", ""))
+
+    def on_test_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        self.csc_metrics.print_results()
+
+        if self.print_errors:
+            self.csc_metrics.print_errors()

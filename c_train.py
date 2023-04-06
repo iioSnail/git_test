@@ -7,7 +7,7 @@ import lightning.pytorch as pl
 import torch
 from lightning.pytorch.callbacks import EarlyStopping
 
-from common.callbacks import CheckpointCallback, MetricsProgressBar
+from common.callbacks import CheckpointCallback, MetricsProgressBar, TestMetricsCallback
 from utils.dataloader import create_dataloader, create_test_dataloader
 from utils.log_utils import log
 from utils.utils import setup_seed, mkdir
@@ -91,9 +91,15 @@ class C_Train(object):
                     )
 
     def test(self):
-        self.trainer.test(self.model, dataloaders=create_test_dataloader(self.args))
+        trainer = pl.Trainer(
+            default_root_dir=self.args.work_dir,
+            callbacks=[TestMetricsCallback()]
+        )
 
-        self.model.csc_metrics.print_results()
+        ckpt_path = './outputs/last.ckpt'
+        trainer.test(self.model, dataloaders=create_test_dataloader(self.args), ckpt_path=ckpt_path)
+
+        # self.model.csc_metrics.print_results()
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
@@ -121,6 +127,7 @@ class C_Train(object):
         parser.add_argument('--limit-batches', type=int, default=-1,
                             help='Limit the batches of datasets for quickly testing if your model works.'
                                  '-1 means that there\'s no limit.')
+        parser.add_argument('--test', action='store_true', default=False, help='Test model.')
 
         ###############################################################################################################
 
@@ -182,5 +189,7 @@ class C_Train(object):
 
 if __name__ == '__main__':
     train = C_Train()
-    train.train()
-    # train.test()
+    if train.args.test:
+        train.test()
+    else:
+        train.train()
