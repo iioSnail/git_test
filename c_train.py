@@ -111,7 +111,7 @@ class C_Train(object):
         parser.add_argument('--work-dir', type=str, default='./outputs',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
-        parser.add_argument('--ckpt-dir', type=str, default=None,
+        parser.add_argument('--ckpt-path', type=str, default=None,
                             help='The path of last checkpoint and best checkpoint. '
                                  'The default value is ${work_dir}')
         parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
