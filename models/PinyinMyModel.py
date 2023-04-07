@@ -46,7 +46,7 @@ class MyModel(pl.LightningModule):
         self.pinyin_feature_size = 6
         self.pinyin_embeddings = PinyinManualEmbeddings(self.args)
 
-        self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size, len(self.token_list) + 2)
+        self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size, len(self.token_list) + 2, layer_num=2)
 
         self.loss_fnt = FocalLoss(device=self.args.device)
 

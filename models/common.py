@@ -76,7 +76,6 @@ class BERT(nn.Module):
         if tokenizer is None:
             tokenizer = BERT.get_tokenizer(model_path)
 
-
         inputs = tokenizer(sentences,
                            padding=True,
                            max_length=max_length,
@@ -86,7 +85,7 @@ class BERT(nn.Module):
 
 
 class BertOnlyMLMHead(nn.Module):
-    def __init__(self, hidden_size, vocab_size, activation='gelu'):
+    def __init__(self, hidden_size, vocab_size, activation='gelu', layer_num=1):
         super().__init__()
         self.decoder = nn.Linear(hidden_size, vocab_size, bias=False)
         self.bias = nn.Parameter(torch.zeros(vocab_size))
@@ -102,14 +101,17 @@ class BertOnlyMLMHead(nn.Module):
         else:
             raise Exception("Please add activation function here.")
 
-        self.head = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
-            self.activation,
-            nn.LayerNorm(hidden_size, eps=1e-12, elementwise_affine=True),
-        )
+        self.heads = []
+
+        for i in range(layer_num):
+            self.heads.append(nn.Sequential(
+                nn.Linear(hidden_size, hidden_size),
+                self.activation,
+                nn.LayerNorm(hidden_size, eps=1e-12, elementwise_affine=True),
+            ))
 
         self.predictions = nn.Sequential(
-            self.head,
+            *self.heads,
             self.decoder
         )
 
