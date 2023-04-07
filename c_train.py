@@ -35,6 +35,14 @@ class C_Train(object):
             from models.MyModel import MyModel
             return MyModel(self.args)
 
+        if model == 'simplemodel':
+            from models.SimpleModel import SimpleModel
+            return SimpleModel(self.args)
+
+        if model == 'pinyinmymodel':
+            from models.PinyinMyModel import MyModel
+            return MyModel(self.args)
+
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
         tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else None

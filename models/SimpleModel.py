@@ -38,4 +38,4 @@ class SimpleModel(pl.LightningModule):
         pass
 
     def configure_optimizers(self):
-        return torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
+        return torch.optim.SGD(self.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)

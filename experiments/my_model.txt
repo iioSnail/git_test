@@ -128,5 +128,134 @@ Sentence-level Detect Acc: 0.6609, P: 0.6803, R: 0.5860, F1: 0.6296
 Sentence-level Correct Acc: 0.6509, P: 0.6725, R: 0.5656, F1: 0.6145
 
 
-模型：MacBert, 使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。
-使用bf16混合精度
+模型：MacBert, 使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。使用bf16混合精度
+增加了SWA。StochasticWeightAveraging(swa_lrs=2e-5, swa_epoch_start=10)
+执行情况：居然到了88.65，有点吊
+2023-04-07 03:05:17,662 - NumExpr defaulting to 2 threads.
+Epoch 0 Training: 100% 250/250 [02:22<00:00,  1.76it/s, loss=0.0957, c_precision=0.982, c_recall=0.263, c_f1_score=0.415]
+Epoch 0 Validation: 100% 62/62 [00:21<00:00,  2.89it/s, loss=0.0794, c_precision=0.973, c_recall=0.294, c_f1_score=0.451]
+2023-04-07 03:08:28,106 - Correction Precision: 0.972553699282849, Recall: 0.29358789625349657, F1-Score: 0.4510237959910687
+Epoch 1 Training: 100% 250/250 [02:41<00:00,  1.55it/s, loss=0.079, c_precision=0.963, c_recall=0.414, c_f1_score=0.579]
+Epoch 1 Validation: 100% 62/62 [00:21<00:00,  2.87it/s, loss=0.0582, c_precision=0.963, c_recall=0.436, c_f1_score=0.6]
+2023-04-07 03:12:38,443 - Correction Precision: 0.962609387429624, Recall: 0.43587896253586605, F1-Score: 0.6000495904459112
+Epoch 2 Training: 100% 250/250 [02:41<00:00,  1.54it/s, loss=0.0565, c_precision=0.959, c_recall=0.5, c_f1_score=0.657]
+Epoch 2 Validation: 100% 62/62 [00:21<00:00,  2.87it/s, loss=0.0457, c_precision=0.955, c_recall=0.526, c_f1_score=0.678]
+2023-04-07 03:16:08,636 - Correction Precision: 0.9554682383752747, Recall: 0.5255763688758913, F1-Score: 0.6781315356793894
+Epoch 3 Training: 100% 250/250 [02:43<00:00,  1.53it/s, loss=0.0354, c_precision=0.948, c_recall=0.546, c_f1_score=0.693]
+Epoch 3 Validation: 100% 62/62 [00:23<00:00,  2.66it/s, loss=0.0389, c_precision=0.931, c_recall=0.594, c_f1_score=0.725]
+2023-04-07 03:19:43,585 - Correction Precision: 0.9311123658944488, Recall: 0.5940201729104488, F1-Score: 0.725313392970335
+Epoch 4 Training: 100% 250/250 [02:42<00:00,  1.54it/s, loss=0.0408, c_precision=0.948, c_recall=0.633, c_f1_score=0.759]
+Epoch 4 Validation: 100% 62/62 [00:22<00:00,  2.70it/s, loss=0.0341, c_precision=0.957, c_recall=0.618, c_f1_score=0.751]
+2023-04-07 03:23:15,987 - Correction Precision: 0.957031249999466, Recall: 0.6177953890487689, F1-Score: 0.7508756562654293
+Epoch 5 Training: 100% 250/250 [02:43<00:00,  1.53it/s, loss=0.0354, c_precision=0.942, c_recall=0.647, c_f1_score=0.767]
+Epoch 5 Validation: 100% 62/62 [00:22<00:00,  2.78it/s, loss=0.0311, c_precision=0.943, c_recall=0.647, c_f1_score=0.767]
+2023-04-07 03:26:48,982 - Correction Precision: 0.9427821522304762, Recall: 0.6469740634003434, F1-Score: 0.7673574017814567
+Epoch 6 Training: 100% 250/250 [02:43<00:00,  1.53it/s, loss=0.0261, c_precision=0.949, c_recall=0.658, c_f1_score=0.777]
+Epoch 6 Validation: 100% 62/62 [00:21<00:00,  2.91it/s, loss=0.0284, c_precision=0.936, c_recall=0.68, c_f1_score=0.788]
+2023-04-07 03:30:21,304 - Correction Precision: 0.9364764267985427, Recall: 0.6797550432274209, F1-Score: 0.7877269876149787
+Epoch 7 Training: 100% 250/250 [02:40<00:00,  1.56it/s, loss=0.0238, c_precision=0.941, c_recall=0.676, c_f1_score=0.787]
+Epoch 7 Validation: 100% 62/62 [00:21<00:00,  2.87it/s, loss=0.0263, c_precision=0.948, c_recall=0.691, c_f1_score=0.799]
+2023-04-07 03:33:51,433 - Correction Precision: 0.9476284584975555, Recall: 0.6909221902014803, F1-Score: 0.7991666661786059
+Epoch 8 Training: 100% 250/250 [02:41<00:00,  1.54it/s, loss=0.027, c_precision=0.94, c_recall=0.691, c_f1_score=0.797]
+Epoch 8 Validation: 100% 62/62 [00:20<00:00,  2.97it/s, loss=0.0248, c_precision=0.927, c_recall=0.706, c_f1_score=0.801]
+2023-04-07 03:37:22,220 - Correction Precision: 0.9267139479901055, Recall: 0.706051873198593, F1-Score: 0.801472091105615
+Epoch 9 Training:   0% 0/250 [00:00<?, ?it/s]Swapping scheduler `PlateauScheduler` for `SWALR`
+Epoch 9 Training: 100% 250/250 [02:41<00:00,  1.55it/s, loss=0.0151, c_precision=0.945, c_recall=0.717, c_f1_score=0.815]
+Epoch 9 Validation: 100% 62/62 [00:21<00:00,  2.85it/s, loss=0.0236, c_precision=0.95, c_recall=0.72, c_f1_score=0.819]
+2023-04-07 03:40:53,433 - Correction Precision: 0.9496197718626666, Recall: 0.7197406340055044, F1-Score: 0.8188524585255392
+Epoch 10 Training: 100% 250/250 [02:37<00:00,  1.59it/s, loss=0.0359, c_precision=0.949, c_recall=0.725, c_f1_score=0.822]
+Epoch 10 Validation: 100% 62/62 [00:20<00:00,  3.02it/s, loss=0.0223, c_precision=0.94, c_recall=0.734, c_f1_score=0.824]
+2023-04-07 03:44:18,925 - Correction Precision: 0.9400369003685701, Recall: 0.7341498559075165, F1-Score: 0.8244336564651569
+Epoch 11 Training: 100% 250/250 [02:43<00:00,  1.53it/s, loss=0.0166, c_precision=0.946, c_recall=0.717, c_f1_score=0.816]
+Epoch 11 Validation: 100% 62/62 [00:21<00:00,  2.94it/s, loss=0.0212, c_precision=0.944, c_recall=0.747, c_f1_score=0.834]
+2023-04-07 03:47:49,934 - Correction Precision: 0.9436107321505486, Recall: 0.7474783861668777, F1-Score: 0.8341708537777469
+Epoch 12 Training: 100% 250/250 [02:47<00:00,  1.50it/s, loss=0.0377, c_precision=0.947, c_recall=0.728, c_f1_score=0.823]
+Epoch 12 Validation: 100% 62/62 [00:22<00:00,  2.74it/s, loss=0.0202, c_precision=0.95, c_recall=0.745, c_f1_score=0.835]
+2023-04-07 03:51:26,983 - Correction Precision: 0.9499540863172865, Recall: 0.7453170028815759, F1-Score: 0.8352846179970572
+Epoch 13 Training: 100% 250/250 [02:43<00:00,  1.53it/s, loss=0.0172, c_precision=0.96, c_recall=0.755, c_f1_score=0.845]
+Epoch 13 Validation: 100% 62/62 [00:21<00:00,  2.84it/s, loss=0.0195, c_precision=0.958, c_recall=0.754, c_f1_score=0.844]
+2023-04-07 03:54:59,853 - Correction Precision: 0.9578947368416669, Recall: 0.7539625360227832, F1-Score: 0.8437814951729521
+Epoch 14 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.00813, c_precision=0.951, c_recall=0.766, c_f1_score=0.848]
+Epoch 14 Validation: 100% 62/62 [00:21<00:00,  2.86it/s, loss=0.0188, c_precision=0.962, c_recall=0.76, c_f1_score=0.849]
+2023-04-07 03:58:34,311 - Correction Precision: 0.9617312072888557, Recall: 0.7604466858786886, F1-Score: 0.8493260908362008
+Epoch 15 Training: 100% 250/250 [02:46<00:00,  1.50it/s, loss=0.0135, c_precision=0.954, c_recall=0.77, c_f1_score=0.852]
+Epoch 15 Validation: 100% 62/62 [00:23<00:00,  2.67it/s, loss=0.0184, c_precision=0.954, c_recall=0.777, c_f1_score=0.856]
+2023-04-07 04:02:12,065 - Correction Precision: 0.9539823008845336, Recall: 0.7766570605184522, F1-Score: 0.8562351067328678
+Epoch 16 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.0117, c_precision=0.956, c_recall=0.774, c_f1_score=0.855]
+Epoch 16 Validation: 100% 62/62 [00:20<00:00,  2.99it/s, loss=0.018, c_precision=0.949, c_recall=0.784, c_f1_score=0.859]
+2023-04-07 04:05:45,994 - Correction Precision: 0.9485838779952294, Recall: 0.7842219020170086, F1-Score: 0.8586077691748364
+Epoch 17 Training: 100% 250/250 [02:43<00:00,  1.53it/s, loss=0.0121, c_precision=0.964, c_recall=0.789, c_f1_score=0.868]
+Epoch 17 Validation: 100% 62/62 [00:21<00:00,  2.88it/s, loss=0.0176, c_precision=0.951, c_recall=0.79, c_f1_score=0.863]
+2023-04-07 04:09:17,566 - Correction Precision: 0.9505851755522537, Recall: 0.7899855907778134, F1-Score: 0.8628762536845191
+Epoch 18 Training: 100% 250/250 [02:46<00:00,  1.50it/s, loss=0.0104, c_precision=0.964, c_recall=0.78, c_f1_score=0.862]
+Epoch 18 Validation: 100% 62/62 [00:22<00:00,  2.79it/s, loss=0.0173, c_precision=0.956, c_recall=0.783, c_f1_score=0.861]
+2023-04-07 04:12:54,006 - Correction Precision: 0.9564260563376072, Recall: 0.7827809798268074, F1-Score: 0.8609350232764339
+Epoch 19 Training: 100% 250/250 [02:44<00:00,  1.52it/s, loss=0.011, c_precision=0.972, c_recall=0.79, c_f1_score=0.871]
+Epoch 19 Validation: 100% 62/62 [00:22<00:00,  2.76it/s, loss=0.0172, c_precision=0.961, c_recall=0.776, c_f1_score=0.858]
+2023-04-07 04:16:28,728 - Correction Precision: 0.9607318161530742, Recall: 0.7755763688758013, F1-Score: 0.8582818412434341
+Epoch 20 Training: 100% 250/250 [02:44<00:00,  1.52it/s, loss=0.0152, c_precision=0.968, c_recall=0.805, c_f1_score=0.879]
+Epoch 20 Validation: 100% 62/62 [00:21<00:00,  2.92it/s, loss=0.017, c_precision=0.967, c_recall=0.772, c_f1_score=0.859]
+2023-04-07 04:20:02,229 - Correction Precision: 0.9674943566587054, Recall: 0.7719740634002983, F1-Score: 0.8587457418421782
+Epoch 21 Training: 100% 250/250 [02:43<00:00,  1.53it/s, loss=0.0117, c_precision=0.967, c_recall=0.805, c_f1_score=0.879]
+Epoch 21 Validation: 100% 62/62 [00:20<00:00,  2.96it/s, loss=0.0167, c_precision=0.959, c_recall=0.79, c_f1_score=0.866]
+2023-04-07 04:23:33,555 - Correction Precision: 0.958898119807189, Recall: 0.7899855907778134, F1-Score: 0.8662848108809761
+Epoch 22 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.0147, c_precision=0.971, c_recall=0.793, c_f1_score=0.873]
+Epoch 22 Validation: 100% 62/62 [00:20<00:00,  2.97it/s, loss=0.0164, c_precision=0.962, c_recall=0.796, c_f1_score=0.871]
+2023-04-07 04:27:06,884 - Correction Precision: 0.9617058311571098, Recall: 0.7961095100861686, F1-Score: 0.8711076069144212
+Epoch 23 Training: 100% 250/250 [02:46<00:00,  1.51it/s, loss=0.0125, c_precision=0.964, c_recall=0.824, c_f1_score=0.888]
+Epoch 23 Validation: 100% 62/62 [00:23<00:00,  2.65it/s, loss=0.0162, c_precision=0.966, c_recall=0.799, c_f1_score=0.875]
+2023-04-07 04:30:44,552 - Correction Precision: 0.9664341761111742, Recall: 0.7986311239190207, F1-Score: 0.8745562125219256
+Epoch 24 Training: 100% 250/250 [02:42<00:00,  1.53it/s, loss=0.0102, c_precision=0.966, c_recall=0.805, c_f1_score=0.878]
+Epoch 24 Validation: 100% 62/62 [00:22<00:00,  2.78it/s, loss=0.0161, c_precision=0.964, c_recall=0.793, c_f1_score=0.87]
+2023-04-07 04:34:17,506 - Correction Precision: 0.9636761487960772, Recall: 0.7932276657057661, F1-Score: 0.8701837576549253
+Epoch 25 Training: 100% 250/250 [02:46<00:00,  1.50it/s, loss=0.0108, c_precision=0.967, c_recall=0.819, c_f1_score=0.887]
+Epoch 25 Validation: 100% 62/62 [00:20<00:00,  2.96it/s, loss=0.0159, c_precision=0.969, c_recall=0.787, c_f1_score=0.869]
+2023-04-07 04:37:52,591 - Correction Precision: 0.968957871396466, Recall: 0.787103746397411, F1-Score: 0.8686145890498388
+Epoch 26 Training: 100% 250/250 [02:47<00:00,  1.50it/s, loss=0.00884, c_precision=0.974, c_recall=0.827, c_f1_score=0.895]
+Epoch 26 Validation: 100% 62/62 [00:22<00:00,  2.78it/s, loss=0.0158, c_precision=0.961, c_recall=0.797, c_f1_score=0.871]
+2023-04-07 04:41:29,269 - Correction Precision: 0.9609035621194784, Recall: 0.7968299711812692, F1-Score: 0.8712091369597047
+Epoch 27 Training: 100% 250/250 [02:46<00:00,  1.50it/s, loss=0.00374, c_precision=0.976, c_recall=0.824, c_f1_score=0.893]
+Epoch 27 Validation: 100% 62/62 [00:21<00:00,  2.82it/s, loss=0.0158, c_precision=0.962, c_recall=0.802, c_f1_score=0.874]
+2023-04-07 04:45:06,135 - Correction Precision: 0.9619541720704877, Recall: 0.8015129682994231, F1-Score: 0.8744350555069391
+Epoch 28 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.0181, c_precision=0.976, c_recall=0.832, c_f1_score=0.899]
+Epoch 28 Validation: 100% 62/62 [00:21<00:00,  2.85it/s, loss=0.0154, c_precision=0.964, c_recall=0.804, c_f1_score=0.877]
+2023-04-07 04:48:40,179 - Correction Precision: 0.9641623488769585, Recall: 0.8043948126798255, F1-Score: 0.8770620576341366
+Epoch 29 Training: 100% 250/250 [02:48<00:00,  1.48it/s, loss=0.00953, c_precision=0.968, c_recall=0.821, c_f1_score=0.888]
+Epoch 29 Validation: 100% 62/62 [00:22<00:00,  2.79it/s, loss=0.0153, c_precision=0.965, c_recall=0.803, c_f1_score=0.877]
+2023-04-07 04:52:18,960 - Correction Precision: 0.9653679653675474, Recall: 0.8033141210371746, F1-Score: 0.8769170266371596
+Epoch 30 Training: 100% 250/250 [02:49<00:00,  1.48it/s, loss=0.00806, c_precision=0.976, c_recall=0.822, c_f1_score=0.892]
+Epoch 30 Validation: 100% 62/62 [00:22<00:00,  2.74it/s, loss=0.0152, c_precision=0.96, c_recall=0.807, c_f1_score=0.877]
+2023-04-07 04:55:57,972 - Correction Precision: 0.9601200686102229, Recall: 0.8065561959651273, F1-Score: 0.87666405588558
+Epoch 31 Training: 100% 250/250 [02:48<00:00,  1.48it/s, loss=0.0141, c_precision=0.974, c_recall=0.844, c_f1_score=0.904]
+Epoch 31 Validation: 100% 62/62 [00:22<00:00,  2.71it/s, loss=0.0149, c_precision=0.96, c_recall=0.809, c_f1_score=0.878]
+2023-04-07 04:59:37,900 - Correction Precision: 0.96022241231781, Recall: 0.8087175792504291, F1-Score: 0.8779820096714901
+Epoch 32 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.0104, c_precision=0.978, c_recall=0.837, c_f1_score=0.902]
+Epoch 32 Validation: 100% 62/62 [00:21<00:00,  2.85it/s, loss=0.0149, c_precision=0.952, c_recall=0.813, c_f1_score=0.877]
+2023-04-07 05:03:12,662 - Correction Precision: 0.9515177065763274, Recall: 0.8130403458210328, F1-Score: 0.8768453763481154
+Epoch 33 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.0124, c_precision=0.982, c_recall=0.85, c_f1_score=0.911]
+Epoch 33 Validation: 100% 62/62 [00:21<00:00,  2.92it/s, loss=0.0146, c_precision=0.963, c_recall=0.814, c_f1_score=0.882]
+2023-04-07 05:06:46,377 - Correction Precision: 0.9633418584821128, Recall: 0.8141210374636837, F1-Score: 0.8824677855242649
+Epoch 34 Training: 100% 250/250 [02:46<00:00,  1.50it/s, loss=0.011, c_precision=0.978, c_recall=0.851, c_f1_score=0.91]
+Epoch 34 Validation: 100% 62/62 [00:22<00:00,  2.78it/s, loss=0.0145, c_precision=0.97, c_recall=0.814, c_f1_score=0.885]
+2023-04-07 05:10:23,368 - Correction Precision: 0.9695278969952921, Recall: 0.8137608069161334, F1-Score: 0.8848413626057009
+Epoch 35 Training: 100% 250/250 [02:45<00:00,  1.51it/s, loss=0.00513, c_precision=0.973, c_recall=0.848, c_f1_score=0.906]
+Epoch 35 Validation: 100% 62/62 [00:22<00:00,  2.80it/s, loss=0.0144, c_precision=0.96, c_recall=0.818, c_f1_score=0.883]
+2023-04-07 05:13:58,870 - Correction Precision: 0.9602536997881775, Recall: 0.818083573486737, F1-Score: 0.8834857026734413
+Epoch 36 Training: 100% 250/250 [02:41<00:00,  1.55it/s, loss=0.00933, c_precision=0.971, c_recall=0.845, c_f1_score=0.904]
+Epoch 36 Validation: 100% 62/62 [00:21<00:00,  2.91it/s, loss=0.0143, c_precision=0.966, c_recall=0.813, c_f1_score=0.883]
+2023-04-07 05:17:28,688 - Correction Precision: 0.9661959777488377, Recall: 0.8134005763685831, F1-Score: 0.8832388025543867
+Epoch 37 Training: 100% 250/250 [02:43<00:00,  1.53it/s, loss=0.0126, c_precision=0.978, c_recall=0.849, c_f1_score=0.909]
+Epoch 37 Validation: 100% 62/62 [00:21<00:00,  2.94it/s, loss=0.0141, c_precision=0.959, c_recall=0.825, c_f1_score=0.887]
+2023-04-07 05:21:00,196 - Correction Precision: 0.9589614740364494, Recall: 0.8249279538901928, F1-Score: 0.8869093720818749
+Epoch 38 Training: 100% 250/250 [02:40<00:00,  1.56it/s, loss=0.0129, c_precision=0.981, c_recall=0.841, c_f1_score=0.906]
+Epoch 38 Validation: 100% 62/62 [00:21<00:00,  2.93it/s, loss=0.0139, c_precision=0.969, c_recall=0.82, c_f1_score=0.888]
+2023-04-07 05:24:29,187 - Correction Precision: 0.9693225394116023, Recall: 0.8195244956769382, F1-Score: 0.8881514732490113
+Epoch 39 Training: 100% 250/250 [02:40<00:00,  1.55it/s, loss=0.00966, c_precision=0.975, c_recall=0.853, c_f1_score=0.91]
+Epoch 39 Validation: 100% 62/62 [00:20<00:00,  3.04it/s, loss=0.0137, c_precision=0.958, c_recall=0.825, c_f1_score=0.887]
+2023-04-07 05:27:57,518 - Correction Precision: 0.9581589958154987, Recall: 0.8249279538901928, F1-Score: 0.8865660080196763
+Eval情况：到了62.71，也够牛逼的
+Character-level Detect Acc: 0.9859, P: 0.6337, R: 0.7653, F1: 0.6933
+Character-level Correct Acc: 0.9852, P: 0.6235, R: 0.7326, F1: 0.6736
+Sentence-level Detect Acc: 0.6664, P: 0.6812, R: 0.6044, F1: 0.6405
+Sentence-level Correct Acc: 0.6573, P: 0.6745, R: 0.5860, F1: 0.6271
+
