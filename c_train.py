@@ -5,7 +5,7 @@ from pathlib import Path
 
 import lightning.pytorch as pl
 import torch
-from lightning.pytorch.callbacks import EarlyStopping
+from lightning.pytorch.callbacks import EarlyStopping, StochasticWeightAveraging
 
 from common.callbacks import CheckpointCallback, MetricsProgressBar, TestMetricsCallback
 from utils.dataloader import create_dataloader, create_test_dataloader
@@ -33,6 +33,14 @@ class C_Train(object):
 
         if model == 'mymodel':
             from models.MyModel import MyModel
+            return MyModel(self.args)
+
+        if model == 'simplemodel':
+            from models.SimpleModel import SimpleModel
+            return SimpleModel(self.args)
+
+        if model == 'pinyinmymodel':
+            from models.PinyinMyModel import MyModel
             return MyModel(self.args)
 
     def train(self):
@@ -75,6 +83,7 @@ class C_Train(object):
             callbacks=[checkpoint_callback,
                        early_stop_callback,
                        MetricsProgressBar(),
+                       StochasticWeightAveraging(swa_lrs=2e-5, swa_epoch_start=10)
                        ],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
