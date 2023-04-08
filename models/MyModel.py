@@ -7,7 +7,7 @@ from transformers import AutoModel, AutoTokenizer
 
 from models.common import BertOnlyMLMHead, BERT
 from utils.loss import FocalLoss
-from utils.scheduler import PlateauScheduler
+from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import get_common_hanzi
 from utils.utils import predict_process
 
@@ -164,7 +164,20 @@ class MyModel(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = self.make_optimizer()
 
-        scheduler = PlateauScheduler(optimizer)
+        # scheduler = PlateauScheduler(optimizer)
+
+        scheduler_args = {
+            "optimizer": optimizer,
+            'warmup_factor': 0.01,
+            'warmup_epochs': 1024,
+            'warmup_method': 'linear',
+            'milestones': (10,),
+            'gamma': 0.9999,
+            'max_iters': 10,
+            'delay_iters': 0,
+            'eta_min_lr': 3e-07
+        }
+        scheduler = WarmupExponentialLR(**scheduler_args)
 
         return [optimizer], [scheduler]
 
