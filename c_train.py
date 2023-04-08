@@ -83,7 +83,7 @@ class C_Train(object):
             callbacks=[checkpoint_callback,
                        early_stop_callback,
                        MetricsProgressBar(),
-                       StochasticWeightAveraging(swa_lrs=2e-5, swa_epoch_start=10)
+                       StochasticWeightAveraging(swa_lrs=self.args.swa_lr, swa_epoch_start=self.args.swa_epoch_start)
                        ],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
@@ -140,6 +140,11 @@ class C_Train(object):
         parser.add_argument('--ckpt-path', type=str, default=None,
                             help='The filepath of checkpoint for test. '
                                  'Default: ${ckpt_dir}/best.ckpt')
+
+        parser.add_argument('--swa-lr', type=float, default=2e-5,
+                            help='The learning rate of Stochastic Weight Averaging.')
+        parser.add_argument('--swa-epoch-start', type=float, default=2,
+                            help='The start epoch for Stochastic Weight Averaging.')
 
         ###############################################################################################################
 
