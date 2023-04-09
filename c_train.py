@@ -57,9 +57,11 @@ class C_Train(object):
                 ckpt_path = checkpoint_callback.ckpt_path
                 log.info("Resume training from last checkpoint.")
 
+        if not self.args.resume and self.args.finetune:
+            self.model.load_state_dict(torch.load(self.args.ckpt_path)['state_dict'])
+
         early_stop_callback = EarlyStopping(
             monitor="val_loss",
-            # min_delta=0.02,
             patience=3,
             mode='min',
         )
@@ -141,11 +143,8 @@ class C_Train(object):
         parser.add_argument('--ckpt-path', type=str, default=None,
                             help='The filepath of checkpoint for test. '
                                  'Default: ${ckpt_dir}/best.ckpt')
-
-        parser.add_argument('--swa-lr', type=float, default=2e-5,
-                            help='The learning rate of Stochastic Weight Averaging.')
-        parser.add_argument('--swa-epoch-start', type=float, default=2,
-                            help='The start epoch for Stochastic Weight Averaging.')
+        parser.add_argument('--finetune', action='store_true', default=False,
+                            help="The finetune flag means that the training into the fine-tuning phase.")
 
         ###############################################################################################################
 
@@ -169,7 +168,6 @@ class C_Train(object):
         parser.add_argument('--error-threshold', type=float, default=0.5,
                             help='When detection logit greater than {error_threshold}, '
                                  'the token will be treated as error.')
-        parser.add_argument('--finetune', action='store_true', default=False)
         parser.add_argument('--eval', action='store_true', default=False, help='Eval model after every epoch.')
         parser.add_argument('--max-length', type=int, default=256,
                             help='The max length of sentence. Sentence will be truncated if its length long than it.')
