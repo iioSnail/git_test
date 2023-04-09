@@ -1,3 +1,4 @@
+import math
 import os
 import sys
 import time
@@ -198,8 +199,11 @@ class SimpleProgressBar(Callback):
 
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         total = len(trainer.train_dataloader)
-        if trainer.limit_train_batches:
+        if type(trainer.limit_train_batches) == int and trainer.limit_train_batches:
             total = trainer.limit_train_batches
+
+        if type(trainer.limit_train_batches) == float and trainer.limit_train_batches < 1.0:
+            total = math.ceil(total * trainer.limit_train_batches)
 
         self.train_progress_bar = tqdm(None, desc="Epoch {} Training".format(trainer.current_epoch), total=total)
 
@@ -207,8 +211,11 @@ class SimpleProgressBar(Callback):
         self.train_progress_bar.close()
 
         total = len(trainer.val_dataloaders)
-        if trainer.limit_val_batches:
+        if type(trainer.limit_val_batches) == int and trainer.limit_val_batches:
             total = trainer.limit_val_batches
+
+        if type(trainer.limit_val_batches) == float and trainer.limit_val_batches < 1.0:
+            total = math.ceil(total * trainer.limit_val_batches)
 
         self.val_progress_bar = tqdm(None, desc="Epoch {} Validation".format(trainer.current_epoch), total=total)
 

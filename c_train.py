@@ -58,6 +58,7 @@ class C_Train(object):
                 log.info("Resume training from last checkpoint.")
 
         if not self.args.resume and self.args.finetune:
+            log.info("Load pre-trained model from " + str(self.args.ckpt_path))
             self.model.load_state_dict(torch.load(self.args.ckpt_path)['state_dict'])
 
         early_stop_callback = EarlyStopping(
@@ -72,7 +73,7 @@ class C_Train(object):
             limit_train_batches = self.args.limit_batches
             limit_val_batches = int(self.args.limit_batches * self.args.valid_ratio / (1 - self.args.valid_ratio))
 
-        precision = '16'
+        precision = '16-mixed'
         if str(self.args.device) == 'cpu':
             precision = '32-true'
 
