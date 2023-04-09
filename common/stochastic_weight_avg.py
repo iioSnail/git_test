@@ -14,6 +14,7 @@ from lightning.pytorch.strategies.fsdp import FSDPStrategy
 from lightning.pytorch.utilities.exceptions import MisconfigurationException
 
 from common.callbacks import TrainMetricsCallback
+from utils.log_utils import log
 
 _AVG_FN = Callable[[Tensor, Tensor, Tensor], Tensor]
 
@@ -90,6 +91,7 @@ class CscStochasticWeightAveraging(Callback):
                 self._swa_epoch_start = trainer.current_epoch
 
         if (not self._initialized) and (self.swa_start <= trainer.current_epoch <= self.swa_end):
+            log.info("Start SWA...")
             self._initialized = True
 
             # move average model to request device.

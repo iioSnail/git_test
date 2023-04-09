@@ -2,7 +2,7 @@ import logging
 import sys
 import warnings
 
-log = None
+log: logging.Logger = None
 
 
 def init_log():
