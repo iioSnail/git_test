@@ -7,7 +7,9 @@ import lightning.pytorch as pl
 import torch
 from lightning.pytorch.callbacks import EarlyStopping, StochasticWeightAveraging
 
-from common.callbacks import CheckpointCallback, MetricsProgressBar, TestMetricsCallback
+from common.callbacks import CheckpointCallback, SimpleProgressBar, TestMetricsCallback, TestCallback, \
+    TrainMetricsCallback
+from common.stochastic_weight_avg import CscStochasticWeightAveraging
 from utils.dataloader import create_dataloader, create_test_dataloader
 from utils.log_utils import log
 from utils.utils import setup_seed, mkdir
@@ -34,10 +36,6 @@ class C_Train(object):
         if model == 'mymodel':
             from models.MyModel import MyModel
             return MyModel(self.args)
-
-        if model == 'simplemodel':
-            from models.SimpleModel import SimpleModel
-            return SimpleModel(self.args)
 
         if model == 'pinyinmymodel':
             from models.PinyinMyModel import MyModel
@@ -76,14 +74,17 @@ class C_Train(object):
         if str(self.args.device) == 'cpu':
             precision = '32-true'
 
+        train_metrics_callback = TrainMetricsCallback()
+
         trainer = pl.Trainer(
             default_root_dir=self.args.work_dir,
             limit_train_batches=limit_train_batches,
             limit_val_batches=limit_val_batches,
             callbacks=[checkpoint_callback,
                        early_stop_callback,
-                       MetricsProgressBar(),
-                       StochasticWeightAveraging(swa_lrs=self.args.swa_lr, swa_epoch_start=self.args.swa_epoch_start)
+                       train_metrics_callback,
+                       SimpleProgressBar(train_metrics_callback),
+                       CscStochasticWeightAveraging(train_metrics_callback),
                        ],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
