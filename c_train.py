@@ -94,7 +94,8 @@ class C_Train(object):
             enable_progress_bar=False,  # Use custom progress bar
             precision=precision,
             gradient_clip_val=0.5,
-            gradient_clip_algorithm="norm"
+            gradient_clip_algorithm="norm",
+            accumulate_grad_batches=4
         )
 
         trainer.fit(self.model,
