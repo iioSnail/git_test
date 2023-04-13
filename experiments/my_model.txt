@@ -461,4 +461,31 @@ Character-level Detect Acc: 0.9883, P: 0.7021, R: 0.7610, F1: 0.7304
 Character-level Correct Acc: 0.9874, P: 0.6903, R: 0.7198, F1: 0.7047
 Sentence-level Detect Acc: 0.7145, P: 0.7430, R: 0.6414, F1: 0.6885
 Sentence-level Correct Acc: 0.7009, P: 0.7345, R: 0.6137, F1: 0.6687
-
+全量训练情况：
+2023-04-12 06:16:45,068 - NumExpr defaulting to 2 threads.
+Epoch 0 Training: 100% 8055/8055 [1:08:20<00:00,  1.96it/s, loss=0.0058, c_precision=0.949, c_recall=0.752, c_f1_score=0.839]
+Epoch 0 Validation: 100% 424/424 [02:51<00:00,  2.77it/s, loss=0.0168, c_precision=0.963, c_recall=0.755, c_f1_score=0.846]
+2023-04-12 07:28:27,143 - val_loss 0.01679, Correction Precision: 0.9633741026322146, Recall: 0.7546865236408689, F1-Score: 0.8463559910980774
+Epoch 1 Training: 100% 8055/8055 [1:07:48<00:00,  1.98it/s, loss=0.00191, c_precision=0.952, c_recall=0.817, c_f1_score=0.879]
+Epoch 1 Validation: 100% 424/424 [02:44<00:00,  3.19it/s, loss=0.0109, c_precision=0.971, c_recall=0.816, c_f1_score=0.887]
+2023-04-12 08:40:13,728 - val_loss 0.01089, Correction Precision: 0.9712886022571641, Recall: 0.8156113309726716, F1-Score: 0.8866685531408804
+Epoch 2 Training: 100% 8055/8055 [1:06:59<00:00,  2.00it/s, loss=0.00169, c_precision=0.958, c_recall=0.847, c_f1_score=0.899]
+Epoch 2 Validation: 100% 424/424 [02:44<00:00,  2.29it/s, loss=0.00909, c_precision=0.962, c_recall=0.848, c_f1_score=0.902]
+2023-04-12 09:50:25,907 - val_loss 0.00909, Correction Precision: 0.9624837528062765, Recall: 0.8483128514892289, F1-Score: 0.9017990584557156
+Epoch 3 Training: 100% 8055/8055 [1:05:41<00:00,  2.04it/s, loss=0.00111, c_precision=0.969, c_recall=0.874, c_f1_score=0.919]
+Epoch 3 Validation: 100% 424/424 [02:40<00:00,  2.49it/s, loss=0.00829, c_precision=0.958, c_recall=0.866, c_f1_score=0.909]
+2023-04-12 10:59:16,438 - val_loss 0.00829, Correction Precision: 0.9576710435383, Recall: 0.865913351385083, F1-Score: 0.9094837010982408
+Epoch 4 Training: 100% 8055/8055 [1:05:07<00:00,  2.06it/s, loss=0.000875, c_precision=0.968, c_recall=0.883, c_f1_score=0.923]
+Epoch 4 Validation: 100% 424/424 [02:41<00:00,  2.63it/s, loss=0.00792, c_precision=0.963, c_recall=0.869, c_f1_score=0.913]
+2023-04-12 12:07:33,928 - val_loss 0.00792, Correction Precision: 0.9625569722494107, Recall: 0.8687773380545267, F1-Score: 0.9132660038256446
+Epoch 5 Training: 100% 8055/8055 [1:05:04<00:00,  2.06it/s, loss=0.00082, c_precision=0.971, c_recall=0.904, c_f1_score=0.936]
+Epoch 5 Validation: 100% 424/424 [02:38<00:00,  3.23it/s, loss=0.00767, c_precision=0.966, c_recall=0.871, c_f1_score=0.916]
+2023-04-12 13:15:44,801 - val_loss 0.00767, Correction Precision: 0.9657142857142299, Recall: 0.8712247448447786, F1-Score: 0.9160393107334444
+Epoch 6 Training: 100% 8055/8055 [1:04:15<00:00,  2.09it/s, loss=0.00069, c_precision=0.968, c_recall=0.902, c_f1_score=0.934]
+Epoch 6 Validation: 100% 424/424 [02:38<00:00,  3.23it/s, loss=0.0075, c_precision=0.966, c_recall=0.874, c_f1_score=0.918]
+2023-04-12 14:23:06,498 - val_loss 0.00750, Correction Precision: 0.9658345795467062, Recall: 0.8744011664236162, F1-Score: 0.9178464056230754
+全量训练后：为毛还不如不全量训练啊
+Character-level Detect Acc: 0.9870, P: 0.6558, R: 0.7994, F1: 0.7205
+Character-level Correct Acc: 0.9865, P: 0.6488, R: 0.7752, F1: 0.7064
+Sentence-level Detect Acc: 0.6864, P: 0.7000, R: 0.6340, F1: 0.6654
+Sentence-level Correct Acc: 0.6791, P: 0.6950, R: 0.6192, F1: 0.6549

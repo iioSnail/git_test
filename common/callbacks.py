@@ -105,6 +105,7 @@ class TrainMetricsCallback(Callback):
         self.val_total_num = 0
 
         self.val_f1_list = []
+        self.val_pr_list = []
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         self.train_matrix = np.zeros([4])
@@ -112,10 +113,8 @@ class TrainMetricsCallback(Callback):
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         c_p, c_r, c_f1 = self.compute_matrix(*self.valid_matrix)
         self.valid_matrix = np.zeros([4])
-        log.info("val_loss {:.5f}, Correction Precision: {}, Recall: {}, F1-Score: {}".format(self.get_val_avg_loss(),
-                                                                                              c_p, c_r, c_f1))
-
         self.val_f1_list.append(c_f1)
+        self.val_pr_list.append((c_p, c_r))
 
     def on_train_batch_end(
             self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any,
@@ -221,6 +220,11 @@ class SimpleProgressBar(Callback):
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         self.val_progress_bar.close()
+        val_avg_loss = self.train_metrics.get_val_avg_loss()
+        c_p, c_r = self.train_metrics.val_pr_list[-1]
+        c_f1 = self.train_metrics.val_f1_list[-1]
+        log.info("val_loss {:.5f}, Correction Precision: {}, Recall: {}, F1-Score: {}".format(val_avg_loss,
+                                                                                              c_p, c_r, c_f1))
 
     def on_train_batch_end(
             self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any,
