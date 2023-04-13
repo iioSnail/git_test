@@ -8,7 +8,7 @@ from transformers import AutoModel, AutoTokenizer
 
 from models.common import BertOnlyMLMHead, BERT
 from utils.loss import FocalLoss
-from utils.scheduler import PlateauScheduler
+from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import get_common_hanzi
 from utils.utils import predict_process, convert_char_to_pinyin
 
@@ -45,7 +45,6 @@ class MyModel(pl.LightningModule):
 
         self.pinyin_feature_size = 6
         self.pinyin_embeddings = PinyinManualEmbeddings(self.args)
-
         self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size, len(self.token_list) + 2, layer_num=1)
 
         self.loss_fnt = FocalLoss(device=self.args.device)
@@ -204,7 +203,18 @@ class MyModel(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = self.make_optimizer()
 
-        scheduler = PlateauScheduler(optimizer)
+        scheduler_args = {
+            "optimizer": optimizer,
+            'warmup_factor': 0.01,
+            'warmup_epochs': 1024,
+            'warmup_method': 'linear',
+            'milestones': (10,),
+            'gamma': 0.9999,
+            'max_iters': 10,
+            'delay_iters': 0,
+            'eta_min_lr': 3e-07
+        }
+        scheduler = WarmupExponentialLR(**scheduler_args)
 
         return [optimizer], [scheduler]
 
