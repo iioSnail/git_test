@@ -216,7 +216,7 @@ class MyModel(pl.LightningModule):
         }
         scheduler = WarmupExponentialLR(**scheduler_args)
 
-        return [optimizer], [scheduler]
+        return [optimizer], [{'scheduler': scheduler, 'interval': 'step'}]
 
     def make_optimizer(self):
         params = []
