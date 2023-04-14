@@ -200,12 +200,15 @@ class C_Train(object):
             else:
                 args.workers = os.cpu_count()
 
-        multiprocessing.set_start_method("spawn", force=True)
+        # multiprocessing.set_start_method("spawn", force=True)
 
         return args
 
 
 if __name__ == '__main__':
+    from multiprocessing import freeze_support
+    freeze_support()
+
     train = C_Train()
     if train.args.test:
         train.test()

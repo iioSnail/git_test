@@ -489,3 +489,28 @@ Character-level Detect Acc: 0.9870, P: 0.6558, R: 0.7994, F1: 0.7205
 Character-level Correct Acc: 0.9865, P: 0.6488, R: 0.7752, F1: 0.7064
 Sentence-level Detect Acc: 0.6864, P: 0.7000, R: 0.6340, F1: 0.6654
 Sentence-level Correct Acc: 0.6791, P: 0.6950, R: 0.6192, F1: 0.6549
+
+
+模型：模型：MacBert, 使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。使用bf16混合精度。增加了SWA。StochasticWeightAveraging(swa_lrs=2e-5, swa_epoch_start=10)
+增加了pinyin信息（6个维度）
+全量训练情况：
+Epoch 0 Training: 100% 8055/8055 [1:13:09<00:00,  1.84it/s, loss=0.0074, c_precision=0.951, c_recall=0.728, c_f1_score=0.825]
+Epoch 0 Validation: 100% 424/424 [03:12<00:00,  2.21it/s, loss=0.0163, c_precision=0.952, c_recall=0.765, c_f1_score=0.848]
+2023-04-13 15:49:15,298 - val_loss 0.01625, Correction Precision: 0.9523715932913422, Recall: 0.7645821280176319, F1-Score: 0.8482072521826538
+Epoch 1 Training: 100% 8055/8055 [1:12:48<00:00,  1.84it/s, loss=0.00367, c_precision=0.959, c_recall=0.801, c_f1_score=0.873]
+Epoch 1 Validation: 100% 424/424 [03:03<00:00,  2.31it/s, loss=0.0103, c_precision=0.964, c_recall=0.826, c_f1_score=0.89]
+2023-04-13 17:06:01,532 - val_loss 0.01027, Correction Precision: 0.9639153114451694, Recall: 0.8261189712301674, F1-Score: 0.8897133789070135
+Epoch 2 Training: 100% 8055/8055 [1:11:29<00:00,  1.88it/s, loss=0.00155, c_precision=0.954, c_recall=0.834, c_f1_score=0.89]
+Epoch 2 Validation: 100% 424/424 [03:05<00:00,  2.29it/s, loss=0.00855, c_precision=0.967, c_recall=0.85, c_f1_score=0.904]
+2023-04-13 18:21:03,996 - val_loss 0.00855, Correction Precision: 0.9667883430075419, Recall: 0.849734392257884, F1-Score: 0.9044899782278121
+Epoch 3 Training: 100% 8055/8055 [1:12:01<00:00,  1.86it/s, loss=0.00108, c_precision=0.967, c_recall=0.87, c_f1_score=0.916]
+Epoch 3 Validation: 100% 424/424 [03:05<00:00,  2.28it/s, loss=0.00779, c_precision=0.968, c_recall=0.861, c_f1_score=0.911]
+2023-04-13 19:36:37,646 - val_loss 0.00779, Correction Precision: 0.9677800768548053, Recall: 0.8609898490506043, F1-Score: 0.9112669779029011
+Epoch 4 Training: 100% 8055/8055 [1:12:18<00:00,  1.86it/s, loss=0.00233, c_precision=0.97, c_recall=0.881, c_f1_score=0.924]
+Epoch 4 Validation: 100% 424/424 [03:08<00:00,  2.25it/s, loss=0.0074, c_precision=0.964, c_recall=0.871, c_f1_score=0.915]
+2023-04-13 20:52:32,569 - val_loss 0.00740, Correction Precision: 0.9642420359908588, Recall: 0.870825224846112, F1-Score: 0.9151558694990342
+全量后Eval情况：
+Character-level Detect Acc: 0.9868, P: 0.6472, R: 0.8037, F1: 0.7170
+Character-level Correct Acc: 0.9863, P: 0.6410, R: 0.7824, F1: 0.7047
+Sentence-level Detect Acc: 0.6818, P: 0.7045, R: 0.6081, F1: 0.6528
+Sentence-level Correct Acc: 0.6773, P: 0.7013, R: 0.5989, F1: 0.6461
