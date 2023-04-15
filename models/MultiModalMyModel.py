@@ -267,21 +267,20 @@ class MyModel(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = self.make_optimizer()
 
-        # scheduler_args = {
-        #     "optimizer": optimizer,
-        #     'warmup_factor': 0.01,
-        #     'warmup_epochs': 1024,
-        #     'warmup_method': 'linear',
-        #     'milestones': (10,),
-        #     'gamma': 0.9999,
-        #     'max_iters': 10,
-        #     'delay_iters': 0,
-        #     'eta_min_lr': 3e-07
-        # }
-        # scheduler = WarmupExponentialLR(**scheduler_args)
+        scheduler_args = {
+            "optimizer": optimizer,
+            'warmup_factor': 0.01,
+            'warmup_epochs': 10240,
+            'warmup_method': 'linear',
+            'milestones': (10,),
+            'gamma': 0.99997,
+            'max_iters': 10,
+            'delay_iters': 0,
+            'eta_min_lr': 2e-6
+        }
+        scheduler = WarmupExponentialLR(**scheduler_args)
 
-        # return [optimizer], [{'scheduler': scheduler, 'interval': 'step'}]
-        return optimizer
+        return [optimizer], [{'scheduler': scheduler, 'interval': 'step'}]
 
     def make_optimizer(self):
         params = []
