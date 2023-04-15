@@ -29,9 +29,8 @@ class PinyinManualEmbeddings(nn.Module):
 
 class GlyphDenseEmbedding(nn.Module):
 
-    def __init__(self, args, font_size=32):
+    def __init__(self, font_size=32):
         super(GlyphDenseEmbedding, self).__init__()
-        self.args = args
         self.font_size = font_size
         self.embeddings = nn.Sequential(
             nn.Linear(1024, 512),
@@ -49,6 +48,12 @@ class GlyphDenseEmbedding(nn.Module):
         images = images.view(batch_size, -1) / 255.
         return self.embeddings(images)
 
+    @staticmethod
+    def from_pretrained(pretrained_model_path):
+        state_dict = torch.load(pretrained_model_path)
+        glyph_embedding = GlyphDenseEmbedding()
+        glyph_embedding.load_state_dict(state_dict)
+        return glyph_embedding
 
 class MyModel(pl.LightningModule):
     tokenizer = AutoTokenizer.from_pretrained("hfl/chinese-macbert-base")
@@ -70,7 +75,7 @@ class MyModel(pl.LightningModule):
         self.pinyin_embeddings = PinyinManualEmbeddings(self.args)
 
         self.glyph_feature_size = 56
-        self.glyph_embeddings = GlyphDenseEmbedding(args)
+        self.glyph_embeddings = GlyphDenseEmbedding.from_pretrained('./ptm/hanzi_glyph_embedding.pt')
 
         self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size + self.glyph_feature_size, len(self.token_list) + 2,
                                    layer_num=1)
