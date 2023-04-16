@@ -559,3 +559,26 @@ Sentence-level Correct Acc: 0.6773, P: 0.7013, R: 0.5989, F1: 0.6461
 2023-04-14 05:05:37,784 - val_loss 0.01297, Correction Precision: 0.9686810763118797, Recall: 0.7879440258339476, F1-Score: 0.8690146413727766
 2023-04-14 05:09:47,198 - val_loss 0.01292, Correction Precision: 0.9614384748696008, Recall: 0.7961966271974179, F1-Score: 0.8710500485717908
 2023-04-14 05:13:54,453 - val_loss 0.01264, Correction Precision: 0.9526026237829232, Recall: 0.8076785073552897, F1-Score: 0.8741747567846031
+
+
+模型：模型：MacBert, 使用macbert作为backbone，macbert的head。加入了FocalLoss中的难易样本的权重。使用了orthogonal_初始化head，其中参数为gain=1。对输出进行了改造，如果该字没错，则固定输出的softmax的index为1，否则softmax就正常输出所在的index。bert的输出融合了一开始的embedding数据，即last_hidden_state += token_embeddings。对token_embedding增加了遗忘门后再加，遗忘门权重只使用了token_emebdding来计算。使用bf16混合精度。增加了SWA。StochasticWeightAveraging(swa_lrs=2e-5, swa_epoch_start=10)，增加了pinyin信息（6个维度）
+增加了glyph信息，使用glyph预训练模型。改了学习率策略，又增加了2倍的sighan训练集
+全量训练情况：4个epoch后的eval情况。
+Character-level Detect Acc: 0.9909, P: 0.7720, R: 0.7994, F1: 0.7855
+Character-level Correct Acc: 0.9904, P: 0.7672, R: 0.7781, F1: 0.7726
+Sentence-level Detect Acc: 0.7755, P: 0.8114, R: 0.7079, F1: 0.7562
+Sentence-level Correct Acc: 0.7673, P: 0.8078, R: 0.6913, F1: 0.7450
+之后的训练：
+2023-04-15 17:01:44,484 - val_loss 0.00732, Correction Precision: 0.9572310405643211, Recall: 0.8794369335155765, F1-Score: 0.9166864587413416
+2023-04-15 18:47:03,132 - val_loss 0.00717, Correction Precision: 0.9625547000497998, Recall: 0.8798926527925018, F1-Score: 0.9193693450382309
+2023-04-15 20:31:57,058 - val_loss 0.00704, Correction Precision: 0.9645856353590627, Recall: 0.8840447617600443, F1-Score: 0.9225607012367454
+2023-04-15 22:15:07,757 - val_loss 0.00701, Correction Precision: 0.9631729604755608, Recall: 0.8859689098181738, F1-Score: 0.9229592504569089
+2023-04-15 23:57:45,266 - val_loss 0.00703, Correction Precision: 0.9669746086186332, Recall: 0.8851081067395369, F1-Score: 0.9242320092296858
+Epoch 9 Training: 100% 8439/8439 [1:37:25<00:00,  1.44it/s, loss=0.000298, c_precision=0.992, c_recall=0.972, c_f1_score=0.982]
+2023-04-16 01:39:35,625 - val_loss 0.00702, Correction Precision: 0.9678899082568272, Recall: 0.8867790774215967, F1-Score: 0.9255608694107981
+Eval情况：
+Character-level Detect Acc: 0.9913, P: 0.7874, R: 0.8009, F1: 0.7941
+Character-level Correct Acc: 0.9910, P: 0.7844, R: 0.7866, F1: 0.7855
+Sentence-level Detect Acc: 0.7891, P: 0.8253, R: 0.7246, F1: 0.7717
+Sentence-level Correct Acc: 0.7845, P: 0.8234, R: 0.7153, F1: 0.7656
+

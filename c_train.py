@@ -45,6 +45,10 @@ class C_Train(object):
             from models.MultiModalMyModel import MyModel
             return MyModel(self.args)
 
+        if model == 'zeroshot':
+            from models.zero_shot import AdjustProbByPinyin
+            return AdjustProbByPinyin(self.args)
+
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
         tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else None
@@ -110,8 +114,12 @@ class C_Train(object):
     def test(self):
         trainer = pl.Trainer(
             default_root_dir=self.args.work_dir,
-            callbacks=[TestMetricsCallback()]
+            callbacks=[TestMetricsCallback(print_errors=True)]
         )
+
+        if 1 == 1:
+            trainer.test(self.model, dataloaders=create_test_dataloader(self.args))
+            return
 
         assert self.args.ckpt_path and os.path.exists(self.args.ckpt_path), \
             "Checkpoint file is not found! ckpt_path:%s" % self.args.ckpt_path
@@ -210,6 +218,7 @@ class C_Train(object):
 
 if __name__ == '__main__':
     from multiprocessing import freeze_support
+
     freeze_support()
 
     train = C_Train()

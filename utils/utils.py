@@ -236,14 +236,29 @@ def convert_char_to_image(character, font_size=32):
     return torch.tensor(image)
 
 
-def convert_char_to_pinyin(character):
+def convert_char_to_pinyin(character, size=-1):
     if not is_chinese(character):
         return torch.LongTensor([0])
 
     pinyin = pypinyin.pinyin(character, style=pypinyin.NORMAL)[0][0]
     embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])
 
+    if size > len(embeddings):
+        padding = torch.zeros(size - len(embeddings))
+        embeddings = torch.concat([embeddings, padding])
+
     return embeddings
+
+def convert_pinyin_to_char(pinyin):
+    if torch.is_tensor(pinyin):
+        pinyin = pinyin.tolist()
+
+    a_z = " abcdefghijklmnopqrstuvwxyz"
+
+    for i in range(len(pinyin)):
+        pinyin[i] = a_z[pinyin[i]]
+
+    return pinyin
 
 
 def random_true(prob):
