@@ -6,7 +6,9 @@ from torch import nn
 from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoModel, AutoTokenizer
 
+from common.callbacks import TestMetricsCallback
 from models.common import BertOnlyMLMHead, BERT
+from utils.dataloader import create_test_dataloader
 from utils.loss import FocalLoss
 from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import get_common_hanzi
@@ -265,6 +267,11 @@ class MyModel(pl.LightningModule):
         return pred
 
     def configure_optimizers(self):
+        if self.args.finetune:
+            print("Fine-tune model with SGD")
+            optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
+            return optimizer
+
         optimizer = self.make_optimizer()
 
         scheduler_args = {
@@ -328,3 +335,11 @@ class MyModel(pl.LightningModule):
         loss_targets[(~d_targets) & (loss_targets != 0)] = 1
 
         return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets
+
+    def on_validation_epoch_end(self) -> None:
+        trainer = pl.Trainer(
+            default_root_dir=self.args.work_dir,
+            callbacks=[TestMetricsCallback(print_errors=False)]
+        )
+
+        trainer.test(self.model, dataloaders=create_test_dataloader(self.args), ckpt_path=self.args.ckpt_path)

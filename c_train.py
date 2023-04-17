@@ -114,12 +114,8 @@ class C_Train(object):
     def test(self):
         trainer = pl.Trainer(
             default_root_dir=self.args.work_dir,
-            callbacks=[TestMetricsCallback(print_errors=True)]
+            callbacks=[TestMetricsCallback(print_errors=self.args.print_errors)]
         )
-
-        if 1 == 1:
-            trainer.test(self.model, dataloaders=create_test_dataloader(self.args))
-            return
 
         assert self.args.ckpt_path and os.path.exists(self.args.ckpt_path), \
             "Checkpoint file is not found! ckpt_path:%s" % self.args.ckpt_path
@@ -158,6 +154,8 @@ class C_Train(object):
                                  'Default: ${ckpt_dir}/best.ckpt')
         parser.add_argument('--finetune', action='store_true', default=False,
                             help="The finetune flag means that the training into the fine-tuning phase.")
+        parser.add_argument('--print-errors', action='store_true', default=False,
+                            help="Print sentences which is failure to predict.")
 
         ###############################################################################################################
 
