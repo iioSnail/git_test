@@ -49,6 +49,8 @@ class C_Train(object):
             from models.zero_shot import AdjustProbByPinyin
             return AdjustProbByPinyin(self.args)
 
+        raise Exception("Can't find any model!")
+
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
         tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else None

@@ -57,6 +57,7 @@ class GlyphDenseEmbedding(nn.Module):
         glyph_embedding.load_state_dict(state_dict)
         return glyph_embedding
 
+
 class MyModel(pl.LightningModule):
     tokenizer = AutoTokenizer.from_pretrained("hfl/chinese-macbert-base")
 
@@ -250,19 +251,19 @@ class MyModel(pl.LightningModule):
             'attention_mask': inputs['attention_mask']
         }
 
-    def test_step(self, batch, batch_idx, *args, **kwargs):
-        src, tgt = batch
-        inputs = BERT.get_bert_inputs(src, tokenizer=MyModel.tokenizer, max_length=9999).to(self.args.device)
-        mask = inputs['attention_mask'].bool()
-
+    def predict(self, sentence):
+        inputs = BERT.get_bert_inputs(sentence, tokenizer=MyModel.tokenizer, max_length=9999).to(self.args.device)
         outputs = self.forward(inputs)
         ids_list = self.extract_outputs(outputs, inputs['input_ids'])
+        pred_tokens = self.tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])
+        return predict_process(list(sentence.replace(" ", "")), pred_tokens, ignore_token=list("他她"))
+
+    def test_step(self, batch, batch_idx, *args, **kwargs):
+        src, tgt = batch
 
         pred = []
-
-        for i in range(len(ids_list)):
-            pred_tokens = self.tokenizer.convert_ids_to_tokens(ids_list[i][mask[i]][1:-1])
-            pred.append(predict_process(list(src[i].replace(" ", "")), pred_tokens))
+        for sentence in src:
+            pred.append(self.predict(sentence))
 
         return pred
 
@@ -336,10 +337,12 @@ class MyModel(pl.LightningModule):
 
         return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets
 
-    def on_validation_epoch_end(self) -> None:
-        trainer = pl.Trainer(
-            default_root_dir=self.args.work_dir,
-            callbacks=[TestMetricsCallback(print_errors=False)]
-        )
-
-        trainer.test(self.model, dataloaders=create_test_dataloader(self.args), ckpt_path=self.args.ckpt_path)
+    # def on_validation_epoch_end(self) -> None:
+    #     trainer = pl.Trainer(
+    #         default_root_dir=self.args.work_dir,
+    #         callbacks=[TestMetricsCallback(print_errors=False)]
+    #     )
+    #
+    #     model = MyModel(self.args)
+    #     self.args.data = 'sighan15test'
+    #     trainer.test(model, dataloaders=create_test_dataloader(self.args), ckpt_path='./outputs/best.ckpt')

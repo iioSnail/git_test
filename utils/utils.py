@@ -265,7 +265,7 @@ def random_true(prob):
     return random.random() < prob
 
 
-def predict_process(src_tokens, pred_tokens):
+def predict_process(src_tokens, pred_tokens, ignore_token:list=None):
     if len(src_tokens) != len(pred_tokens):
         return ''.join(pred_tokens)
 
@@ -274,5 +274,11 @@ def predict_process(src_tokens, pred_tokens):
                 or len(pred_tokens[i]) > 1 \
                 or len(pred_tokens[i]) <= 0:
             pred_tokens[i] = src_tokens[i]
+            continue
+
+        if ignore_token:
+            if src_tokens[i] in ignore_token:
+                pred_tokens[i] = src_tokens[i]
+                continue
 
     return ''.join(pred_tokens)
