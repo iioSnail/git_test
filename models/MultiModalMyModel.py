@@ -4,7 +4,7 @@ import lightning.pytorch as pl
 import torch
 from torch import nn
 from torch.nn.utils.rnn import pad_sequence
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModel, AutoTokenizer, AutoConfig
 
 from common.callbacks import TestMetricsCallback
 from models.common import BertOnlyMLMHead, BERT
@@ -59,14 +59,20 @@ class GlyphDenseEmbedding(nn.Module):
 
 
 class MyModel(pl.LightningModule):
-    tokenizer = AutoTokenizer.from_pretrained("hfl/chinese-macbert-base")
+
+    bert_path = "hfl/chinese-macbert-base"
+    tokenizer = AutoTokenizer.from_pretrained(bert_path)
 
     def __init__(self, args: argparse.Namespace):
         super().__init__()
 
         self.args = args
 
-        self.bert = AutoModel.from_pretrained("hfl/chinese-macbert-base")
+        self.bert_config = AutoConfig.from_pretrained(MyModel.bert_path)
+        self.bert_config.attention_probs_dropout_prob = 0.2
+        self.bert_config.hidden_dropout_prob = 0.2
+
+        self.bert = AutoModel.from_pretrained(MyModel.bert_path, config=self.bert_config)
         self.tokenizer = MyModel.tokenizer
 
         self.hanzi_list = list(get_common_hanzi(6000))
