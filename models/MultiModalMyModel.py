@@ -12,7 +12,7 @@ from utils.dataloader import create_test_dataloader
 from utils.loss import FocalLoss
 from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import get_common_hanzi
-from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image
+from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image, pred_token_process
 
 
 class PinyinManualEmbeddings(nn.Module):
@@ -251,12 +251,39 @@ class MyModel(pl.LightningModule):
             'attention_mask': inputs['attention_mask']
         }
 
-    def predict(self, sentence):
+    def _predict(self, sentence):
+        src_tokens = list(sentence)
+        sentence = ' '.join(list(sentence))
         inputs = BERT.get_bert_inputs(sentence, tokenizer=MyModel.tokenizer, max_length=9999).to(self.args.device)
         outputs = self.forward(inputs)
         ids_list = self.extract_outputs(outputs, inputs['input_ids'])
         pred_tokens = self.tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])
-        return predict_process(list(sentence.replace(" ", "")), pred_tokens, ignore_token=list("他她"))
+        pred_tokens = pred_token_process(src_tokens, pred_tokens)
+        return pred_tokens
+
+    def predict(self, sentence):
+        sentence = sentence.replace(" ", "")
+        _src_tokens = list(sentence)
+        src_tokens = list(sentence)
+        pred_tokens = self._predict(sentence)
+
+        for _ in range(1):
+            record_index = []
+            # 遍历input和pred，找出修改了的token对应的index
+            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
+                if a != b:
+                    record_index.append(i)
+
+            src_tokens = pred_tokens
+            pred_tokens = self._predict(''.join(pred_tokens))
+            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
+                # 若这个token被修改了，且在窗口范围内，则什么都不做。
+                if a != b and any([abs(i - x) <= 1 for x in record_index]):
+                    pass
+                else:
+                    pred_tokens[i] = src_tokens[i]
+
+        return predict_process(_src_tokens, pred_tokens, ignore_token=list("他她"))
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
         src, tgt = batch

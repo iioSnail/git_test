@@ -249,6 +249,7 @@ def convert_char_to_pinyin(character, size=-1):
 
     return embeddings
 
+
 def convert_pinyin_to_char(pinyin):
     if torch.is_tensor(pinyin):
         pinyin = pinyin.tolist()
@@ -265,9 +266,9 @@ def random_true(prob):
     return random.random() < prob
 
 
-def predict_process(src_tokens, pred_tokens, ignore_token:list=None):
+def pred_token_process(src_tokens, pred_tokens, ignore_token: list = None):
     if len(src_tokens) != len(pred_tokens):
-        return ''.join(pred_tokens)
+        return pred_tokens
 
     for i in range(len(src_tokens)):
         if not is_chinese(src_tokens[i]) \
@@ -281,4 +282,8 @@ def predict_process(src_tokens, pred_tokens, ignore_token:list=None):
                 pred_tokens[i] = src_tokens[i]
                 continue
 
-    return ''.join(pred_tokens)
+    return pred_tokens
+
+
+def predict_process(src_tokens, pred_tokens, ignore_token: list = None):
+    return ''.join(pred_token_process(src_tokens, pred_tokens, ignore_token))
