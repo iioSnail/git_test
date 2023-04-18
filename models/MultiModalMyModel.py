@@ -256,6 +256,7 @@ class MyModel(pl.LightningModule):
         sentence = ' '.join(list(sentence))
         inputs = BERT.get_bert_inputs(sentence, tokenizer=MyModel.tokenizer, max_length=9999).to(self.args.device)
         outputs = self.forward(inputs)
+        # outputs[:, :, 1] = outputs[:, :, 1] - outputs.std(dim=2)
         ids_list = self.extract_outputs(outputs, inputs['input_ids'])
         pred_tokens = self.tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])
         pred_tokens = pred_token_process(src_tokens, pred_tokens)
@@ -329,8 +330,17 @@ class MyModel(pl.LightningModule):
                 lr = 4e-6
                 weight_decay = 0
 
-            if 'token_forget_gate' in key:
-                lr = 2e-4
+            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+
+        for key, value in self.token_forget_gate.named_parameters():
+            if not value.requires_grad:
+                continue
+
+            lr = 2e-6
+            weight_decay = 0.01
+            if "bias" in key:
+                lr = 4e-6
+                weight_decay = 0
 
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
@@ -363,13 +373,3 @@ class MyModel(pl.LightningModule):
         loss_targets[(~d_targets) & (loss_targets != 0)] = 1
 
         return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets
-
-    # def on_validation_epoch_end(self) -> None:
-    #     trainer = pl.Trainer(
-    #         default_root_dir=self.args.work_dir,
-    #         callbacks=[TestMetricsCallback(print_errors=False)]
-    #     )
-    #
-    #     model = MyModel(self.args)
-    #     self.args.data = 'sighan15test'
-    #     trainer.test(model, dataloaders=create_test_dataloader(self.args), ckpt_path='./outputs/best.ckpt')

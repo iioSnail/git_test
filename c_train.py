@@ -119,7 +119,7 @@ class C_Train(object):
             callbacks=[TestMetricsCallback(print_errors=self.args.print_errors)]
         )
 
-        if True:
+        if self.args.ckpt_path == 'None':
             trainer.test(self.model, dataloaders=create_test_dataloader(self.args))
             return
 
