@@ -6,7 +6,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForMaskedLM
 
 from utils.str_utils import is_chinese
-from utils.utils import load_obj, mock_args
+from utils.utils import load_obj, mock_args, predict_process
 
 
 class AdjustProbByPinyin(pl.LightningModule):
@@ -97,7 +97,8 @@ class AdjustProbByPinyin(pl.LightningModule):
             # token_index = inputs['input_ids'][0][i + 1]
             # logits[i][token_index] = logits[i][token_index] + std  # 本身这个字再加1个标准差，防止把正确的字变成错误的字。
 
-        return ''.join(self.tokenizer.convert_ids_to_tokens(logits.argmax(-1)))
+        pred_tokens = self.tokenizer.convert_ids_to_tokens(logits.argmax(-1))
+        return predict_process(pred_tokens)
 
     def test_step(self, batch, batch_idx: int, *args, **kwargs):
         src, tgt = batch
