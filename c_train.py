@@ -119,6 +119,10 @@ class C_Train(object):
             callbacks=[TestMetricsCallback(print_errors=self.args.print_errors)]
         )
 
+        if True:
+            trainer.test(self.model, dataloaders=create_test_dataloader(self.args))
+            return
+
         assert self.args.ckpt_path and os.path.exists(self.args.ckpt_path), \
             "Checkpoint file is not found! ckpt_path:%s" % self.args.ckpt_path
 

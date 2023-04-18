@@ -56,6 +56,7 @@ class AdjustProbByPinyin(pl.LightningModule):
 
     def predict(self, sentence):
         sentence = sentence.replace(" ", "").strip()
+
         inputs = self.tokenizer(' '.join(list(sentence)), return_tensors='pt').to(self.args.device)
         logits = self.model(**inputs).logits[0][1:-1]
 
@@ -80,18 +81,45 @@ class AdjustProbByPinyin(pl.LightningModule):
 
         return ''.join(self.tokenizer.convert_ids_to_tokens(logits.argmax(-1)))
 
+    def predict2(self, sent_tokens, pinyins):
+        inputs = self.tokenizer(' '.join(sent_tokens), return_tensors='pt').to(self.args.device)
+        logits = self.model(**inputs).logits[0][1:-1]
+
+        for i, token in enumerate(sent_tokens):
+            std = logits[i].std()
+            # pinyin = pypinyin.pinyin(token, style=pypinyin.Style.TONE3)[0][0]
+            pinyin = pinyins[i]
+            sims = self.get_pinyin_sims(pinyin)
+
+            # 拼音相同的，logits加1个标准差，拼音相似的，logits加0.x个标准差，拼音完全不相似的，不加标准差
+            logits[i] = logits[i] + sims * std
+
+            # token_index = inputs['input_ids'][0][i + 1]
+            # logits[i][token_index] = logits[i][token_index] + std  # 本身这个字再加1个标准差，防止把正确的字变成错误的字。
+
+        return ''.join(self.tokenizer.convert_ids_to_tokens(logits.argmax(-1)))
+
     def test_step(self, batch, batch_idx: int, *args, **kwargs):
         src, tgt = batch
         pred = []
 
         for sent, label in zip(src, tgt):
             # If I told the sent which token is wrong.
+            sent_tokens = sent.split(" ")
+            label_tokens = label.split(" ")
+            pinyins = []
+            for i in range(len(sent_tokens)):
+                pinyin = pypinyin.pinyin(sent_tokens[i], style=pypinyin.Style.TONE3)[0][0]
+                pinyins.append(pinyin)
+
+                if sent_tokens[i] != label_tokens[i]:
+                    sent_tokens[i] = '[MASK]'
 
 
-            pred.append(self.predict(sent))
+            pred.append(self.predict2(sent_tokens, pinyins))
         return pred
 
 
 if __name__ == '__main__':
     print(AdjustProbByPinyin(mock_args(device='cpu'), pinyin_distance_filepath='../ptm/pinyin_distances.pkl').predict(
-        "吃了早菜以后他去上课。"))
+        "吃 了 早 [MASK] 以 后 他 去 上 课 。"))
