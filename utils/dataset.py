@@ -37,8 +37,8 @@ class CSCDataset(Dataset):
             src = items[0].strip()
             tgt = items[1].strip()
 
-            src = ' '.join(src.replace(" ", ""))
-            tgt = ' '.join(tgt.replace(" ", ""))
+            src = ' '.join(src.replace(" ", "").replace(u"\u3000", ""))
+            tgt = ' '.join(tgt.replace(" ", "").replace(u"\u3000", ""))
 
             if len(src) == len(tgt):
                 data.append((src, tgt))
