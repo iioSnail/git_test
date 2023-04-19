@@ -18,7 +18,8 @@ class AdjustProbByPinyin(pl.LightningModule):
         self.tokenizer = AutoTokenizer.from_pretrained(bert_path)
         self.model = AutoModelForMaskedLM.from_pretrained(bert_path)
 
-        self.vocab_pinyin = self._init_vocab_pinyin()
+        # self.vocab_pinyin = self._init_vocab_pinyin()
+        self.vocab_pinyin = self._init_vocab_pinyin2()
 
         # self.pinyin_distance_dict: dict = load_obj(pinyin_distance_filepath)
         # for key in list(self.pinyin_distance_dict.keys()):
@@ -35,6 +36,21 @@ class AdjustProbByPinyin(pl.LightningModule):
 
             pinyin = pypinyin.pinyin(token, style=pypinyin.Style.TONE3)[0][0]
             vocab_pinyin.append(pinyin)
+        return vocab_pinyin
+
+    def _init_vocab_pinyin2(self):
+        vocab_pinyin = []
+        for i in range(len(self.tokenizer)):
+            token = self.tokenizer._convert_id_to_token(i)
+
+            if not is_chinese(token):
+                vocab_pinyin.append(None)
+                continue
+
+            initial = pypinyin.pinyin(token, style=pypinyin.Style.INITIALS, strict=False)[0][0]
+            final = pypinyin.pinyin(token, style=pypinyin.Style.FINALS_TONE3, strict=False)[0][0]
+            final = final.rstrip("1234567890")
+            vocab_pinyin.append((initial, final))
         return vocab_pinyin
 
     def get_pinyin_sims(self, pinyin):
@@ -70,6 +86,34 @@ class AdjustProbByPinyin(pl.LightningModule):
             for i in range(min(len(pinyin), len(v_pinyin))):
                 if pinyin[i] == v_pinyin[i]:
                     sim_len += 1
+            sims.append(5 * sim_len / length)
+
+        return torch.Tensor(sims).to(self.args.device)
+
+    def get_simple_pinyin_sims2(self, pinyin):
+        """
+        计算当前拼音和vocab中的拼音的相似度。
+        """
+        sims = []
+        for v_pinyin in self.vocab_pinyin:
+            if v_pinyin is None:
+                sims.append(0)
+                continue
+
+            v_initial, v_final = v_pinyin
+            initial, final = pinyin
+            length = max(len(v_initial) + len(v_final), len(initial) + len(final))
+
+            sim_len = 0
+
+            for i in range(min(len(v_initial), len(initial))):
+                if v_initial[i] == initial[i]:
+                    sim_len += 1
+
+            for i in range(min(len(v_final), len(final))):
+                if v_final[i] == final[i]:
+                    sim_len += 1
+
             sims.append(5 * sim_len / length)
 
         return torch.Tensor(sims).to(self.args.device)
@@ -112,8 +156,8 @@ class AdjustProbByPinyin(pl.LightningModule):
             std = logits[i].std()
             # pinyin = pypinyin.pinyin(token, style=pypinyin.Style.TONE3)[0][0]
             pinyin = pinyins[i]
-            sims = self.get_simple_pinyin_sims(pinyin)
 
+            sims = self.get_simple_pinyin_sims2(pinyin)
             # 拼音相同的，logits加1个标准差，拼音相似的，logits加0.x个标准差，拼音完全不相似的，不加标准差
             logits[i] = logits[i] + sims * std
 
@@ -153,25 +197,79 @@ class AdjustProbByPinyin(pl.LightningModule):
 
         return ''.join(self.tokenizer.convert_ids_to_tokens(logits.argmax(-1)))
 
+    def tell_mask(self, sent_tokens, label):
+        # If I told the sent which token is wrong.
+        label_tokens = label.split(" ")
+        pinyins = []
+        for i in range(len(sent_tokens)):
+            # pinyin = pypinyin.pinyin(sent_tokens[i], style=pypinyin.Style.TONE3)[0][0]
+            initial = pypinyin.pinyin(sent_tokens[i], style=pypinyin.Style.INITIALS, strict=False)[0][0]
+            final = pypinyin.pinyin(sent_tokens[i], style=pypinyin.Style.FINALS_TONE3, strict=False)[0][0]
+            final = final.rstrip("1234567890")
+            pinyins.append((initial, final))
+
+            if sent_tokens[i] != label_tokens[i]:
+                sent_tokens[i] = '[MASK]'
+        return sent_tokens, pinyins
+
+    def predict_mask(self, sent_tokens):
+        inputs = self.tokenizer(' '.join(sent_tokens), return_tensors='pt').to(self.args.device)
+        logits = self.model(**inputs).logits[0][1:-1]
+        pred_tokens = self.tokenizer.convert_ids_to_tokens(logits.argmax(-1))
+        pinyins = []
+        for i in range(len(sent_tokens)):
+            # pinyin = pypinyin.pinyin(sent_tokens[i], style=pypinyin.Style.TONE3)[0][0]
+            initial = pypinyin.pinyin(sent_tokens[i], style=pypinyin.Style.INITIALS, strict=False)[0][0]
+            final = pypinyin.pinyin(sent_tokens[i], style=pypinyin.Style.FINALS_TONE3, strict=False)[0][0]
+            final = final.rstrip("1234567890")
+            pinyins.append((initial, final))
+
+            if sent_tokens[i] != pred_tokens[i]:
+                sent_tokens[i] = '[MASK]'
+
+        return sent_tokens, pinyins
+
+    def detect_predict(self, sent_tokens):
+        inputs = self.tokenizer(' '.join(sent_tokens), return_tensors='pt').to(self.args.device)
+        logits = self.model(**inputs).logits[0][1:-1]
+
+        for i, index in enumerate(inputs['input_ids'][0][1:-1]):
+            std = logits[i].std()
+            # 把原有字降低一个std的置信度
+            logits[i, index] = logits[i, index] - std
+
+        pred_tokens = self.tokenizer.convert_ids_to_tokens(logits.argmax(-1))
+
+        for i in range(len(sent_tokens)):
+            if sent_tokens[i] != pred_tokens[i]:
+                sent_tokens[i] = '?'
+
+        return ''.join(sent_tokens)
+
+    # def test_step(self, batch, batch_idx: int, *args, **kwargs):
+    #     src, tgt = batch
+    #     pred = []
+    #
+    #     for sent, label in zip(src, tgt):
+    #         sent_tokens = sent.split(" ")
+    #         # sent_tokens, pinyins = self.tell_mask(sent_tokens, label)
+    #         sent_tokens, pinyins = self.predict_mask(sent_tokens)
+    #
+    #         pred.append(self.predict2(sent_tokens, pinyins))
+    #     return pred
+
     def test_step(self, batch, batch_idx: int, *args, **kwargs):
+        """
+        test for detection
+        """
         src, tgt = batch
-        pred = []
+        preds = []
 
         for sent, label in zip(src, tgt):
-            # If I told the sent which token is wrong.
             sent_tokens = sent.split(" ")
-            label_tokens = label.split(" ")
-            pinyins = []
-            for i in range(len(sent_tokens)):
-                pinyin = pypinyin.pinyin(sent_tokens[i], style=pypinyin.Style.TONE3)[0][0]
-                pinyins.append(pinyin)
-
-                if sent_tokens[i] != label_tokens[i]:
-                    sent_tokens[i] = '[MASK]'
-
-            pred.append(self.predict2(sent_tokens, pinyins))
-        return pred
+            preds.append(self.detect_predict(sent_tokens))
+        return preds
 
 if __name__ == '__main__':
-    print(AdjustProbByPinyin(mock_args(device='cpu'), pinyin_distance_filepath='../ptm/pinyin_distances.pkl').predict3(
-        "陈先生会说三种语言，西班牙语、华语根日文。"))
+    print(AdjustProbByPinyin(mock_args(device='cpu'), pinyin_distance_filepath='../ptm/pinyin_distances.pkl').detect_predict(
+        list("他睡得很跑，睡到忘了时间起床。")))
