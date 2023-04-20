@@ -19,7 +19,7 @@ class AdjustProbByPinyin(pl.LightningModule):
         self.model = AutoModelForMaskedLM.from_pretrained(bert_path)
 
         # self.vocab_pinyin = self._init_vocab_pinyin()
-        self.vocab_pinyin = self._init_vocab_pinyin2()
+        # self.vocab_pinyin = self._init_vocab_pinyin2()
 
         # self.pinyin_distance_dict: dict = load_obj(pinyin_distance_filepath)
         # for key in list(self.pinyin_distance_dict.keys()):
@@ -246,6 +246,24 @@ class AdjustProbByPinyin(pl.LightningModule):
 
         return ''.join(sent_tokens)
 
+    def detect_predict2(self, sent_tokens):
+        inputs = self.tokenizer(' '.join(sent_tokens), return_tensors='pt').to(self.args.device)
+        bs, seq_num = inputs['input_ids'].size()
+        assert bs == 1, "Sorry, Batch size must be 1"
+        attention_mask = (~torch.eye(seq_num, dtype=bool)).int()
+        attention_mask[0, 0] = 1
+        attention_mask[-1, -1] = 1
+        # inputs['attention_mask'] = attention_mask
+        inputs['encoder_attention_mask'] = attention_mask
+        logits = self.model(**inputs).logits[0][1:-1]
+
+        pred_tokens = self.tokenizer.convert_ids_to_tokens(logits.argmax(-1))
+        # for i in range(len(sent_tokens)):
+        #     if sent_tokens[i] != pred_tokens[i]:
+        #         sent_tokens[i] = '?'
+
+        return ''.join(pred_tokens)
+
     # def test_step(self, batch, batch_idx: int, *args, **kwargs):
     #     src, tgt = batch
     #     pred = []
@@ -257,6 +275,36 @@ class AdjustProbByPinyin(pl.LightningModule):
     #
     #         pred.append(self.predict2(sent_tokens, pinyins))
     #     return pred
+
+    def predict4(self, sent_tokens):
+        sentence = sentence.replace(" ", "").strip()
+
+        inputs = self.tokenizer(' '.join(sent_tokens), return_tensors='pt').to(self.args.device)
+        logits = self.model(**inputs).logits[0][1:-1]
+
+        for i, token in enumerate(sentence):
+            std = logits[i].std()
+            pinyin = pypinyin.pinyin(token, style=pypinyin.Style.NORMAL)[0][0]
+            sims = self.get_simple_pinyin_sims(pinyin)
+
+            # 计算两个pinyin的相似度：
+            # self.pinyin_distance_dict[key]
+
+            # 获取第i个字的最相似的那些字
+            # self.tokenizer.convert_ids_to_tokens(sims.argsort(descending=True)[:15])
+
+            # 获取第i个字的可能的取值
+            # self.tokenizer.convert_ids_to_tokens(logits[i].argsort(descending=True)[:15])
+            # 获取第i个字的可能取值对应的输出
+            # logits[i].sort(descending=True).values[:15]
+
+            # 拼音相同的，logits加1个标准差，拼音相似的，logits加0.x个标准差，拼音完全不相似的，不加标准差
+            logits[i] = logits[i] + sims * std
+
+            # token_index = inputs['input_ids'][0][i + 1]
+            # logits[i][token_index] = logits[i][token_index] + std  # 本身这个字再加1个标准差，防止把正确的字变成错误的字。
+
+        return ''.join(self.tokenizer.convert_ids_to_tokens(logits.argmax(-1)))
 
     def test_step(self, batch, batch_idx: int, *args, **kwargs):
         """
@@ -271,5 +319,7 @@ class AdjustProbByPinyin(pl.LightningModule):
         return preds
 
 if __name__ == '__main__':
-    print(AdjustProbByPinyin(mock_args(device='cpu'), pinyin_distance_filepath='../ptm/pinyin_distances.pkl').detect_predict(
-        list("他睡得很跑，睡到忘了时间起床。")))
+    sent_tokens = list("他再也不会撤扬。")
+    # sent_tokens = "[MASK] 再 也 不 会 [PAD] 扬 。 [PAD]".split(' ')
+    print(AdjustProbByPinyin(mock_args(device='cpu'), pinyin_distance_filepath='../ptm/pinyin_distances.pkl').detect_predict2(
+        sent_tokens))
