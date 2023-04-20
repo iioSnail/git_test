@@ -298,3 +298,5 @@ class TestMetricsCallback(Callback):
 
         if self.print_errors:
             self.csc_metrics.print_errors()
+
+            self.csc_metrics.error_pairs
