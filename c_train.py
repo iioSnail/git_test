@@ -1,4 +1,5 @@
 import argparse
+import json
 import multiprocessing
 import os.path
 from pathlib import Path
@@ -12,6 +13,7 @@ from common.callbacks import CheckpointCallback, SimpleProgressBar, TestMetricsC
 from common.stochastic_weight_avg import CscStochasticWeightAveraging
 from utils.dataloader import create_dataloader, create_test_dataloader
 from utils.log_utils import log
+from utils.str_utils import is_float
 from utils.utils import setup_seed, mkdir
 
 
@@ -162,6 +164,8 @@ class C_Train(object):
                             help="The finetune flag means that the training into the fine-tuning phase.")
         parser.add_argument('--print-errors', action='store_true', default=False,
                             help="Print sentences which is failure to predict.")
+        parser.add_argument('--hyper-params', type=str, default="",
+                            help='The hyper parameters of your model. The type must be json.')
 
         ###############################################################################################################
 
@@ -214,6 +218,24 @@ class C_Train(object):
                 args.workers = 0
             else:
                 args.workers = os.cpu_count()
+
+        try:
+            hyper_params = {}
+            for param in args.hyper_params.split(","):
+                if len(param.split("=")) != 2:
+                    continue
+
+                key, value = param.split("=")
+                if is_float(value):
+                    value = float(value)
+                hyper_params[key] = value
+            args.hyper_params = hyper_params
+        except:
+            log.error("Failed to resolve hyper-params. The pattern must look like 'key=value,key=value'. hyper_params: %s" % args.hyper_params)
+            exit(0)
+
+        if len(args.hyper_params) > 0:
+            print("Hyper parameters:", args.hyper_params)
 
         # multiprocessing.set_start_method("spawn", force=True)
 

@@ -95,6 +95,7 @@ def get_common_hanzi(num=None):
 
     return hanzi_with_frequency[:num]
 
+
 def get_common_words(num=None):
     word_txt = ROOT / 'data' / 'common_words.txt'
     with open(word_txt, mode='r', encoding='UTF-8') as f:
@@ -106,6 +107,14 @@ def get_common_words(num=None):
         return words
 
     return words[:num]
+
+
+def is_float(string):
+    try:
+        float(string)
+        return True
+    except:
+        return False
 
 
 if __name__ == '__main__':

@@ -114,7 +114,7 @@ class AdjustProbByPinyin(pl.LightningModule):
                 if v_final[i] == final[i]:
                     sim_len += 1
 
-            sims.append(5 * sim_len / length)
+            sims.append(self.args.hyper_params['sim_times'] * sim_len / length)
 
         return torch.Tensor(sims).to(self.args.device)
 
@@ -315,7 +315,7 @@ class AdjustProbByPinyin(pl.LightningModule):
 
             # 再给原始字增加些概率
             token_index = self.tokenizer.convert_tokens_to_ids(token)
-            logits[i, token_index] = logits[i, token_index] + std
+            logits[i, token_index] = logits[i, token_index] + std * self.args.hyper_params['token_times']
             pred_tokens[i] = self.tokenizer._convert_id_to_token(logits[i].argmax(-1))
 
         return predict_process(sent_tokens, pred_tokens)
