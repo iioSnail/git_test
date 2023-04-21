@@ -1,12 +1,14 @@
 import math
 
 import lightning.pytorch as pl
+import numpy as np
 import pypinyin
 import torch
+from matplotlib import pyplot as plt
 from transformers import AutoTokenizer, AutoModelForMaskedLM
 
 from utils.str_utils import is_chinese
-from utils.utils import load_obj, mock_args, predict_process
+from utils.utils import load_obj, mock_args, predict_process, norm_distribute_plot
 
 
 class AdjustProbByPinyin(pl.LightningModule):
@@ -24,6 +26,9 @@ class AdjustProbByPinyin(pl.LightningModule):
         # self.pinyin_distance_dict: dict = load_obj(pinyin_distance_filepath)
         # for key in list(self.pinyin_distance_dict.keys()):
         #     self.pinyin_distance_dict[key.replace("0", "")] = self.pinyin_distance_dict.pop(key)
+
+        self.c_logits = []
+        self.e_logits = []
 
     def _init_vocab_pinyin(self):
         vocab_pinyin = []
@@ -276,6 +281,27 @@ class AdjustProbByPinyin(pl.LightningModule):
     #         pred.append(self.predict2(sent_tokens, pinyins))
     #     return pred
 
+    def detect_predict3(self, sent_tokens):
+        pred_tokens = [item for item in sent_tokens]
+        for i in range(len(sent_tokens)):
+            input_tokens = [item for item in sent_tokens]
+            token = input_tokens[i]
+            input_tokens[i] = '[MASK]'
+
+            inputs = self.tokenizer(' '.join(input_tokens), return_tensors='pt').to(self.args.device)
+            logits = self.model(**inputs).logits[0][1:-1]
+
+            # 获取第i个字的可能的取值
+            # self.tokenizer.convert_ids_to_tokens(logits[i].argsort(descending=True)[:15])
+            # 获取第i个字的可能取值对应的输出
+            # logits[i].sort(descending=True).values[:15]
+
+            token_index = self.tokenizer.convert_tokens_to_ids(token)
+
+            pred_tokens[i] = self.tokenizer._convert_id_to_token(logits[i].argmax(-1))
+
+        return ''.join(pred_tokens)
+
     def predict4(self, sent_tokens):
         pred_tokens = [item for item in sent_tokens]
         for i in range(len(sent_tokens)):
@@ -320,6 +346,33 @@ class AdjustProbByPinyin(pl.LightningModule):
 
         return predict_process(sent_tokens, pred_tokens)
 
+    def logits_probe(self, sent_tokens, tgt_tokens):
+        pred_tokens = [item for item in sent_tokens]
+        for i in range(len(sent_tokens)):
+            input_tokens = [item for item in sent_tokens]
+            token = input_tokens[i]
+            input_tokens[i] = '[MASK]'
+
+            inputs = self.tokenizer(' '.join(input_tokens), return_tensors='pt').to(self.args.device)
+            logits = self.model(**inputs).logits[0][1:-1]
+
+            # 获取第i个字的可能的取值
+            # self.tokenizer.convert_ids_to_tokens(logits[i].argsort(descending=True)[:15])
+            # 获取第i个字的可能取值对应的输出
+            # logits[i].sort(descending=True).values[:15]
+
+            token_index = self.tokenizer.convert_tokens_to_ids(token)
+
+            logit = logits[i][token_index]
+            if token == tgt_tokens[i]:
+                self.c_logits.append(logit.item())
+            else:
+                self.e_logits.append(logit.item())
+
+            pred_tokens[i] = token
+
+        return ''.join(pred_tokens)
+
     def test_step(self, batch, batch_idx: int, *args, **kwargs):
         """
         test for detection
@@ -329,16 +382,29 @@ class AdjustProbByPinyin(pl.LightningModule):
 
         for sent, label in zip(src, tgt):
             sent_tokens = sent.split(" ")
-            preds.append(self.predict4(sent_tokens))
+            tgt_tokens = label.split(" ")
+            preds.append(self.logits_probe(sent_tokens, tgt_tokens))
         return preds
+
+    def on_test_end(self) -> None:
+        # Calculate mean and standard deviation
+        norm_distribute_plot(self.c_logits)
+        norm_distribute_plot(self.e_logits)
 
 
 if __name__ == '__main__':
-    sent_tokens = list("吃了早菜以后他去上课。")
+    args = mock_args(device='cpu',
+                     hyper_params={
+                         'sim_times': 5,
+                         'token_times': 1.2
+                     })
+
+    sent_tokens = list("明天我们去露行吧，你要早一点起来。")
+    tgt_tokens = list("明天我们去旅行吧，你要早一点起来。")
     # sent_tokens = "[MASK] 再 也 不 会 [PAD] 扬 。 [PAD]".split(' ')
     # print(
-        # AdjustProbByPinyin(mock_args(device='cpu'),
-        #                    pinyin_distance_filepath='../ptm/pinyin_distances.pkl').predict4(
-        #     sent_tokens))
-
-    print(AdjustProbByPinyin(mock_args(device='cpu')).predict4(sent_tokens))
+    # AdjustProbByPinyin(mock_args(device='cpu'),
+    #                    pinyin_distance_filepath='../ptm/pinyin_distances.pkl').predict4(
+    #     sent_tokens))
+    # print(AdjustProbByPinyin(args).predict4(sent_tokens))
+    print(AdjustProbByPinyin(args).logits_probe(sent_tokens, tgt_tokens))

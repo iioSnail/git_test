@@ -7,6 +7,7 @@ import pypinyin
 import torch
 from PIL import ImageFont
 from matplotlib import pyplot as plt
+from scipy.stats import norm
 
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
@@ -290,3 +291,19 @@ def pred_token_process(src_tokens, pred_tokens, ignore_token: list = None):
 
 def predict_process(src_tokens, pred_tokens, ignore_token: list = None):
     return ''.join(pred_token_process(src_tokens, pred_tokens, ignore_token))
+
+
+def norm_distribute_plot(data):
+    # Calculate mean and standard deviation
+    mean = np.mean(data)
+    std_dev = np.std(data)
+
+    # Create a range of values for x-axis
+    x = np.linspace(mean - 3 * std_dev, mean + 3 * std_dev, 100)
+
+    # Generate the Gaussian distribution
+    y = norm.pdf(x, mean, std_dev)
+
+    # Plot the distribution
+    plt.plot(x, y)
+    plt.show()
