@@ -282,6 +282,12 @@ class AdjustProbByPinyin(pl.LightningModule):
     #     return pred
 
     def detect_predict3(self, sent_tokens):
+        """
+        根据logits判断某个字是否是错字。
+        当当前字的logit小于某个值时，则认为它是错字
+        """
+        logit_threshold = 10  # 越低，召回率越低，精准率越高
+
         pred_tokens = [item for item in sent_tokens]
         for i in range(len(sent_tokens)):
             input_tokens = [item for item in sent_tokens]
@@ -297,16 +303,47 @@ class AdjustProbByPinyin(pl.LightningModule):
             # logits[i].sort(descending=True).values[:15]
 
             token_index = self.tokenizer.convert_tokens_to_ids(token)
+            if logits[i][token_index] < logit_threshold:
+                pred_tokens[i] = '×'
 
-            pred_tokens[i] = self.tokenizer._convert_id_to_token(logits[i].argmax(-1))
+            # pred_tokens[i] = self.tokenizer._convert_id_to_token(logits[i].argmax(-1))
 
         return ''.join(pred_tokens)
+
+    def detect_predict4(self, sent_tokens):
+        """
+        根据候选值来判断是否是错字。
+        逐个将每个字进行[MASK]，当该字的前n名不存在该字时，则认为该字时错字。
+        """
+        n = 3  # n越低，召回率越高，但是精准率越低
+
+        pred_tokens = [item for item in sent_tokens]
+        for i in range(len(sent_tokens)):
+            input_tokens = [item for item in sent_tokens]
+            token = input_tokens[i]
+            input_tokens[i] = '[MASK]'
+
+            inputs = self.tokenizer(' '.join(input_tokens), return_tensors='pt').to(self.args.device)
+            logits = self.model(**inputs).logits[0][1:-1]
+
+            # 获取第i个字的可能的取值
+            # self.tokenizer.convert_ids_to_tokens(logits[i].argsort(descending=True)[:15])
+            # 获取第i个字的可能取值对应的输出
+            # logits[i].sort(descending=True).values[:15]
+
+            candidates = self.tokenizer.convert_ids_to_tokens(logits[i].argsort(descending=True)[:n])
+            if token not in candidates:
+                pred_tokens[i] = '×'
+
+        pred = ''.join(pred_tokens)
+        return pred
 
     def predict4(self, sent_tokens):
         pred_tokens = [item for item in sent_tokens]
         for i in range(len(sent_tokens)):
             input_tokens = [item for item in sent_tokens]
             token = input_tokens[i]
+            token_index = self.tokenizer.convert_tokens_to_ids(token)
             input_tokens[i] = '[MASK]'
 
             inputs = self.tokenizer(' '.join(input_tokens), return_tensors='pt').to(self.args.device)
@@ -326,6 +363,10 @@ class AdjustProbByPinyin(pl.LightningModule):
             # 获取第i个字的可能取值对应的输出
             # logits[i].sort(descending=True).values[:15]
 
+            # 通过logit判断当前字是否为错字。如果当前token的logit较大，则不认为该字是错字
+            if logits[i][token_index] > 15: # FIXME 超参，需要调
+                continue
+
             logits[i] = logits[i] + sims * std
 
             """
@@ -339,9 +380,12 @@ class AdjustProbByPinyin(pl.LightningModule):
                 pred_tokens[i] = self.tokenizer._convert_id_to_token(logits[i].argmax(-1))
             """
 
+            """
+            # 通过给当前字增加一些概率的方式，判断该字是否是错字
             # 再给原始字增加些概率
-            token_index = self.tokenizer.convert_tokens_to_ids(token)
             logits[i, token_index] = logits[i, token_index] + std * self.args.hyper_params['token_times']
+            """
+
             pred_tokens[i] = self.tokenizer._convert_id_to_token(logits[i].argmax(-1))
 
         return predict_process(sent_tokens, pred_tokens)
@@ -383,13 +427,15 @@ class AdjustProbByPinyin(pl.LightningModule):
         for sent, label in zip(src, tgt):
             sent_tokens = sent.split(" ")
             tgt_tokens = label.split(" ")
-            preds.append(self.logits_probe(sent_tokens, tgt_tokens))
+            # preds.append(self.logits_probe(sent_tokens, tgt_tokens))
+            preds.append(self.detect_predict3(sent_tokens))
         return preds
 
     def on_test_end(self) -> None:
         # Calculate mean and standard deviation
-        norm_distribute_plot(self.c_logits)
-        norm_distribute_plot(self.e_logits)
+        # norm_distribute_plot(self.c_logits)
+        # norm_distribute_plot(self.e_logits)
+        pass
 
 
 if __name__ == '__main__':
