@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 
+import pypinyin
 import torch
 from ltp import LTP
 from torch.nn.utils.rnn import pad_sequence
@@ -115,6 +116,13 @@ def is_float(string):
         return True
     except:
         return False
+
+
+def to_pinyin(hanzi, tone=False):
+    pinyin = pypinyin.pinyin(hanzi, style=pypinyin.Style.TONE3)[0][0]
+    if not tone:
+        pinyin = pinyin.rstrip("1234567890")
+    return pinyin
 
 
 if __name__ == '__main__':

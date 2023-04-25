@@ -51,6 +51,10 @@ class C_Train(object):
             from models.zero_shot import AdjustProbByPinyin
             return AdjustProbByPinyin(self.args)
 
+        if model == 'pinyinbert':
+            from models.PinyinBert import BertCSCModel
+            return BertCSCModel(self.args)
+
         raise Exception("Can't find any model!")
 
     def train(self):
