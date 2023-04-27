@@ -61,7 +61,6 @@ def fill_merge_cells(df, index_column, exclude_columns=None):
 
     return df
 
-
 def merge_cell_and_export(df, filename, index_column, exclude_columns=None):
     if exclude_columns is None:
         exclude_columns = []
@@ -76,6 +75,19 @@ def merge_cell_and_export(df, filename, index_column, exclude_columns=None):
     wb = openpyxl.load_workbook(temp_filename)
     sheet = wb[wb.sheetnames[0]]
 
+    # 唯一性校验
+    has_error = False
+    index_columns = []
+    for column in df[index_column]:
+        if column in index_columns and column != index_columns[-1]:
+            print("错误：存在重复的“%s”: %s" % (index_column, column))
+            has_error = True
+        index_columns.append(column)
+
+    if has_error:
+        print("重复的%s会导致输出文件出错，请修正后再次运行程序" % index_column)
+
+    # 开始合并单元格
     for item in list(df[index_column].drop_duplicates()):
         index = df[df[index_column] == item].index
         if len(index) <= 1:
