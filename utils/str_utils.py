@@ -119,6 +119,9 @@ def is_float(string):
 
 
 def to_pinyin(hanzi, tone=False):
+    if not is_chinese(hanzi):
+        return hanzi
+
     pinyin = pypinyin.pinyin(hanzi, style=pypinyin.Style.TONE3)[0][0]
     if not tone:
         pinyin = pinyin.rstrip("1234567890")

@@ -65,10 +65,14 @@ class BertCSCModel(pl.LightningModule):
         self.tokenizer = BertCSCModel.tokenizer
         self.model: BertForMaskedLM = AutoModelForMaskedLM.from_pretrained(BertCSCModel.bert_path)
 
-    def training_step(self, batch, batch_idx, *args, **kwargs):
-        inputs, labels = batch
+    def forward(self, inputs, labels, pinyin_masks):
+        labels = labels * pinyin_masks  # 只计算pinyin部分的loss
+        return self.model(**inputs, labels=labels)
 
-        outputs = self.model(**inputs, labels=labels)
+    def training_step(self, batch, batch_idx, *args, **kwargs):
+        inputs, labels, pinyin_masks = batch
+
+        outputs = self.forward(inputs, labels, pinyin_masks)
 
         return {
             'loss': outputs.loss,
@@ -79,9 +83,9 @@ class BertCSCModel(pl.LightningModule):
         }
 
     def validation_step(self, batch, batch_idx, *args, **kwargs):
-        inputs, labels = batch
+        inputs, labels, pinyin_masks = batch
 
-        outputs = self.model(**inputs, labels=labels)
+        outputs = self.forward(inputs, labels, pinyin_masks)
 
         return {
             'loss': outputs.loss,
@@ -92,7 +96,43 @@ class BertCSCModel(pl.LightningModule):
         }
 
     def configure_optimizers(self):
-        return torch.optim.AdamW(self.parameters(), lr=3e-4)
+        return torch.optim.AdamW(self.parameters(), lr=2e-5)
+
+    def predict(self, sentence):
+        sentence = sentence.replace(" ", "")
+        pred_tokens = list(sentence)
+        for i in range(len(sentence)):
+            tokens = list(sentence)
+            if not is_chinese(tokens[i]):
+                continue
+
+            tokens[i] = BertCSCModel.to_pinyin(tokens[i])
+
+            if i + 1 < len(tokens) and is_chinese(tokens[i + 1]):
+                tokens[i + 1] = BertCSCModel.to_pinyin(tokens[i + 1])
+
+            if i - 1 >= 0 and is_chinese(tokens[i - 1]):
+                tokens[i - 1] = BertCSCModel.to_pinyin(tokens[i - 1])
+
+            inputs = self.tokenizer(' '.join(tokens), return_tensors='pt').to(self.args.device)
+            outputs = self.model(**inputs).logits
+            pred_token = self.tokenizer.convert_ids_to_tokens([outputs[0, i + 1].argmax(-1)])[0]
+            pred_tokens[i] = pred_token
+
+        return ''.join(pred_tokens)
+
+    def test_step(self, batch, batch_idx, *args, **kwargs):
+        src, tgt = batch
+
+        pred = []
+        for sentence in src:
+            pred.append(self.predict(sentence))
+
+        return pred
+
+    @staticmethod
+    def to_pinyin(token):
+        return "[%s]" % to_pinyin(token)
 
     @staticmethod
     def collate_fn(batch):
@@ -100,19 +140,25 @@ class BertCSCModel(pl.LightningModule):
         tgt = list(tgt)
 
         src = []
+        masks = []
         for sentence in tgt:
             tokens = sentence.split(" ")
+            mask = []
             i = random.randint(0, len(tokens) - 1)
             if is_chinese(tokens[i]):
-                tokens[i] = "[%s]" % to_pinyin(tokens[i])
+                tokens[i] = BertCSCModel.to_pinyin(tokens[i])
+                mask.append(i + 1)
 
             if i + 1 < len(tokens) and is_chinese(tokens[i + 1]):
-                tokens[i + 1] = "[%s]" % to_pinyin(tokens[i + 1])
+                tokens[i + 1] = BertCSCModel.to_pinyin(tokens[i + 1])
+                mask.append(i + 2)
 
             if i - 1 >= 0 and is_chinese(tokens[i - 1]):
-                tokens[i - 1] = "[%s]" % to_pinyin(tokens[i - 1])
+                tokens[i - 1] = BertCSCModel.to_pinyin(tokens[i - 1])
+                mask.append(i)
 
             src.append(' '.join(tokens))
+            masks.append(mask)
 
         inputs = BERT.get_bert_inputs(src, tokenizer=BertCSCModel.tokenizer)
         labels = BERT.get_bert_inputs(tgt, tokenizer=BertCSCModel.tokenizer)['input_ids']
@@ -120,9 +166,13 @@ class BertCSCModel(pl.LightningModule):
         # 查看src中的第一个句子
         # ''.join(BertCSCModel.tokenizer.convert_ids_to_tokens(inputs['input_ids'][1]))
 
-        return inputs, labels
+        pinyin_masks = torch.zeros(labels.size()).int()
+        for i, mask in enumerate(masks):
+            pinyin_masks[i, mask] = 1
+
+        return inputs, labels, pinyin_masks
 
 
 if __name__ == '__main__':
     args = mock_args(device='cpu')
-    BertCSCModel(args).forward(["昨晚天气真的很冷！"])
+    # BertCSCModel(args).forward(["昨晚天气真的很冷！"])
