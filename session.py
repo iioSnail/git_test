@@ -131,6 +131,19 @@ def get(url, retry=False):
 
     return resp
 
+def form_post(url, form_data, retry=False):
+    resp = requests.post(url, form_data, cookies=get_cookies())
+
+    if "重新登录" in resp.text:
+        if retry:
+            print("自动登录失败，请重试或联系你老公！")
+            exit()
+
+        login()
+        return get(url, True)
+
+    return resp
+
 
 if os.path.exists(session_file):
     with open(session_file, mode='r') as f:

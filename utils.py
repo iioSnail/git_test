@@ -193,3 +193,13 @@ def pattern_extract(text: str, names: list):
                 return items[1].strip()
 
     return ''
+
+def is_null(obj):
+    if obj is None:
+        return True
+
+    if type(obj) == str:
+        return len(obj.strip()) == 0
+
+    if type(obj) == float:
+        return pd.isnull(obj)
