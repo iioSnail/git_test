@@ -307,3 +307,8 @@ def norm_distribute_plot(data):
     # Plot the distribution
     plt.plot(x, y)
     plt.show()
+
+
+def hist_plot(data):
+    plt.hist(data)
+    plt.show()

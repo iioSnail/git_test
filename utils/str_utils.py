@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 
+import dimsim
 import pypinyin
 import torch
 from ltp import LTP
@@ -128,10 +129,39 @@ def to_pinyin(hanzi, tone=False):
     return pinyin
 
 
+def to_full_pinyin(hanzi, tone=False):
+    if not is_chinese(hanzi):
+        return hanzi
+
+    initial = pypinyin.pinyin(hanzi, style=pypinyin.Style.INITIALS, strict=False)[0][0]
+    final = pypinyin.pinyin(hanzi, style=pypinyin.Style.FINALS_TONE3, strict=False)[0][0]
+    _tone = final[-1]
+    if not _tone.isnumeric():
+        _tone = '0'
+    final = final.rstrip("1234567890")
+    if tone:
+        return initial, final, _tone
+    else:
+        return initial, final
+
+
+def pinyin_distance(pinyin1, pinyin2):
+    if pinyin1[-1] not in list("1234567890"):
+        pinyin1 += '0'
+
+    if pinyin2[-1] not in list("1234567890"):
+        pinyin2 += '0'
+
+    pinyin_distance = dimsim.get_distance([pinyin1], [pinyin2], pinyin=True)
+    return pinyin_distance
+
+
 if __name__ == '__main__':
     # sentences = ["我 很 喜 欢 看 你 跳 无 ， 你 干 嘛 ！ ", "李 四 想 去 负 担 大 学 的 夜 市 摊 吃 甜 橘 子", "惊 弓 之 鸟"]
     # print(word_segment(sentences))
     # print(word_segment_labels(sentences))
     # print(word_segment_targets(sentences))
     # print(get_common_hanzi(4500))
-    print(get_common_words())
+    # print(get_common_words())
+    # print(pinyin_distance("ba", "ba2"))
+    print(to_full_pinyin('啊', tone=True))

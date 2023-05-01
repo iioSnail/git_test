@@ -59,7 +59,6 @@ class GlyphDenseEmbedding(nn.Module):
 
 
 class MyModel(pl.LightningModule):
-
     bert_path = "hfl/chinese-macbert-base"
     tokenizer = AutoTokenizer.from_pretrained(bert_path)
 
@@ -78,7 +77,7 @@ class MyModel(pl.LightningModule):
         self.hanzi_list = list(get_common_hanzi(6000))
         self.token_list = self.hanzi_list
 
-        self.token_forget_gate = nn.Linear(768, 768)
+        self.token_forget_gate = nn.Linear(768, 768, bias=False)
 
         self.pinyin_feature_size = 6
         self.pinyin_embeddings = PinyinManualEmbeddings(self.args)
@@ -307,7 +306,7 @@ class MyModel(pl.LightningModule):
             optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
             return optimizer
 
-        optimizer = self.make_optimizer()
+        optimizer = self.make_optimizer2()
 
         scheduler_args = {
             "optimizer": optimizer,
@@ -348,6 +347,52 @@ class MyModel(pl.LightningModule):
                 lr = 4e-6
                 weight_decay = 0
 
+            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+
+        for key, value in self.cls.named_parameters():
+            if not value.requires_grad:
+                continue
+            lr = 2e-4
+            weight_decay = 0.01
+            if "bias" in key:
+                lr = 4e-4
+                weight_decay = 0
+            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+
+        optimizer = torch.optim.AdamW(params)
+        return optimizer
+
+    def make_optimizer2(self):
+        params = []
+        # BERT的学习率逐层降低
+        bert_base_lr = 2e-5
+        decay_factor = 0.95
+        for key, value in self.bert.named_parameters():
+            if not value.requires_grad:
+                continue
+
+            lr, weight_decay = 0, 0
+            if key.startswith("embeddings."):
+                lr = bert_base_lr * (decay_factor ** 12)
+                weight_decay = 0.01
+
+            if key.startswith("'encoder.layer."):
+                layer = int('encoder.layer.9.output.dense.weight'.split('.')[2])
+                lr = bert_base_lr * (decay_factor ** (11 - layer))
+                weight_decay = 0.01
+
+            if "bias" in key:
+                lr *= 2
+                weight_decay = 0
+
+            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+
+        for key, value in self.token_forget_gate.named_parameters():
+            if not value.requires_grad:
+                continue
+
+            lr = bert_base_lr
+            weight_decay = 0.01
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
         for key, value in self.cls.named_parameters():

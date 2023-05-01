@@ -81,6 +81,8 @@ class CSCDataset(Dataset):
             filepath = ROOT / 'datasets' / 'cscd_ime_dev.csv'
         elif data_name in ['cscdime2m']:
             filepath = ROOT / 'datasets' / 'cscd_ime_2m.csv'
+        elif data_name in ['customdata']:
+            filepath = ROOT / 'datasets' / 'custom_data.csv'
 
         if filepath is None:
             raise Exception("Can't find data file:" % data_name)

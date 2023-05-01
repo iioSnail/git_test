@@ -5,7 +5,9 @@
 TODO: 还可以给相似的拼音加一个对比学习，让他们之间的embedding越近越好
 """
 import random
+from collections import Counter
 
+import numpy as np
 import pypinyin
 import torch
 from torch import nn
@@ -99,6 +101,11 @@ class BertCSCModel(pl.LightningModule):
         return torch.optim.AdamW(self.parameters(), lr=2e-5)
 
     def predict(self, sentence):
+        """
+        和训练时思路类似，逐个字去处理，对于每个字，将其前后的字都改成pinyin，然后进行预测。
+        之后忽略前后的预测结果，只取当前字的预测结果。
+        结论：效果极差。
+        """
         sentence = sentence.replace(" ", "")
         pred_tokens = list(sentence)
         for i in range(len(sentence)):
@@ -119,14 +126,118 @@ class BertCSCModel(pl.LightningModule):
             pred_token = self.tokenizer.convert_ids_to_tokens([outputs[0, i + 1].argmax(-1)])[0]
             pred_tokens[i] = pred_token
 
-        return ''.join(pred_tokens)
+        pred = ''.join(pred_tokens)
+        return pred
+
+    def predict2(self, sentence):
+        """
+        和训练时思路类似，逐个字去处理，对于每个字，将其前后的字都改成pinyin，然后进行预测。
+        对于每个字，会被预测3次，记录下来，取结果最多的。若一个字的三次预测结果都不一致，那
+        么就去置信度最大的那个。
+        """
+        sentence = sentence.replace(" ", "")
+        sent_tokens = list(sentence)
+        pred_tokens = list(sentence)
+        pred_results = [[] for i in range(len(pred_tokens))]
+        for i in range(-1, len(sentence) + 1):
+            tokens = list(sentence)
+            if 0 <= i < len(tokens) and is_chinese(tokens[i]):
+                tokens[i] = BertCSCModel.to_pinyin(tokens[i])
+
+            if i + 1 < len(tokens) and is_chinese(tokens[i + 1]):
+                tokens[i + 1] = BertCSCModel.to_pinyin(tokens[i + 1])
+
+            if i - 1 >= 0 and is_chinese(tokens[i - 1]):
+                tokens[i - 1] = BertCSCModel.to_pinyin(tokens[i - 1])
+
+            inputs = self.tokenizer(' '.join(tokens), return_tensors='pt').to(self.args.device)
+            outputs = self.model(**inputs).logits[0, 1:-1]
+
+            # 统计每个字的三次预测结果
+            for j in [i-1, i, i+1]:
+                if 0 <= j < len(tokens):
+                    if is_chinese(sent_tokens[j]):
+                        index = outputs[j].argmax(-1)
+                        logit = outputs[j, index].item()
+                        token = self.tokenizer.convert_ids_to_tokens([index])[0]
+                        pred_results[j].append((token, logit))
+                    else:
+                        pred_results[j].append((sent_tokens[j], 1))
+
+        for i in range(len(pred_results)):
+            tokens, logits = zip(*pred_results[i])
+            # 少数服从多数好像不如取概率最大的好用，若一致，则取概率最大的。
+            # token, count = Counter(tokens).most_common(1)[0]
+            # if count >= 2:
+            #     pred_tokens[i] = token
+            # else:
+            #     pred_tokens[i] = tokens[np.argmax(logits)]
+            pred_tokens[i] = tokens[np.argmax(logits)]
+
+        pred = ''.join(pred_tokens)
+        return pred
+
+    def predict3(self, sentence, target_sentence):
+        """
+        和训练时思路类似，逐个字去处理，对于每个字，将其前后的字都改成pinyin，然后进行预测。
+        对于每个字，会被预测3次，记录下来，取置信度最大的那个。
+
+        告诉模型哪个是错的，看看最终的结果
+        """
+        sentence = sentence.replace(" ", "")
+        target_sentence = target_sentence.replace(" ", "")
+        sent_tokens = list(sentence)
+        pred_tokens = list(sentence)
+        target_tokens = list(target_sentence)
+        pred_results = [[] for i in range(len(pred_tokens))]
+        for i in range(-1, len(sentence) + 1):
+            tokens = list(sentence)
+            if 0 <= i < len(tokens) and is_chinese(tokens[i]):
+                tokens[i] = BertCSCModel.to_pinyin(tokens[i])
+
+            if i + 1 < len(tokens) and is_chinese(tokens[i + 1]):
+                tokens[i + 1] = BertCSCModel.to_pinyin(tokens[i + 1])
+
+            if i - 1 >= 0 and is_chinese(tokens[i - 1]):
+                tokens[i - 1] = BertCSCModel.to_pinyin(tokens[i - 1])
+
+            inputs = self.tokenizer(' '.join(tokens), return_tensors='pt').to(self.args.device)
+            outputs = self.model(**inputs).logits[0, 1:-1]
+
+            # 统计每个字的三次预测结果
+            for j in [i-1, i, i+1]:
+                if 0 <= j < len(tokens):
+                    if is_chinese(sent_tokens[j]):
+                        index = outputs[j].argmax(-1)
+                        logit = outputs[j, index].item()
+                        token = self.tokenizer.convert_ids_to_tokens([index])[0]
+                        pred_results[j].append((token, logit))
+                    else:
+                        pred_results[j].append((sent_tokens[j], 1))
+
+        for i in range(len(pred_results)):
+            if target_tokens[i] == sent_tokens[i]:
+                # 如果这个字没有错，则不预测
+                continue
+
+            tokens, logits = zip(*pred_results[i])
+            # 少数服从多数好像不如取概率最大的好用，若一致，则取概率最大的。
+            # token, count = Counter(tokens).most_common(1)[0]
+            # if count >= 2:
+            #     pred_tokens[i] = token
+            # else:
+            #     pred_tokens[i] = tokens[np.argmax(logits)]
+            pred_tokens[i] = tokens[np.argmax(logits)]
+
+        pred = ''.join(pred_tokens)
+        return pred
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
         src, tgt = batch
 
         pred = []
-        for sentence in src:
-            pred.append(self.predict(sentence))
+        for i, sentence in enumerate(src):
+            pred.append(self.predict3(sentence, tgt[i]))
 
         return pred
 
