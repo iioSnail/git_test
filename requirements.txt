@@ -1,11 +1,19 @@
 # python=3.8.5
-lightning==2.0.1
-transformers==4.27.1
-pypinyin==0.48.0
-pillow==9.4.0
-matplotlib==3.7.1
-scikit-learn==1.2.2
-ltp==4.2.13
-torch==1.13.1
+# lightning==2.0.1
+lightning
+# transformers==4.27.1
+transformers
+# pypinyin==0.48.0
+pypinyin
+# pillow==9.4.0
+pillow
+# matplotlib==3.7.1
+matplotlib
+# scikit-learn==1.2.2
+scikit-learn
+# ltp==4.2.13
+ltp
+# torch==1.13.1
+torch
 torchvision
 lightning[extra]
