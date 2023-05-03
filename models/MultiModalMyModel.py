@@ -6,9 +6,7 @@ from torch import nn
 from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoModel, AutoTokenizer, AutoConfig
 
-from common.callbacks import TestMetricsCallback
 from models.common import BertOnlyMLMHead, BERT
-from utils.dataloader import create_test_dataloader
 from utils.loss import FocalLoss
 from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import get_common_hanzi

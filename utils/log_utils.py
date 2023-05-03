@@ -5,7 +5,7 @@ import warnings
 log: logging.Logger = None
 
 
-def init_log():
+def init_log(filename='output.log'):
     global log
     if log is not None:
         return
@@ -17,6 +17,8 @@ def init_log():
     sh.setFormatter(formatter)
     log.addHandler(sh)
 
+    ignore_warning()
+
 
 def ignore_warning():
     warnings.filterwarnings("ignore", message=".*The dirpath has changed from.*")
@@ -25,5 +27,12 @@ def ignore_warning():
     warnings.filterwarnings("ignore", message=".*Detected KeyboardInterrupt*")
 
 
+def add_file_handler(filename):
+    global log
+    formatter = logging.Formatter("%(asctime)s - %(message)s")
+    fhlr = logging.FileHandler(filename)
+    fhlr.setFormatter(formatter)
+    log.addHandler(fhlr)
+
+
 init_log()
-ignore_warning()

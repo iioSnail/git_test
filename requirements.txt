@@ -17,3 +17,5 @@ ltp
 torch
 torchvision
 lightning[extra]
+dimsim
+scipy

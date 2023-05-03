@@ -1,3 +1,4 @@
+from utils.log_utils import log
 from utils.utils import render_color_for_text
 
 
@@ -73,18 +74,18 @@ class CSCMetrics:
         char_correct_acc, char_correct_p, char_correct_r, char_correct_f1, \
         sent_detect_acc, sent_detect_p, sent_detect_r, sent_detect_f1, \
         sent_correct_acc, sent_correct_p, sent_correct_r, sent_correct_f1 = self.get_results()
-        print("------------------------------------------------------------")
-        print("Character-level Detect Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f"
+        log.info("------------------------------------------------------------")
+        log.info("Character-level Detect Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f"
               % (char_detect_acc, char_detect_p, char_detect_r, char_detect_f1))
-        print("Character-level Correct Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f"
+        log.info("Character-level Correct Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f"
               % (char_correct_acc, char_correct_p, char_correct_r, char_correct_f1))
-        print("Sentence-level Detect Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f"
+        log.info("Sentence-level Detect Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f"
               % (sent_detect_acc, sent_detect_p, sent_detect_r, sent_detect_f1))
-        print("Sentence-level Correct Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f"
+        log.info("Sentence-level Correct Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f"
               % (sent_correct_acc, sent_correct_p, sent_correct_r, sent_correct_f1))
-        print("------------------------------------------------------------")
+        log.info("------------------------------------------------------------")
 
-        print("Total Sentences Num: %d, Error Sentences Num: %d" % (self.total_sent_num, len(self.abnormal_pairs)))
+        log.info("Total Sentences Num: %d, Error Sentences Num: %d" % (self.total_sent_num, len(self.abnormal_pairs)))
 
     def print_errors(self):
         for src, tgt, pred in self.error_pairs:

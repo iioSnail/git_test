@@ -4,4 +4,4 @@ python c_train.py --datas wang271k,sighan15train,sighan14train,sighan13train,sig
                   --resume \
                   --epochs 20 \
                   --model MultiModalMyModel \
-                  --ckpt-dir ../drive/MyDrive/Lightning/MyModel/
+                  --ckpt-dir /root/autodl-tmp/csc/ \

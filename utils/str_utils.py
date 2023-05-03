@@ -5,7 +5,7 @@ from pathlib import Path
 import dimsim
 import pypinyin
 import torch
-from ltp import LTP
+# from ltp import LTP # FIXME
 from torch.nn.utils.rnn import pad_sequence
 
 ltp = None

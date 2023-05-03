@@ -69,8 +69,10 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
     return train_loader, valid_loader
 
 
-def create_test_dataloader(args):
-    dataset = CSCDataset(args.data)
+def create_test_dataloader(args, data=None):
+    if data is None:
+        data = args.data
+    dataset = CSCDataset(data)
 
     return DataLoader(dataset,
                       batch_size=args.batch_size,

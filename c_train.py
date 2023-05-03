@@ -7,12 +7,13 @@ from pathlib import Path
 import lightning.pytorch as pl
 import torch
 from lightning.pytorch.callbacks import EarlyStopping, StochasticWeightAveraging
+from lightning.pytorch.loggers import TensorBoardLogger
 
 from common.callbacks import CheckpointCallback, SimpleProgressBar, TestMetricsCallback, TestCallback, \
-    TrainMetricsCallback
+    TrainMetricsCallback, EvalInTrainMetricsCallback
 from common.stochastic_weight_avg import CscStochasticWeightAveraging
 from utils.dataloader import create_dataloader, create_test_dataloader
-from utils.log_utils import log
+from utils.log_utils import log, init_log, add_file_handler
 from utils.str_utils import is_float
 from utils.utils import setup_seed, mkdir
 
@@ -64,6 +65,10 @@ class C_Train(object):
 
         checkpoint_callback = CheckpointCallback(dir_path=self.args.ckpt_dir)
 
+        logger = None
+        if self.args.tensorboard:
+            logger = TensorBoardLogger(self.args.work_dir)
+
         ckpt_path = None
         if self.args.resume:
             if not os.path.exists(checkpoint_callback.ckpt_path):
@@ -104,13 +109,15 @@ class C_Train(object):
                        train_metrics_callback,
                        SimpleProgressBar(train_metrics_callback),
                        CscStochasticWeightAveraging(train_metrics_callback),
+                       EvalInTrainMetricsCallback(self.args),   # FIXME Only for adjust hyper-parameters.
                        ],
             max_epochs=self.args.epochs,
             num_sanity_val_steps=0,
             enable_progress_bar=False,  # Use custom progress bar
             precision=precision,
             gradient_clip_val=0.5,
-            gradient_clip_algorithm="norm"
+            gradient_clip_algorithm="norm",
+            logger=logger,
         )
 
         trainer.fit(self.model,
@@ -125,14 +132,16 @@ class C_Train(object):
             callbacks=[TestMetricsCallback(print_errors=self.args.print_errors)]
         )
 
+        test_dataloader = create_test_dataloader(self.args)
+
         if self.args.ckpt_path == 'None':
-            trainer.test(self.model, dataloaders=create_test_dataloader(self.args))
+            trainer.test(self.model, dataloaders=test_dataloader)
             return
 
         assert self.args.ckpt_path and os.path.exists(self.args.ckpt_path), \
             "Checkpoint file is not found! ckpt_path:%s" % self.args.ckpt_path
 
-        trainer.test(self.model, dataloaders=create_test_dataloader(self.args), ckpt_path=self.args.ckpt_path)
+        trainer.test(self.model, dataloaders=test_dataloader, ckpt_path=self.args.ckpt_path)
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
@@ -170,6 +179,7 @@ class C_Train(object):
                             help="Print sentences which is failure to predict.")
         parser.add_argument('--hyper-params', type=str, default="",
                             help='The hyper parameters of your model. The type must be json.')
+        parser.add_argument('--tensorboard', action='store_true', default=False)
 
         ###############################################################################################################
 
@@ -198,7 +208,6 @@ class C_Train(object):
                             help='The max length of sentence. Sentence will be truncated if its length long than it.')
 
         args = parser.parse_known_args()[0]
-        print(args)
 
         if args.device == 'auto':
             args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -210,6 +219,9 @@ class C_Train(object):
         setup_seed(args.seed)
         mkdir(args.work_dir)
         args.work_dir = Path(args.work_dir)
+
+        add_file_handler(filename=args.work_dir / 'output.log')
+        log.info(args)
 
         if args.ckpt_dir is None:
             args.ckpt_dir = args.work_dir

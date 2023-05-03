@@ -12,8 +12,10 @@ from lightning.pytorch.callbacks.progress.tqdm_progress import convert_inf, Tqdm
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from tqdm import tqdm
 
+from utils.dataloader import create_test_dataloader
 from utils.log_utils import log
 from utils.metrics import CSCMetrics
+from utils.utils import mock_args
 
 
 class TestCallback(Callback):
@@ -115,6 +117,7 @@ class TrainMetricsCallback(Callback):
         self.valid_matrix = np.zeros([4])
         self.val_f1_list.append(c_f1)
         self.val_pr_list.append((c_p, c_r))
+
 
     def on_train_batch_end(
             self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any,
@@ -220,11 +223,22 @@ class SimpleProgressBar(Callback):
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         self.val_progress_bar.close()
+
+        c_p, c_r, c_f1 = self.train_metrics.get_train_matrix()
+        log.info("train, Correction Precision: {}, Recall: {}, F1-Score: {}".format(c_p, c_r, c_f1))
+
         val_avg_loss = self.train_metrics.get_val_avg_loss()
         c_p, c_r = self.train_metrics.val_pr_list[-1]
         c_f1 = self.train_metrics.val_f1_list[-1]
         log.info("val_loss {:.5f}, Correction Precision: {}, Recall: {}, F1-Score: {}".format(val_avg_loss,
                                                                                               c_p, c_r, c_f1))
+        if trainer.logger:
+            trainer.logger.log_metrics({
+                "val_loss": val_avg_loss,
+                "val pre": c_p,
+                "val rec": c_r,
+                "val f1": c_f1,
+            }, step=trainer.current_epoch)
 
     def on_train_batch_end(
             self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any,
@@ -240,6 +254,14 @@ class SimpleProgressBar(Callback):
             'c_recall': c_r,
             'c_f1_score': c_f1,
         })
+
+        if trainer.logger:
+            trainer.logger.log_metrics({
+                "train_loss": loss.item(),
+                "train pre": c_p,
+                "train rec": c_r,
+                "train f1": c_f1,
+            }, step=trainer.current_epoch * batch_idx + batch_idx)
 
         self.train_progress_bar.update(1)
 
@@ -298,5 +320,49 @@ class TestMetricsCallback(Callback):
 
         if self.print_errors:
             self.csc_metrics.print_errors()
+            self.csc_metrics.error_pairs()
 
-            self.csc_metrics.error_pairs
+
+class EvalInTrainMetricsCallback(Callback):
+
+    def __init__(self, args):
+        super().__init__()
+        self.args = args
+        self.csc_metrics = CSCMetrics()
+
+    def on_test_batch_end(
+            self,
+            trainer: "pl.Trainer",
+            pl_module: "pl.LightningModule",
+            outputs: Optional[STEP_OUTPUT],
+            batch: Any,
+            batch_idx: int,
+            dataloader_idx: int = 0,
+    ) -> None:
+        src, tgt = batch
+        pred = outputs
+
+        assert len(src) == len(tgt) == len(pred)
+
+        for i in range(len(src)):
+            self.csc_metrics.add_sentence(src[i].replace(" ", ""), tgt[i].replace(" ", ""), pred[i].replace(" ", ""))
+
+    def on_test_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        self.csc_metrics.print_results()
+
+    def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        """
+        FIXME Only for adjust hyper-parameters
+        """
+        if not self.args.eval:
+            return
+
+        if not hasattr(self, 'test_dataloader'):
+            self.test_dataloader = create_test_dataloader(mock_args(data='sighan15test', batch_size=1, workers=0))
+
+        for batch_idx, batch in tqdm(enumerate(self.test_dataloader), total=len(self.test_dataloader), desc="Test"):
+            outputs = pl_module.test_step(batch, batch_idx)
+            self.on_test_batch_end(trainer, pl_module, outputs, batch, batch_idx, 0)
+
+        self.on_test_end(trainer, pl_module)
+        self.csc_metrics = CSCMetrics()
