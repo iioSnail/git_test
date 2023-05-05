@@ -1,7 +1,6 @@
 import copy
 import math
 
-import dimsim
 import lightning.pytorch as pl
 import numpy as np
 import pypinyin
@@ -9,7 +8,8 @@ import torch
 from matplotlib import pyplot as plt
 from transformers import AutoTokenizer, AutoModelForMaskedLM
 
-from utils.str_utils import is_chinese, pinyin_distance, to_full_pinyin
+from utils.pinyin_utils import pinyin_is_sim
+from utils.str_utils import is_chinese, pinyin_distance, to_full_pinyin, to_pinyin
 from utils.utils import load_obj, mock_args, predict_process
 
 
@@ -400,6 +400,40 @@ class AdjustProbByPinyin(pl.LightningModule):
         pred_sentence = predict_process(sent_tokens, pred_tokens)
         return pred_sentence
 
+    def predict5_3(self, sent_tokens, pinyins, label_tokens=None):
+        """
+        “只对[MASK]”部分进行预测
+        在候选值中，从大到小选择，选择第一个韵母或声母有其中之一相同的字
+
+        更新：在5.2，直接使用拼音是否相似的函数
+        """
+        inputs = self.tokenizer(' '.join(sent_tokens), return_tensors='pt').to(self.args.device)
+        logits = self.model(**inputs).logits[0][1:-1]
+        pred_tokens = copy.deepcopy(sent_tokens)
+
+        for i, token in enumerate(sent_tokens):
+            if token != '[MASK]':
+                continue
+
+            initial, final, tone = pinyins[i]
+            pinyin = initial + final + tone
+            candidates = self.tokenizer.convert_ids_to_tokens(logits[i].argsort(descending=True)[:100])
+            for c_token in candidates:
+                if not is_chinese(c_token):
+                    continue
+
+                c_pinyin = to_pinyin(c_token)
+                if pinyin_is_sim(c_pinyin, pinyin):
+                    pred_tokens[i] = c_token
+                    break
+
+            if pred_tokens[i] == '[MASK]':
+                # There is no anyone for fitting, then use the first candidate.
+                pred_tokens[i] = candidates[0]
+
+        pred_sentence = predict_process(sent_tokens, pred_tokens)
+        return pred_sentence
+
     def tell_mask(self, sent_tokens, label):
         # If I told the sent which token is wrong.
         label_tokens = label.split(" ")
@@ -627,31 +661,31 @@ class AdjustProbByPinyin(pl.LightningModule):
     #         # preds.append(self.detect_predict3(sent_tokens))
     #     return preds
 
-    def test_step(self, batch, batch_idx: int, *args, **kwargs):
-        src, tgt = batch
-        pred = []
-
-        for sent, label in zip(src, tgt):
-            sent_tokens = sent.split(" ")
-            sent_tokens, pinyins = self.tell_mask(sent_tokens, label)
-            # sent_tokens, pinyins = self.predict_mask(sent_tokens)
-
-            pred.append(self.predict2_4(sent_tokens, pinyins))
-            # pred.append(self.predict5(sent_tokens, pinyins))
-        return pred
-
     # def test_step(self, batch, batch_idx: int, *args, **kwargs):
     #     src, tgt = batch
     #     pred = []
     #
     #     for sent, label in zip(src, tgt):
     #         sent_tokens = sent.split(" ")
-    #         label_tokens = label.split(" ")
-    #         sent_tokens, pinyins = self.tell_mask_full_pinyin(sent_tokens, label)
+    #         sent_tokens, pinyins = self.tell_mask(sent_tokens, label)
     #         # sent_tokens, pinyins = self.predict_mask(sent_tokens)
     #
-    #         pred.append(self.predict5_2(sent_tokens, pinyins, label_tokens))
+    #         pred.append(self.predict2_4(sent_tokens, pinyins))
+    #         # pred.append(self.predict5(sent_tokens, pinyins))
     #     return pred
+
+    def test_step(self, batch, batch_idx: int, *args, **kwargs):
+        src, tgt = batch
+        pred = []
+
+        for sent, label in zip(src, tgt):
+            sent_tokens = sent.split(" ")
+            label_tokens = label.split(" ")
+            sent_tokens, pinyins = self.tell_mask_full_pinyin(sent_tokens, label)
+            # sent_tokens, pinyins = self.predict_mask(sent_tokens)
+
+            pred.append(self.predict5_3(sent_tokens, pinyins, label_tokens))
+        return pred
 
     def on_test_end(self) -> None:
         # Calculate mean and standard deviation
@@ -667,8 +701,8 @@ if __name__ == '__main__':
                          'token_times': 1.2
                      })
 
-    sent_tokens = list("明天我们去露行吧，你要早一点起来。")
-    tgt_tokens = list("明天我们去旅行吧，你要早一点起来。")
+    sent_tokens = list("吃了早菜以后他去上课。")
+    tgt_tokens = list("吃了早餐以后他去上课。")
     model = AdjustProbByPinyin(args)
 
     # sent_tokens = "[MASK] 再 也 不 会 [PAD] 扬 。 [PAD]".split(' ')
@@ -678,7 +712,8 @@ if __name__ == '__main__':
     #     sent_tokens))
     # print(AdjustProbByPinyin(args).predict4(sent_tokens))
     # print(AdjustProbByPinyin(args).logits_probe(sent_tokens, tgt_tokens))
-    sent_tokens, pinyins = model.tell_mask(sent_tokens, ' '.join(tgt_tokens))
-    print(model.predict2_3(sent_tokens, pinyins))
-    # sent_tokens, pinyins = model.tell_mask_full_pinyin(sent_tokens, ' '.join(tgt_tokens))
+    # sent_tokens, pinyins = model.tell_mask(sent_tokens, ' '.join(tgt_tokens))
+    # print(model.predict2_3(sent_tokens, pinyins))
+    sent_tokens, pinyins = model.tell_mask_full_pinyin(sent_tokens, ' '.join(tgt_tokens))
     # print(model.predict5_2(sent_tokens, pinyins))
+    print(model.predict5_3(sent_tokens, pinyins))
