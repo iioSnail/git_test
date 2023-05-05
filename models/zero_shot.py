@@ -647,19 +647,19 @@ class AdjustProbByPinyin(pl.LightningModule):
 
         return ''.join(pred_tokens)
 
-    # def test_step(self, batch, batch_idx: int, *args, **kwargs):
-    #     """
-    #     test for detection
-    #     """
-    #     src, tgt = batch
-    #     preds = []
-    #
-    #     for sent, label in zip(src, tgt):
-    #         sent_tokens = sent.split(" ")
-    #         tgt_tokens = label.split(" ")
-    #         preds.append(self.logits_probe(sent_tokens, tgt_tokens))
-    #         # preds.append(self.detect_predict3(sent_tokens))
-    #     return preds
+    def test_step(self, batch, batch_idx: int, *args, **kwargs):
+        """
+        test for detection
+        """
+        src, tgt = batch
+        preds = []
+
+        for sent, label in zip(src, tgt):
+            sent_tokens = sent.split(" ")
+            tgt_tokens = label.split(" ")
+            # preds.append(self.logits_probe(sent_tokens, tgt_tokens))
+            preds.append(self.detect_predict3(sent_tokens))
+        return preds
 
     # def test_step(self, batch, batch_idx: int, *args, **kwargs):
     #     src, tgt = batch
@@ -670,22 +670,22 @@ class AdjustProbByPinyin(pl.LightningModule):
     #         sent_tokens, pinyins = self.tell_mask(sent_tokens, label)
     #         # sent_tokens, pinyins = self.predict_mask(sent_tokens)
     #
-    #         pred.append(self.predict2_4(sent_tokens, pinyins))
+    #         pred.append(self.predict2(sent_tokens, pinyins))
     #         # pred.append(self.predict5(sent_tokens, pinyins))
     #     return pred
 
-    def test_step(self, batch, batch_idx: int, *args, **kwargs):
-        src, tgt = batch
-        pred = []
-
-        for sent, label in zip(src, tgt):
-            sent_tokens = sent.split(" ")
-            label_tokens = label.split(" ")
-            sent_tokens, pinyins = self.tell_mask_full_pinyin(sent_tokens, label)
-            # sent_tokens, pinyins = self.predict_mask(sent_tokens)
-
-            pred.append(self.predict5_3(sent_tokens, pinyins, label_tokens))
-        return pred
+    # def test_step(self, batch, batch_idx: int, *args, **kwargs):
+    #     src, tgt = batch
+    #     pred = []
+    #
+    #     for sent, label in zip(src, tgt):
+    #         sent_tokens = sent.split(" ")
+    #         label_tokens = label.split(" ")
+    #         sent_tokens, pinyins = self.tell_mask_full_pinyin(sent_tokens, label)
+    #         # sent_tokens, pinyins = self.predict_mask(sent_tokens)
+    #
+    #         pred.append(self.predict5_3(sent_tokens, pinyins, label_tokens))
+    #     return pred
 
     def on_test_end(self) -> None:
         # Calculate mean and standard deviation
@@ -701,8 +701,8 @@ if __name__ == '__main__':
                          'token_times': 1.2
                      })
 
-    sent_tokens = list("吃了早菜以后他去上课。")
-    tgt_tokens = list("吃了早餐以后他去上课。")
+    sent_tokens = list("我真的喜欢去你的会，可是那的时候我有一个重要的考试。")
+    tgt_tokens = list("我真的喜欢去你的会，可是那个时候我有一个重要的考试。")
     model = AdjustProbByPinyin(args)
 
     # sent_tokens = "[MASK] 再 也 不 会 [PAD] 扬 。 [PAD]".split(' ')

@@ -4,9 +4,15 @@ vowelList = ["a", "o", "e", "i", "u", "v", "u:", "er", "ao", "ai", "ou", "ei", "
              "uei", "ua", "uo", "uai", "u:e", "ve", "an", "en", "in", "un", "uen", "vn", "u:n", "ian", "uan", "u:an",
              "van", "ang", "eng", "ing", "ong", "iang", "iong", "uang", "ueng"]
 
-sim_initials = ["b,p", "g,k", "h,f", "d,t", "n,l", "zh,z,j", "ch,c,q", "sh,s,x", "y,w"]
+sim_initials = ["b,p", "g,k", "h,f", "d,t", "n,l", "zh,z,j", "ch,c",
+                "sh,s,x", "y,w",
+
+                "g,d", "z,c", "zh,j", "x,s", "sh,z", "x,q", "k,j"]
+
 sim_finals = ["a,an,ang", "ia,ian,iang", "ua,uan,uang,u:an", "ao,iao", "ai,uai", "o,io,iou,iu,ou,uo", "ong,iong",
-              "er,e", "u:e,ve,ue,ie,ei,uei,ui", "en,eng", "uen,un,ueng", "i,in,ing", "u,v,u:n,vn"]
+              "er,e", "u:e,ve,ue,ie,ei,uei,ui", "en,eng", "uen,un,ueng", "i,in,ing", "u,v,u:,u:n,vn",
+
+              "an,ai", "uo,ou", "ui,ua", "uo,u", "ch,zh", "z,ch"]
 
 sim_initials = [set(item.split(",")) for item in sim_initials]
 sim_finals = [set(item.split(",")) for item in sim_finals]
@@ -88,12 +94,15 @@ class Pinyin:
 def pinyin_is_sim(pinyin1, pinyin2):
     pinyin1 = Pinyin(pinyin1)
     pinyin2 = Pinyin(pinyin2)
-    initial_pair = {pinyin1.consonant, pinyin2.consonant}
     initial_sim = False
-    for item in sim_initials:
-        if initial_pair.issubset(item):
-            initial_sim = True
-            break
+    if pinyin1.consonant == pinyin2.consonant:
+        initial_sim = True
+    else:
+        initial_pair = {pinyin1.consonant, pinyin2.consonant}
+        for item in sim_initials:
+            if initial_pair.issubset(item):
+                initial_sim = True
+                break
 
     final_pair = {pinyin1.vowel, pinyin2.vowel}
     final_sim = False
@@ -106,4 +115,4 @@ def pinyin_is_sim(pinyin1, pinyin2):
 
 
 if __name__ == '__main__':
-    print(pinyin_is_sim("nv", "nu"))
+    print(pinyin_is_sim("cai", "can"))
