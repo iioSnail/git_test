@@ -66,8 +66,8 @@ class MyModel(pl.LightningModule):
         self.args = args
 
         self.bert_config = AutoConfig.from_pretrained(MyModel.bert_path)
-        self.bert_config.attention_probs_dropout_prob = 0.15
-        self.bert_config.hidden_dropout_prob = 0.15
+        self.bert_config.attention_probs_dropout_prob = 0.1
+        self.bert_config.hidden_dropout_prob = 0.1
 
         self.bert = AutoModel.from_pretrained(MyModel.bert_path, config=self.bert_config)
         self.tokenizer = MyModel.tokenizer
