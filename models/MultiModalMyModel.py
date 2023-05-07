@@ -8,6 +8,7 @@ from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoModel, AutoTokenizer, AutoConfig
 
 from models.common import BertOnlyMLMHead, BERT
+from utils.log_utils import log
 from utils.loss import FocalLoss
 from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import get_common_hanzi
@@ -152,6 +153,8 @@ class MyModel(pl.LightningModule):
             if key in self.args.hyper_params:
                 continue
             self.args.hyper_params[key] = value
+
+        log.info("Hyper-parameters:" + str(self.args.hyper_params))
 
         self.bert_config = AutoConfig.from_pretrained(MyModel.bert_path)
         dropout = self.args.hyper_params['dropout']
