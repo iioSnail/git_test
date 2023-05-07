@@ -24,7 +24,8 @@ def ignore_warning():
     warnings.filterwarnings("ignore", message=".*The dirpath has changed from.*")
     warnings.filterwarnings("ignore", message=".*does not have many workers which may be a bottleneck.*")
     warnings.filterwarnings("ignore", message=".*You're resuming from a checkpoint that ended before the epoch ended.*")
-    warnings.filterwarnings("ignore", message=".*Detected KeyboardInterrupt*")
+    warnings.filterwarnings("ignore", message=".*Detected KeyboardInterrupt.*")
+    warnings.filterwarnings("ignore", message=".*Detected call of `lr_scheduler.step()`.*")
 
 
 def add_file_handler(filename):
