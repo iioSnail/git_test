@@ -13,6 +13,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from tqdm import tqdm
 
 from utils.dataloader import create_test_dataloader
+from utils.dataset import CSCDataset
 from utils.log_utils import log
 from utils.metrics import CSCMetrics
 from utils.utils import mock_args
@@ -329,6 +330,7 @@ class EvalInTrainMetricsCallback(Callback):
         super().__init__()
         self.args = args
         self.csc_metrics = CSCMetrics()
+        self.dataset = CSCDataset('sighan15test')
 
     def on_test_batch_end(
             self,
@@ -350,19 +352,19 @@ class EvalInTrainMetricsCallback(Callback):
     def on_test_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         self.csc_metrics.print_results()
 
-    def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         """
         FIXME Only for adjust hyper-parameters
         """
         if not self.args.eval:
             return
 
-        if not hasattr(self, 'test_dataloader'):
-            self.test_dataloader = create_test_dataloader(mock_args(data='sighan15test', batch_size=1, workers=0))
-
-        for batch_idx, batch in tqdm(enumerate(self.test_dataloader), total=len(self.test_dataloader), desc="Test"):
+        pl_module.eval()
+        for batch_idx, batch in tqdm(enumerate(self.dataset.data), total=len(self.dataset), desc="Test"):
+            batch = ([batch[0]], [batch[1]])
             outputs = pl_module.test_step(batch, batch_idx)
             self.on_test_batch_end(trainer, pl_module, outputs, batch, batch_idx, 0)
 
         self.on_test_end(trainer, pl_module)
         self.csc_metrics = CSCMetrics()
+        pl_module.train()

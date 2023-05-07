@@ -65,10 +65,6 @@ class C_Train(object):
 
         checkpoint_callback = CheckpointCallback(dir_path=self.args.ckpt_dir)
 
-        logger = None
-        if self.args.tensorboard:
-            logger = TensorBoardLogger(self.args.work_dir)
-
         ckpt_path = None
         if self.args.resume:
             if not os.path.exists(checkpoint_callback.ckpt_path):
@@ -117,7 +113,7 @@ class C_Train(object):
             precision=precision,
             gradient_clip_val=0.5,
             gradient_clip_algorithm="norm",
-            logger=logger,
+            logger=TensorBoardLogger(self.args.work_dir),
         )
 
         trainer.fit(self.model,
@@ -179,7 +175,6 @@ class C_Train(object):
                             help="Print sentences which is failure to predict.")
         parser.add_argument('--hyper-params', type=str, default="",
                             help='The hyper parameters of your model. The type must be json.')
-        parser.add_argument('--tensorboard', action='store_true', default=False)
 
         ###############################################################################################################
 

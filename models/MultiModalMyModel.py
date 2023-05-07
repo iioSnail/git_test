@@ -1,4 +1,5 @@
 import argparse
+import copy
 
 import lightning.pytorch as pl
 import torch
@@ -12,6 +13,8 @@ from utils.scheduler import PlateauScheduler, WarmupExponentialLR
 from utils.str_utils import get_common_hanzi
 from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image, pred_token_process
 
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 class InputHelper:
 
@@ -95,7 +98,7 @@ class PinyinManualEmbeddings(nn.Module):
     def forward(self, inputs):
         fill = self.pinyin_feature_size - inputs.size(1)
         if fill > 0:
-            inputs = torch.concat([inputs, torch.zeros((len(inputs), fill)).to(self.args.device)], dim=1).long()
+            inputs = torch.concat([inputs, torch.zeros((len(inputs), fill), device=self.args.device)], dim=1).long()
         return inputs.float()
 
 
@@ -136,6 +139,7 @@ class MyModel(pl.LightningModule):
 
     def __init__(self, args: argparse.Namespace):
         super().__init__()
+        print("version 2023-05-07 20:08")
 
         self.args = args
 
@@ -144,7 +148,7 @@ class MyModel(pl.LightningModule):
         self.bert_config.hidden_dropout_prob = 0.1
 
         self.bert = AutoModel.from_pretrained(MyModel.bert_path, config=self.bert_config)
-        self.tokenizer = MyModel.tokenizer
+        self._tokenizer = AutoTokenizer.from_pretrained(MyModel.bert_path)
 
         self.hanzi_list = self.input_helper.hanzi_list
         self.token_list = self.hanzi_list
@@ -213,7 +217,7 @@ class MyModel(pl.LightningModule):
 
     def _convert_hids_to_ids(self, hids):
         if not hasattr(self, 'hids_map'):
-            hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.token_list)
+            hanzi_ids = self._tokenizer.convert_tokens_to_ids(self.token_list)
             self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
 
         if not hasattr(self, 'ids_map'):
@@ -268,13 +272,14 @@ class MyModel(pl.LightningModule):
     def _predict(self, sentence):
         src_tokens = list(sentence)
         sentence = ' '.join(list(sentence))
-        inputs = BERT.get_bert_inputs(sentence, tokenizer=MyModel.tokenizer, max_length=9999).to(self.args.device)
+        inputs = BERT.get_bert_inputs(sentence, tokenizer=self._tokenizer, max_length=9999).to(self.args.device)
         input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(inputs['input_ids'].view(-1))
         images = MyModel.input_helper.convert_tokens_to_images(inputs['input_ids'].view(-1), None)  # TODO
+        input_pinyins, images = input_pinyins.to(self.args.device), images.to(self.args.device)
         outputs = self.forward(inputs, input_pinyins, images)
         # outputs[:, :, 1] = outputs[:, :, 1] - outputs.std(dim=2)
         ids_list = self.extract_outputs(outputs, inputs['input_ids'])
-        pred_tokens = self.tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])
+        pred_tokens = self._tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])
         pred_tokens = pred_token_process(src_tokens, pred_tokens)
         return pred_tokens
 
