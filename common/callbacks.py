@@ -200,6 +200,10 @@ class SimpleProgressBar(Callback):
         self.train_progress_bar = None
         self.val_progress_bar = None
 
+    def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        if trainer.logger:
+            trainer.logger.log_hyperparams(pl_module.args.hyper_params)
+
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         total = len(trainer.train_dataloader)
         if type(trainer.limit_train_batches) == int and trainer.limit_train_batches:

@@ -16,6 +16,14 @@ from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+default_params = {
+    "dropout": 0.1,
+    "bert_base_lr": 2e-6,
+    "lr_decay_factor": 0.95,
+    "weight_decay": 0.01,
+    "cls_lr": 2e-4,
+}
+
 class InputHelper:
 
     def __init__(self, tokenizer):
@@ -139,13 +147,16 @@ class MyModel(pl.LightningModule):
 
     def __init__(self, args: argparse.Namespace):
         super().__init__()
-        print("version 2023-05-07 20:08")
-
         self.args = args
+        for key, value in default_params.items():
+            if key in self.args.hyper_params:
+                continue
+            self.args.hyper_params[key] = value
 
         self.bert_config = AutoConfig.from_pretrained(MyModel.bert_path)
-        self.bert_config.attention_probs_dropout_prob = 0.1
-        self.bert_config.hidden_dropout_prob = 0.1
+        dropout = self.args.hyper_params['dropout']
+        self.bert_config.attention_probs_dropout_prob = dropout
+        self.bert_config.hidden_dropout_prob = dropout
 
         self.bert = AutoModel.from_pretrained(MyModel.bert_path, config=self.bert_config)
         self._tokenizer = AutoTokenizer.from_pretrained(MyModel.bert_path)
@@ -317,12 +328,7 @@ class MyModel(pl.LightningModule):
         return pred
 
     def configure_optimizers(self):
-        if self.args.finetune:
-            print("Fine-tune model with SGD")
-            optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
-            return optimizer
-
-        optimizer = self.make_optimizer2()
+        optimizer = self.make_optimizer()
 
         scheduler_args = {
             "optimizer": optimizer,
@@ -341,48 +347,9 @@ class MyModel(pl.LightningModule):
 
     def make_optimizer(self):
         params = []
-        for key, value in self.bert.named_parameters():
-            if not value.requires_grad:
-                continue
-
-            lr = 2e-6
-            weight_decay = 0.01
-            if "bias" in key:
-                lr = 4e-6
-                weight_decay = 0
-
-            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
-
-        for key, value in self.token_forget_gate.named_parameters():
-            if not value.requires_grad:
-                continue
-
-            lr = 2e-6
-            weight_decay = 0.01
-            if "bias" in key:
-                lr = 4e-6
-                weight_decay = 0
-
-            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
-
-        for key, value in self.cls.named_parameters():
-            if not value.requires_grad:
-                continue
-            lr = 2e-4
-            weight_decay = 0.01
-            if "bias" in key:
-                lr = 4e-4
-                weight_decay = 0
-            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
-
-        optimizer = torch.optim.AdamW(params)
-        return optimizer
-
-    def make_optimizer2(self):
-        params = []
         # BERT的学习率逐层降低
-        bert_base_lr = 2e-5
-        decay_factor = 0.95
+        bert_base_lr = self.args.hyper_params['bert_base_lr']
+        decay_factor = self.args.hyper_params['lr_decay_factor']
         for key, value in self.bert.named_parameters():
             if not value.requires_grad:
                 continue
@@ -390,12 +357,12 @@ class MyModel(pl.LightningModule):
             lr, weight_decay = 0, 0
             if key.startswith("embeddings."):
                 lr = bert_base_lr * (decay_factor ** 12)
-                weight_decay = 0.01
+                weight_decay = self.args.hyper_params['weight_decay']
 
             if key.startswith("'encoder.layer."):
-                layer = int('encoder.layer.9.output.dense.weight'.split('.')[2])
+                layer = int(key.split('.')[2])
                 lr = bert_base_lr * (decay_factor ** (11 - layer))
-                weight_decay = 0.01
+                weight_decay = self.args.hyper_params['weight_decay']
 
             if "bias" in key:
                 lr *= 2
@@ -408,16 +375,16 @@ class MyModel(pl.LightningModule):
                 continue
 
             lr = bert_base_lr
-            weight_decay = 0.01
+            weight_decay = self.args.hyper_params['weight_decay']
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
         for key, value in self.cls.named_parameters():
             if not value.requires_grad:
                 continue
-            lr = 2e-4
-            weight_decay = 0.01
+            lr = self.args.hyper_params['cls_lr']
+            weight_decay = self.args.hyper_params['weight_decay']
             if "bias" in key:
-                lr = 4e-4
+                lr *= 2
                 weight_decay = 0
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
