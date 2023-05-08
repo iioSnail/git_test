@@ -362,7 +362,7 @@ class MyModel(pl.LightningModule):
                 lr = bert_base_lr * (decay_factor ** 12)
                 weight_decay = self.args.hyper_params['weight_decay']
 
-            if key.startswith("'encoder.layer."):
+            if key.startswith("encoder.layer."):
                 layer = int(key.split('.')[2])
                 lr = bert_base_lr * (decay_factor ** (11 - layer))
                 weight_decay = self.args.hyper_params['weight_decay']
@@ -384,6 +384,7 @@ class MyModel(pl.LightningModule):
         for key, value in self.cls.named_parameters():
             if not value.requires_grad:
                 continue
+
             lr = self.args.hyper_params['cls_lr']
             weight_decay = self.args.hyper_params['weight_decay']
             if "bias" in key:

@@ -119,7 +119,6 @@ class TrainMetricsCallback(Callback):
         self.val_f1_list.append(c_f1)
         self.val_pr_list.append((c_p, c_r))
 
-
     def on_train_batch_end(
             self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any,
             batch_idx: int
@@ -230,13 +229,16 @@ class SimpleProgressBar(Callback):
         self.val_progress_bar.close()
 
         c_p, c_r, c_f1 = self.train_metrics.get_train_matrix()
-        log.info("train, Correction Precision: {}, Recall: {}, F1-Score: {}".format(c_p, c_r, c_f1))
+        log.info("Epoch {} train, Correction Precision: {}, Recall: {}, F1-Score: {}".format(trainer.current_epoch,
+                                                                                             c_p, c_r, c_f1))
 
         val_avg_loss = self.train_metrics.get_val_avg_loss()
         c_p, c_r = self.train_metrics.val_pr_list[-1]
         c_f1 = self.train_metrics.val_f1_list[-1]
-        log.info("val_loss {:.5f}, Correction Precision: {}, Recall: {}, F1-Score: {}".format(val_avg_loss,
-                                                                                              c_p, c_r, c_f1))
+        log.info(
+            "Epoch {} val_loss {:.5f}, Correction Precision: {}, Recall: {}, F1-Score: {}".format(trainer.current_epoch,
+                                                                                                  val_avg_loss,
+                                                                                                  c_p, c_r, c_f1))
         if trainer.logger:
             trainer.logger.log_metrics({
                 "val_loss": val_avg_loss,
