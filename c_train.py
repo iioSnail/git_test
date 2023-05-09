@@ -80,7 +80,7 @@ class C_Train(object):
 
         early_stop_callback = EarlyStopping(
             monitor="val_loss",
-            patience=3,
+            patience=5,
             mode='min',
         )
 
@@ -125,8 +125,12 @@ class C_Train(object):
     def test(self):
         trainer = pl.Trainer(
             default_root_dir=self.args.work_dir,
-            callbacks=[TestMetricsCallback(print_errors=self.args.print_errors)]
+            callbacks=[TestMetricsCallback(print_errors=self.args.print_errors,
+                                           ignore_de='13' in self.args.data
+                                           )]
         )
+
+
 
         test_dataloader = create_test_dataloader(self.args)
 

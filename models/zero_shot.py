@@ -478,6 +478,9 @@ class AdjustProbByPinyin(pl.LightningModule):
         return sent_tokens, pinyins
 
     def detect_predict(self, sent_tokens):
+        """
+        将原来的字降低一个std的置信度，若还能保持第一，说明该字没有错，否则就认为是错字
+        """
         inputs = self.tokenizer(' '.join(sent_tokens), return_tensors='pt').to(self.args.device)
         logits = self.model(**inputs).logits[0][1:-1]
 
@@ -489,12 +492,19 @@ class AdjustProbByPinyin(pl.LightningModule):
         pred_tokens = self.tokenizer.convert_ids_to_tokens(logits.argmax(-1))
 
         for i in range(len(sent_tokens)):
+            if not is_chinese(sent_tokens[i]):
+                continue
+
             if sent_tokens[i] != pred_tokens[i]:
-                sent_tokens[i] = '?'
+                sent_tokens[i] = '错'
 
         return ''.join(sent_tokens)
 
     def detect_predict2(self, sent_tokens):
+        """
+        对attention进行MASK，让每个字都对自己进行MASK。
+        FIXME，这个实现有点难，或者好像没办法通过一次forward实现。
+        """
         inputs = self.tokenizer(' '.join(sent_tokens), return_tensors='pt').to(self.args.device)
         bs, seq_num = inputs['input_ids'].size()
         assert bs == 1, "Sorry, Batch size must be 1"
@@ -514,13 +524,18 @@ class AdjustProbByPinyin(pl.LightningModule):
 
     def detect_predict3(self, sent_tokens):
         """
-        根据logits判断某个字是否是错字。
-        当当前字的logit小于某个值时，则认为它是错字
+        对每个字进行mask，然后根据logits判断某个字是否是错字。
+        若当前字的logit小于某个值时，则认为它是错字.
+
+        问题：这个整体f1太低了。要么召回率特别高，精准率几乎为0，要么全都很低。
         """
-        logit_threshold = 10  # 越低，召回率越低，精准率越高
+        logit_threshold = 5  # 越低，召回率越低，精准率越高。 TODO，超参
 
         pred_tokens = [item for item in sent_tokens]
         for i in range(len(sent_tokens)):
+            if not is_chinese(sent_tokens[i]):
+                continue
+
             input_tokens = [item for item in sent_tokens]
             token = input_tokens[i]
             input_tokens[i] = '[MASK]'
@@ -543,13 +558,16 @@ class AdjustProbByPinyin(pl.LightningModule):
 
     def detect_predict4(self, sent_tokens):
         """
-        根据候选值来判断是否是错字。
+        对每个字进行mask，根据候选值来判断是否是错字。
         逐个将每个字进行[MASK]，当该字的前n名不存在该字时，则认为该字时错字。
         """
-        n = 3  # n越低，召回率越高，但是精准率越低
+        n = 3  # n越低，召回率越高，但是精准率越低。TODO，超参
 
         pred_tokens = [item for item in sent_tokens]
         for i in range(len(sent_tokens)):
+            if not is_chinese(sent_tokens[i]):
+                continue
+
             input_tokens = [item for item in sent_tokens]
             token = input_tokens[i]
             input_tokens[i] = '[MASK]'
@@ -565,6 +583,92 @@ class AdjustProbByPinyin(pl.LightningModule):
             candidates = self.tokenizer.convert_ids_to_tokens(logits[i].argsort(descending=True)[:n])
             if token not in candidates:
                 pred_tokens[i] = '×'
+
+        pred = ''.join(pred_tokens)
+        return pred
+
+    def detect_predict_3_4(self, sent_tokens):
+        """
+        结合3和4
+        """
+        logit_threshold = 15  # 越低，召回率越低，精准率越高。 TODO，超参
+
+        pred_tokens = [item for item in sent_tokens]
+        for i in range(len(sent_tokens)):
+            if not is_chinese(sent_tokens[i]):
+                continue
+
+            input_tokens = [item for item in sent_tokens]
+            token = input_tokens[i]
+            input_tokens[i] = '[MASK]'
+
+            inputs = self.tokenizer(' '.join(input_tokens), return_tensors='pt').to(self.args.device)
+            logits = self.model(**inputs).logits[0][1:-1]
+
+            token_index = self.tokenizer.convert_tokens_to_ids(token)
+
+            logit_threshold = logits[i].sort(descending=True).values[:100].mean()
+            if logits[i][token_index] < logit_threshold:
+                pred_tokens[i] = '错'
+
+            # sorted_indexes = logits[i].argsort(descending=True)
+            # torch.where(sorted_indexes == token_index)[0][0]
+
+            # candidates = self.tokenizer.convert_ids_to_tokens(logits[i].argsort(descending=True)[:10])
+            # if token not in candidates:
+            #     pred_tokens[i] = '×'
+
+            # pred_tokens[i] = self.tokenizer._convert_id_to_token(logits[i].argmax(-1))
+
+        return ''.join(pred_tokens)
+
+
+    def detect_predict5(self, sent_tokens):
+        """
+        先整体进行一次forward，然后记录每个token的logit。
+        然后再对每个字进行mask，然后记录每个token的logit。
+        最后就一个差值，看看对于mask和原字的情况logit的差距。
+        当logit都很低时，为错字。
+        当logit都很高时，为正确字。
+        当mask时高，原字时低，为错字（FIXME？）
+        当mask时低，原字时高，为正确字（FIXME?）
+        """
+        pred_tokens = [item for item in sent_tokens]
+
+        inputs = self.tokenizer(' '.join(sent_tokens), return_tensors='pt').to(self.args.device)
+        token_indexes = inputs['input_ids'][0][1:-1]
+
+        logits = self.model(**inputs).logits[0][1:-1]
+        token_logits = []
+        for i, token_index in enumerate(token_indexes):
+            token_logits.append(logits[i, token_index])
+
+        token_logits = torch.tensor(token_logits)  # 每个字的logit
+
+        mask_logits = []
+        for i in range(len(sent_tokens)):
+            if not is_chinese(sent_tokens[i]):
+                mask_logits.append(token_logits[i])
+                continue
+
+            input_tokens = [item for item in sent_tokens]
+            token = input_tokens[i]
+            input_tokens[i] = '[MASK]'
+
+            inputs = self.tokenizer(' '.join(input_tokens), return_tensors='pt').to(self.args.device)
+            logits = self.model(**inputs).logits[0][1:-1]
+
+            mask_logits.append(logits[i, token_indexes[i]])
+
+        mask_logits = torch.tensor(mask_logits)  # 每个字mask状态下的logit
+
+        for i in range(len(sent_tokens)):
+            if token_logits[i] > 20:  # 足够确定，不是错字
+                continue
+
+            if token_logits[i] < 15 and mask_logits[i] < 10: # 不自信，是错字：
+                pred_tokens[i] = '错'
+                continue
 
         pred = ''.join(pred_tokens)
         return pred
@@ -658,7 +762,7 @@ class AdjustProbByPinyin(pl.LightningModule):
             sent_tokens = sent.split(" ")
             tgt_tokens = label.split(" ")
             # preds.append(self.logits_probe(sent_tokens, tgt_tokens))
-            preds.append(self.detect_predict3(sent_tokens))
+            preds.append(self.detect_predict_3_4(sent_tokens))
         return preds
 
     # def test_step(self, batch, batch_idx: int, *args, **kwargs):
@@ -701,8 +805,8 @@ if __name__ == '__main__':
                          'token_times': 1.2
                      })
 
-    sent_tokens = list("我真的喜欢去你的会，可是那的时候我有一个重要的考试。")
-    tgt_tokens = list("我真的喜欢去你的会，可是那个时候我有一个重要的考试。")
+    sent_tokens = list("据悉，明日中金所将面向全市场开展上证50和中证500股指期货的仿真交易，公募基金人表示，此举有助于为量化市场增添新的玩法，单只量化基金的最佳规模也将扩大")
+    tgt_tokens = list("据悉，明日中金所将面向全市场开展上证50和中证500股指期货的仿真交易，公募基金人表示，此举有助于为量化市场增添新的玩法，单只量化基金的最佳规模也将扩大")
     model = AdjustProbByPinyin(args)
 
     # sent_tokens = "[MASK] 再 也 不 会 [PAD] 扬 。 [PAD]".split(' ')
@@ -714,6 +818,8 @@ if __name__ == '__main__':
     # print(AdjustProbByPinyin(args).logits_probe(sent_tokens, tgt_tokens))
     # sent_tokens, pinyins = model.tell_mask(sent_tokens, ' '.join(tgt_tokens))
     # print(model.predict2_3(sent_tokens, pinyins))
-    sent_tokens, pinyins = model.tell_mask_full_pinyin(sent_tokens, ' '.join(tgt_tokens))
+    # sent_tokens, pinyins = model.tell_mask_full_pinyin(sent_tokens, ' '.join(tgt_tokens))
     # print(model.predict5_2(sent_tokens, pinyins))
-    print(model.predict5_3(sent_tokens, pinyins))
+    # print(model.predict5_3(sent_tokens, pinyins))
+
+    print(model.detect_predict_3_4(sent_tokens))

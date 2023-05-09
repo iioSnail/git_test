@@ -300,9 +300,10 @@ class SimpleProgressBar(Callback):
 
 class TestMetricsCallback(Callback):
 
-    def __init__(self, print_errors=False):
+    def __init__(self, print_errors=False, ignore_de=False):
         super().__init__()
         self.print_errors = print_errors
+        self.ignore_de = ignore_de
 
         self.csc_metrics = CSCMetrics()
 
@@ -318,10 +319,19 @@ class TestMetricsCallback(Callback):
         src, tgt = batch
         pred = outputs
 
-        assert len(src) == len(tgt) == len(pred)
-
         for i in range(len(src)):
-            self.csc_metrics.add_sentence(src[i].replace(" ", ""), tgt[i].replace(" ", ""), pred[i].replace(" ", ""))
+            src_i, tgt_i, pred_i = src[i].replace(" ", ""), tgt[i].replace(" ", ""), pred[i].replace(" ", "")
+            assert len(src_i) == len(tgt_i) == len(pred_i)
+
+            if self.ignore_de:
+                tgt_tokens = list(tgt_i)
+                pred_tokens = list(pred_i)
+                for j in range(len(tgt_tokens)):
+                    if tgt_tokens[j] in ['的', '地', '得']:
+                        pred_tokens[j] = tgt_tokens[j]
+                pred_i = ''.join(pred_tokens)
+
+            self.csc_metrics.add_sentence(src_i, tgt_i, pred_i)
 
     def on_test_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         self.csc_metrics.print_results()
