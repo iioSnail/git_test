@@ -19,10 +19,11 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 default_params = {
     "dropout": 0.1,
-    "bert_base_lr": 2e-6,
+    "bert_base_lr": 2e-5,
     "lr_decay_factor": 0.95,
     "weight_decay": 0.01,
     "cls_lr": 2e-4,
+    "k_head": 5,
 }
 
 
@@ -36,8 +37,6 @@ class InputHelper:
 
         self.token_images_cache = None
         self._init_token_images_cache()
-
-        self.hanzi_list = list(get_common_hanzi(6000))
 
     def _init_pinyin_embedding_cache(self):
         self.pinyin_embedding_cache = {}
@@ -53,30 +52,6 @@ class InputHelper:
             #     continue
 
             self.token_images_cache[id] = convert_char_to_image(token, 32)
-
-    def convert_ids_to_hids(self, ids):
-        if not hasattr(self, 'hids_map'):
-            hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.hanzi_list)
-            self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
-
-        size = ids.size()
-        ids = ids.view(-1)
-
-        # 把targets的input_ids转成hanzi_list中对应的“index”
-        for i in range(len(ids)):
-            tid = int(ids[i])  # token id
-            if tid == 0 or tid == 1:
-                continue
-
-            if tid in self.hids_map:
-                ids[i] = self.hids_map[tid]
-                continue
-
-            # 若targets的input_id为错字，但又不是汉字（通常是数据出了问题），则不计算loss
-            ids[i] = 0
-
-        ids = ids.view(size)
-        return ids
 
     def convert_tokens_to_pinyin_embeddings(self, input_ids):
         input_pinyins = []
@@ -155,6 +130,8 @@ class MyModel(pl.LightningModule):
                 continue
             self.args.hyper_params[key] = value
 
+        default_params.update(self.args.hyper_params)
+
         log.info("Hyper-parameters:" + str(self.args.hyper_params))
 
         self.bert_config = AutoConfig.from_pretrained(MyModel.bert_path)
@@ -220,7 +197,7 @@ class MyModel(pl.LightningModule):
 
         for i in range(len(outputs)):
             for j in range(len(outputs[i])):
-                if outputs[i][j] == 1 or outputs[i][j] == 0:
+                if outputs[i][j] <= default_params['k_head']:
                     outputs[i][j] = input_ids[i][j]
 
         return outputs
@@ -231,12 +208,15 @@ class MyModel(pl.LightningModule):
 
         loss = self.compute_loss(outputs, loss_targets)
 
+        outputs[:, :, 1] = outputs[:, :, 1:default_params['k_head'] + 1].max(-1).values
+        outputs[:, :, 2:default_params['k_head'] + 1] = -99999.
+
         outputs = outputs.argmax(-1)
 
         return {
             'loss': loss,
             'outputs': outputs,
-            'targets': loss_targets,
+            'targets': targets,
             'd_targets': d_targets,
             'attention_mask': inputs['attention_mask']
         }
@@ -246,12 +226,15 @@ class MyModel(pl.LightningModule):
         outputs = self.forward(inputs, input_pinyins, images)
         loss = self.compute_loss(outputs, loss_targets)
 
+        outputs[:, :, 1] = outputs[:, :, 1:default_params['k_head'] + 1].max(-1).values
+        outputs[:, :, 2:default_params['k_head'] + 1] = -99999.
+
         outputs = outputs.argmax(-1)
 
         return {
             'loss': loss,
             'outputs': outputs,
-            'targets': loss_targets,
+            'targets': targets,
             'd_targets': d_targets,
             'attention_mask': inputs['attention_mask']
         }
@@ -381,8 +364,16 @@ class MyModel(pl.LightningModule):
 
         # 将没有出错的单个字变为1
         loss_targets[(~d_targets) & (loss_targets != 0)] = 1
+        targets = loss_targets.clone()
+
+        # 构造(seq_num, vocab_size)的loss_targets
+        idx = loss_targets.view(-1, 1).long()
+        one_hot_key = torch.zeros(idx.size(0), len(MyModel.tokenizer), dtype=torch.float32, device=idx.device)
+        one_hot_key = one_hot_key.scatter_(1, idx, 1)
+        one_hot_key[:, 0] = 0  # ignore 0 index.
+        one_hot_key[:, 2:default_params['k_head'] + 1] = one_hot_key[:, 1:2]
 
         input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(src['input_ids'].view(-1))
         images = MyModel.input_helper.convert_tokens_to_images(src['input_ids'].view(-1), None)  # TODO
 
-        return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets, input_pinyins, images
+        return src, targets, (src['input_ids'] != tgt['input_ids']).float(), loss_targets, input_pinyins, images
