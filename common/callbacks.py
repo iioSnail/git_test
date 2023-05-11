@@ -242,9 +242,9 @@ class SimpleProgressBar(Callback):
         if trainer.logger:
             trainer.logger.log_metrics({
                 "val_avg_loss": val_avg_loss,
-                "val pre": c_p,
-                "val rec": c_r,
-                "val f1": c_f1,
+                "val_pre": c_p,
+                "val_rec": c_r,
+                "val_f1": c_f1,
             }, step=trainer.current_epoch)
 
     def on_train_batch_end(
@@ -265,9 +265,9 @@ class SimpleProgressBar(Callback):
         if trainer.logger:
             trainer.logger.log_metrics({
                 "train_loss": loss.item(),
-                "train pre": c_p,
-                "train rec": c_r,
-                "train f1": c_f1,
+                "train_pre": c_p,
+                "train_rec": c_r,
+                "train_f1": c_f1,
                 "lr": trainer.optimizers[0].state_dict()['param_groups'][-1]['lr'],
             }, step=trainer.current_epoch * len(trainer.train_dataloader) + batch_idx)
 
