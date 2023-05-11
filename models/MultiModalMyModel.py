@@ -23,12 +23,15 @@ default_params = {
     "lr_decay_factor": 0.95,
     "weight_decay": 0.01,
     "cls_lr": 2e-4,
+    "correct_k": 5,
 }
 
 class InputHelper:
 
-    def __init__(self, tokenizer):
+    def __init__(self, tokenizer, k=1):
         self.tokenizer = tokenizer
+
+        self.k = k
 
         self.pinyin_embedding_cache = None
         self._init_pinyin_embedding_cache()
@@ -56,7 +59,7 @@ class InputHelper:
     def convert_ids_to_hids(self, ids):
         if not hasattr(self, 'hids_map'):
             hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.hanzi_list)
-            self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
+            self.hids_map = dict(zip(hanzi_ids, range(self.k+1, len(hanzi_ids) + self.k+1)))
 
         size = ids.size()
         ids = ids.view(-1)
@@ -71,7 +74,7 @@ class InputHelper:
                 ids[i] = self.hids_map[tid]
                 continue
 
-            # 若targets的input_id为错字，但又不是汉字（通常是数据出了问题），则不计算loss
+            # 若targets的input_id为错字，但又不是汉字（通问题），则常是数据出了不计算loss
             ids[i] = 0
 
         ids = ids.view(size)
@@ -156,6 +159,8 @@ class MyModel(pl.LightningModule):
 
         log.info("Hyper-parameters:" + str(self.args.hyper_params))
 
+        self.k = self.args.hyper_params['correct_k']
+
         self.bert_config = AutoConfig.from_pretrained(MyModel.bert_path)
         dropout = self.args.hyper_params['dropout']
         self.bert_config.attention_probs_dropout_prob = dropout
@@ -175,8 +180,8 @@ class MyModel(pl.LightningModule):
         self.glyph_feature_size = 56
         self.glyph_embeddings = GlyphDenseEmbedding.from_pretrained('./ptm/hanzi_glyph_embedding.pt')
 
-        self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size + self.glyph_feature_size, len(self.token_list) + 2,
-                                   layer_num=1)
+        self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size + self.glyph_feature_size,
+                                   len(self.token_list) + self.k + 1, layer_num=1)
 
         self.loss_fnt = FocalLoss(device=self.args.device)
 
@@ -224,7 +229,7 @@ class MyModel(pl.LightningModule):
 
         for i in range(len(outputs)):
             for j in range(len(outputs[i])):
-                if outputs[i][j] == 1 or outputs[i][j] == 0:
+                if outputs[i][j] <= self.k:
                     outputs[i][j] = input_ids[i][j]
 
         return outputs
@@ -232,7 +237,7 @@ class MyModel(pl.LightningModule):
     def _convert_hids_to_ids(self, hids):
         if not hasattr(self, 'hids_map'):
             hanzi_ids = self._tokenizer.convert_tokens_to_ids(self.token_list)
-            self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
+            self.hids_map = dict(zip(hanzi_ids, range(self.k+1, len(hanzi_ids) + self.k+1)))
 
         if not hasattr(self, 'ids_map'):
             self.ids_map = {value: key for key, value in self.hids_map.items()}
