@@ -209,7 +209,7 @@ class MyModel(pl.LightningModule):
         loss = self.compute_loss(outputs, loss_targets)
 
         outputs[:, :, 1] = outputs[:, :, 1:default_params['k_head'] + 1].max(-1).values
-        outputs[:, :, 2:default_params['k_head'] + 1] = -99999.
+        outputs[:, :, 2:default_params['k_head'] + 1] = torch.tensor(-99999., device=outputs.device)
 
         outputs = outputs.argmax(-1)
 
