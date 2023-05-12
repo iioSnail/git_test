@@ -1,5 +1,6 @@
 import argparse
 import json
+import math
 import multiprocessing
 import os.path
 from pathlib import Path
@@ -243,6 +244,9 @@ class C_Train(object):
                 key, value = param.split("=")
                 if is_float(value):
                     value = float(value)
+                    if value == int(value):
+                        value = int(value)
+
                 hyper_params[key] = value
             args.hyper_params = hyper_params
         except:
