@@ -371,7 +371,8 @@ class MyModel(pl.LightningModule):
         one_hot_key = torch.zeros(idx.size(0), len(MyModel.tokenizer), dtype=torch.float32, device=idx.device)
         one_hot_key = one_hot_key.scatter_(1, idx, 1)
         one_hot_key[:, 0] = 0  # ignore 0 index.
-        one_hot_key[:, 1:default_params['k_head'] + 1] = one_hot_key[:, 1:2] # / default_params['k_head']
+        # one_hot_key[:, 1:default_params['k_head'] + 1] = one_hot_key[:, 1:2] / default_params['k_head']
+        one_hot_key[:, 2:default_params['k_head'] + 1] = one_hot_key[:, 1:2]
 
         input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(src['input_ids'].view(-1))
         images = MyModel.input_helper.convert_tokens_to_images(src['input_ids'].view(-1), None)  # TODO
