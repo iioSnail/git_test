@@ -264,6 +264,9 @@ class C_Train(object):
 if __name__ == '__main__':
     from multiprocessing import freeze_support
 
+    import torch.multiprocessing
+    torch.multiprocessing.set_sharing_strategy('file_system')
+
     freeze_support()
 
     train = C_Train()
