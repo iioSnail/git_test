@@ -192,6 +192,8 @@ class MyModel(pl.LightningModule):
         return self.loss_fnt(outputs.view(-1, outputs.size(-1)), targets)
 
     def extract_outputs(self, outputs, input_ids):
+        outputs[:, :, 1] = outputs[:, :, 1:default_params['k_head'] + 1].max(-1).values
+        outputs[:, :, 2:default_params['k_head'] + 1] = torch.tensor(-99999., device=outputs.device)
         outputs = outputs.argmax(-1)
 
         for i in range(len(outputs)):
