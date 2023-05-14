@@ -1,5 +1,4 @@
 import argparse
-import copy
 
 import lightning.pytorch as pl
 import torch
@@ -10,20 +9,22 @@ from transformers import AutoModel, AutoTokenizer, AutoConfig
 from models.common import BertOnlyMLMHead, BERT
 from utils.log_utils import log
 from utils.loss import FocalLoss
-from utils.scheduler import PlateauScheduler, WarmupExponentialLR
+from utils.scheduler import WarmupExponentialLR
 from utils.str_utils import get_common_hanzi
 from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image, pred_token_process
 
 import os
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 default_params = {
     "dropout": 0.1,
-    "bert_base_lr": 2e-5,
+    "bert_base_lr": 2e-6,
     "lr_decay_factor": 0.95,
     "weight_decay": 0.01,
     "cls_lr": 2e-4,
 }
+
 
 class InputHelper:
 
@@ -35,8 +36,6 @@ class InputHelper:
 
         self.token_images_cache = None
         self._init_token_images_cache()
-
-        self.hanzi_list = list(get_common_hanzi(6000))
 
     def _init_pinyin_embedding_cache(self):
         self.pinyin_embedding_cache = {}
@@ -52,30 +51,6 @@ class InputHelper:
             #     continue
 
             self.token_images_cache[id] = convert_char_to_image(token, 32)
-
-    def convert_ids_to_hids(self, ids):
-        if not hasattr(self, 'hids_map'):
-            hanzi_ids = self.tokenizer.convert_tokens_to_ids(self.hanzi_list)
-            self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
-
-        size = ids.size()
-        ids = ids.view(-1)
-
-        # 把targets的input_ids转成hanzi_list中对应的“index”
-        for i in range(len(ids)):
-            tid = int(ids[i])  # token id
-            if tid == 0 or tid == 1:
-                continue
-
-            if tid in self.hids_map:
-                ids[i] = self.hids_map[tid]
-                continue
-
-            # 若targets的input_id为错字，但又不是汉字（通常是数据出了问题），则不计算loss
-            ids[i] = 0
-
-        ids = ids.view(size)
-        return ids
 
     def convert_tokens_to_pinyin_embeddings(self, input_ids):
         input_pinyins = []
@@ -164,9 +139,6 @@ class MyModel(pl.LightningModule):
         self.bert = AutoModel.from_pretrained(MyModel.bert_path, config=self.bert_config)
         self._tokenizer = AutoTokenizer.from_pretrained(MyModel.bert_path)
 
-        self.hanzi_list = self.input_helper.hanzi_list
-        self.token_list = self.hanzi_list
-
         self.token_forget_gate = nn.Linear(768, 768, bias=False)
 
         self.pinyin_feature_size = 6
@@ -175,7 +147,7 @@ class MyModel(pl.LightningModule):
         self.glyph_feature_size = 56
         self.glyph_embeddings = GlyphDenseEmbedding.from_pretrained('./ptm/hanzi_glyph_embedding.pt')
 
-        self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size + self.glyph_feature_size, len(self.token_list) + 2,
+        self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size + self.glyph_feature_size, len(self._tokenizer),
                                    layer_num=1)
 
         self.loss_fnt = FocalLoss(device=self.args.device)
@@ -220,37 +192,12 @@ class MyModel(pl.LightningModule):
     def extract_outputs(self, outputs, input_ids):
         outputs = outputs.argmax(-1)
 
-        outputs = self._convert_hids_to_ids(outputs)
-
         for i in range(len(outputs)):
             for j in range(len(outputs[i])):
                 if outputs[i][j] == 1 or outputs[i][j] == 0:
                     outputs[i][j] = input_ids[i][j]
 
         return outputs
-
-    def _convert_hids_to_ids(self, hids):
-        if not hasattr(self, 'hids_map'):
-            hanzi_ids = self._tokenizer.convert_tokens_to_ids(self.token_list)
-            self.hids_map = dict(zip(hanzi_ids, range(2, len(hanzi_ids) + 2)))
-
-        if not hasattr(self, 'ids_map'):
-            self.ids_map = {value: key for key, value in self.hids_map.items()}
-
-        batch_size, token_num = None, None
-        if len(hids.shape) == 2:
-            batch_size, token_num = hids.shape
-            hids = hids.view(-1)
-
-        for i in range(len(hids)):
-            hid = int(hids[i])
-            if hid in self.ids_map:
-                hids[i] = self.ids_map[hid]
-
-        if batch_size and token_num:
-            hids = hids.view(batch_size, token_num)
-
-        return hids
 
     def training_step(self, batch, batch_idx, *args, **kwargs):
         inputs, targets, d_targets, loss_targets, input_pinyins, images = batch
@@ -291,7 +238,6 @@ class MyModel(pl.LightningModule):
         images = MyModel.input_helper.convert_tokens_to_images(inputs['input_ids'].view(-1), None)  # TODO
         input_pinyins, images = input_pinyins.to(self.args.device), images.to(self.args.device)
         outputs = self.forward(inputs, input_pinyins, images)
-        # outputs[:, :, 1] = outputs[:, :, 1] - outputs.std(dim=2)
         ids_list = self.extract_outputs(outputs, inputs['input_ids'])
         pred_tokens = self._tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])
         pred_tokens = pred_token_process(src_tokens, pred_tokens)
@@ -409,8 +355,6 @@ class MyModel(pl.LightningModule):
 
         # 将没有出错的单个字变为1
         loss_targets[(~d_targets) & (loss_targets != 0)] = 1
-
-        loss_targets = MyModel.input_helper.convert_ids_to_hids(loss_targets)
 
         input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(src['input_ids'].view(-1))
         images = MyModel.input_helper.convert_tokens_to_images(src['input_ids'].view(-1), None)  # TODO

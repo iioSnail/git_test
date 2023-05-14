@@ -33,20 +33,16 @@ class C_Train(object):
             from models.BertCorrectionModel import BertCSCModel
             return BertCSCModel(self.args)
 
-        if model == 'multimodalbert':
-            from models.MultiModalBert import MultiModalBertCscModel
-            return MultiModalBertCscModel(self.args)
-
-        if model == 'mymodel':
-            from models.MyModel import MyModel
-            return MyModel(self.args)
-
         if model == 'pinyinmymodel':
             from models.PinyinMyModel import MyModel
             return MyModel(self.args)
 
         if model == 'multimodalmymodel':
             from models.MultiModalMyModel import MyModel
+            return MyModel(self.args)
+
+        if model == 'multimodalmymodel_sota':
+            from models.MultiModalMyModel_SOTA import MyModel
             return MyModel(self.args)
 
         if model == 'zeroshot':
