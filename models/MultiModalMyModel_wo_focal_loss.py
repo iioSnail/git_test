@@ -150,7 +150,7 @@ class MyModel(pl.LightningModule):
         self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size + self.glyph_feature_size, len(self._tokenizer),
                                    layer_num=1)
 
-        self.loss_fnt = FocalLoss(device=self.args.device)
+        self.loss_fnt = nn.CrossEntropyLoss(ignore_index=0)
 
     def _init_parameters(self):
         for layer in self.cls.predictions:
