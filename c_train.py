@@ -57,6 +57,10 @@ class C_Train(object):
             from models.MultiModalMyModel_wo_multi_and_focal_loss import MyModel
             return MyModel(self.args)
 
+        if model == 'multimodalmymodel_wo_token_embeddings':
+            from models.MultiModalMyModel_wo_token_embeddings import MyModel
+            return MyModel(self.args)
+
         if model == 'zeroshot':
             from models.zero_shot import AdjustProbByPinyin
             return AdjustProbByPinyin(self.args)
