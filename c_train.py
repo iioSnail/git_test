@@ -61,6 +61,10 @@ class C_Train(object):
             from models.MultiModalMyModel_wo_token_embeddings import MyModel
             return MyModel(self.args)
 
+        if model == 'multimodalmymodel_wo_fix_index':
+            from models.MultiModalMyModel_wo_fix_index import MyModel
+            return MyModel(self.args)
+
         if model == 'zeroshot':
             from models.zero_shot import AdjustProbByPinyin
             return AdjustProbByPinyin(self.args)
