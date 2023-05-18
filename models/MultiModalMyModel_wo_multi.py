@@ -10,8 +10,7 @@ from models.common import BertOnlyMLMHead, BERT
 from utils.log_utils import log
 from utils.loss import FocalLoss
 from utils.scheduler import WarmupExponentialLR
-from utils.str_utils import get_common_hanzi
-from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image, pred_token_process
+from utils.utils import predict_process, pred_token_process
 
 import os
 
@@ -108,7 +107,7 @@ class MyModel(pl.LightningModule):
         }
 
     def validation_step(self, batch, batch_idx, *args, **kwargs):
-        inputs, targets, d_targets, loss_targets, input_pinyins, images = batch
+        inputs, targets, d_targets, loss_targets = batch
         outputs = self.forward(inputs)
         loss = self.compute_loss(outputs, loss_targets)
 
