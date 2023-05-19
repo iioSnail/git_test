@@ -69,8 +69,8 @@ class C_Train(object):
             from models.MultiModalMyModel_wo_multi_and_token_embeddings import MyModel
             return MyModel(self.args)
 
-        if model == 'multimodalmymodel_wo_glphy':
-            from models.MultiModalMyModel_wo_glphy import MyModel
+        if model == 'multimodalmymodel_wo_glyph':
+            from models.MultiModalMyModel_wo_glyph import MyModel
             return MyModel(self.args)
 
         if model == 'zeroshot':
