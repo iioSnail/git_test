@@ -56,8 +56,6 @@ class MyModel(pl.LightningModule):
             if isinstance(layer, nn.Linear):
                 nn.init.orthogonal_(layer.weight, gain=1)
 
-        nn.init.orthogonal_(self.token_forget_gate.weight, gain=1)
-
     def forward(self, inputs):
         input_ids = inputs['input_ids']
         attention_mask = inputs['attention_mask']
@@ -198,14 +196,6 @@ class MyModel(pl.LightningModule):
                 lr *= 2
                 weight_decay = 0
 
-            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
-
-        for key, value in self.token_forget_gate.named_parameters():
-            if not value.requires_grad:
-                continue
-
-            lr = bert_base_lr
-            weight_decay = self.args.hyper_params['weight_decay']
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
         for key, value in self.cls.named_parameters():
