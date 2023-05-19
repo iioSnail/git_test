@@ -23,6 +23,7 @@ default_params = {
     "lr_decay_factor": 0.95,
     "weight_decay": 0.01,
     "cls_lr": 2e-4,
+    "min_lr": 1e-6
 }
 
 

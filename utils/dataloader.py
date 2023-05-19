@@ -37,15 +37,19 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
         log.exception("Please specify data or datas.")
         exit()
 
-    valid_size = int(len(dataset) * args.valid_ratio)
-    train_size = len(dataset) - valid_size
+    train_dataset = dataset
+    if args.val_data is None:
+        valid_size = int(len(dataset) * args.valid_ratio)
+        train_size = len(dataset) - valid_size
 
-    if valid_size > 0:
-        train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
+        if valid_size > 0:
+            train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
+        else:
+            log.warning("No any valid data.")
+            train_dataset = dataset
+            valid_dataset = None
     else:
-        log.warning("No any valid data.")
-        train_dataset = dataset
-        valid_dataset = None
+        valid_dataset = CSCDataset(args.val_data)
 
     if collate_fn is None:
         collate_fn = DefaultCollateFn(args, tokenizer)

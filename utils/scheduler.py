@@ -40,11 +40,12 @@ class WarmupExponentialLR(_LRScheduler):
     """
 
     def __init__(self, optimizer, gamma, last_epoch=-1, warmup_epochs=2, warmup_factor=1.0 / 3, verbose=False,
-                 **kwargs):
+                 min_lr=None, **kwargs):
         self.gamma = gamma
         self.warmup_method = 'linear'
         self.warmup_epochs = warmup_epochs
         self.warmup_factor = warmup_factor
+        self.min_lr = min_lr
         super().__init__(optimizer, last_epoch, verbose)
 
     def _get_warmup_factor_at_iter(
@@ -82,10 +83,17 @@ class WarmupExponentialLR(_LRScheduler):
         )
 
         if self.last_epoch <= self.warmup_epochs:
-            return [base_lr * warmup_factor
-                    for base_lr in self.base_lrs]
-        return [group['lr'] * self.gamma
-                for group in self.optimizer.param_groups]
+            if self.min_lr is None:
+                return [base_lr * warmup_factor for base_lr in self.base_lrs]
+            else:
+                return [base_lr * warmup_factor if base_lr * warmup_factor > self.min_lr else self.min_lr
+                        for base_lr in self.base_lrs]
+
+        if self.min_lr is None:
+            return [group['lr'] * self.gamma for group in self.optimizer.param_groups]
+        else:
+            return [group['lr'] * self.gamma if group['lr'] * self.gamma > self.min_lr else self.min_lr
+                    for group in self.optimizer.param_groups]
 
     def _get_closed_form_lr(self):
         return [base_lr * self.gamma ** self.last_epoch

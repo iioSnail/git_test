@@ -173,6 +173,7 @@ class C_Train(object):
         parser.add_argument('--model', type=str, default='bert',
                             help='The model name you want to evaluate.')
         parser.add_argument('--data', type=str, default=None, help='The data you want to load. e.g. wang271k.')
+        parser.add_argument('--val-data', type=str, default=None, help='The data you want to load for validation. e.g. wang271k.')
         parser.add_argument('--datas', type=str, default=None,
                             help='The data you want to load together. e.g. sighan15train,sighan14train')
         parser.add_argument('--valid-ratio', type=float, default=0.2,
