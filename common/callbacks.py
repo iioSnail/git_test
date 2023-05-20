@@ -347,7 +347,7 @@ class EvalInTrainMetricsCallback(Callback):
         super().__init__()
         self.args = args
         self.csc_metrics = CSCMetrics()
-        self.dataset = CSCDataset('sighan15test')
+        self.dataset = CSCDataset(self.args.test_data)
 
     def on_test_batch_end(
             self,
