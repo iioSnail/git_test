@@ -191,14 +191,14 @@ def token_embeddings_visualise(embeddings, text):
     pca = PCA(n_components=2)
     embeddings = pca.fit_transform(embeddings)
     # 2. 创建一个16x9大小的维度图像
-    plt.figure(figsize=(16, 9))
+    plt.figure(figsize=(3, 2))
     # 3. 循环绘制文字
     for i in range(len(embeddings)):
         plt.text(embeddings[i][0], embeddings[i][1], text[i])
 
     # 4. 设置坐标边界
-    plt.xlim(embeddings[:, 0].min() - 0.5, embeddings[:, 0].max() + 0.5)
-    plt.ylim(embeddings[:, 1].min() - 0.5, embeddings[:, 1].max() + 0.5)
+    plt.xlim(embeddings[:, 0].min() - 5, embeddings[:, 0].max() + 5)
+    plt.ylim(embeddings[:, 1].min() - 5, embeddings[:, 1].max() + 5)
     plt.show()
 
 
