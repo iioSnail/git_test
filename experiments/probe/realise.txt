@@ -1,0 +1,318 @@
+ReaLise模型的Probe实验
+
+实验描述：使用ReaLiSe模型进行拼音和字形的Probe实验，判断ReaLise到底能不能编码拼音信息和字形信息。仅使用3000个最常见的汉字。
+
+实验1：拼音Probe，去掉了最后的融合层（不过保留了遗忘门）。对ReaLiSe模型也进行参数更新。分类头为 768*2->768>256->1。最终结果如下：
+Epoch 0 Training: 100%|██████████| 966/966 [02:10<00:00,  7.43it/s, loss=0.69, accuracy=0.5]
+Epoch 0 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.32it/s, accuracy=0.59]
+Epoch 1 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.5901192946058091
+Epoch 1 Training: 100%|██████████| 966/966 [02:05<00:00,  7.67it/s, loss=0.564, accuracy=0.719]
+Epoch 1 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.12it/s, accuracy=0.659]
+Epoch 2 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6591026970954357
+Epoch 2 Training: 100%|██████████| 966/966 [02:02<00:00,  7.87it/s, loss=0.514, accuracy=0.688]
+Epoch 2 Validation: 100%|██████████| 241/241 [00:09<00:00, 24.97it/s, accuracy=0.698]
+Epoch 3 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.698003112033195
+Epoch 3 Training: 100%|██████████| 966/966 [02:05<00:00,  7.67it/s, loss=0.36, accuracy=0.844]
+Epoch 3 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.31it/s, accuracy=0.751]
+Epoch 4 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.7506483402489627
+Epoch 4 Training: 100%|██████████| 966/966 [02:01<00:00,  7.93it/s, loss=0.504, accuracy=0.781]
+Epoch 4 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.19it/s, accuracy=0.772]
+Epoch 5 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.7721732365145229
+Epoch 5 Training: 100%|██████████| 966/966 [02:05<00:00,  7.71it/s, loss=0.456, accuracy=0.812]
+Epoch 5 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.41it/s, accuracy=0.794]
+Epoch 6 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.793957468879668
+Epoch 6 Training: 100%|██████████| 966/966 [02:05<00:00,  7.67it/s, loss=0.409, accuracy=0.75]
+Epoch 6 Validation: 100%|██████████| 241/241 [00:09<00:00, 25.76it/s, accuracy=0.821]
+Epoch 7 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8213174273858921
+Epoch 7 Training: 100%|██████████| 966/966 [02:04<00:00,  7.78it/s, loss=0.317, accuracy=0.812]
+Epoch 7 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.48it/s, accuracy=0.837]
+Epoch 8 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8366182572614108
+Epoch 8 Training: 100%|██████████| 966/966 [02:09<00:00,  7.47it/s, loss=0.33, accuracy=0.844]
+Epoch 8 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.16it/s, accuracy=0.848]
+Epoch 9 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8477697095435685
+Epoch 9 Training: 100%|██████████| 966/966 [02:12<00:00,  7.29it/s, loss=0.232, accuracy=0.906]
+Epoch 9 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.27it/s, accuracy=0.851]
+Epoch 10 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8511410788381742
+Epoch 10 Training: 100%|██████████| 966/966 [02:03<00:00,  7.80it/s, loss=0.419, accuracy=0.812]
+Epoch 10 Validation: 100%|██████████| 241/241 [00:09<00:00, 25.81it/s, accuracy=0.872]
+Epoch 11 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8718879668049793
+Epoch 11 Training: 100%|██████████| 966/966 [02:05<00:00,  7.68it/s, loss=0.386, accuracy=0.812]
+Epoch 11 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.82it/s, accuracy=0.875]
+Epoch 12 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8747406639004149
+Epoch 12 Training: 100%|██████████| 966/966 [02:05<00:00,  7.71it/s, loss=0.158, accuracy=0.938]
+Epoch 12 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.54it/s, accuracy=0.877]
+Epoch 13 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8768153526970954
+Epoch 13 Training: 100%|██████████| 966/966 [02:07<00:00,  7.59it/s, loss=0.282, accuracy=0.906]
+Epoch 13 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.60it/s, accuracy=0.879]
+Epoch 14 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.879408713692946
+Epoch 14 Training: 100%|██████████| 966/966 [02:05<00:00,  7.69it/s, loss=0.383, accuracy=0.844]
+Epoch 14 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.93it/s, accuracy=0.887]
+Epoch 15 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8865404564315352
+Epoch 15 Training: 100%|██████████| 966/966 [02:01<00:00,  7.95it/s, loss=0.0693, accuracy=1]
+Epoch 15 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.68it/s, accuracy=0.889]
+Epoch 16 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8892634854771784
+Epoch 16 Training: 100%|██████████| 966/966 [02:08<00:00,  7.53it/s, loss=0.0555, accuracy=1]
+Epoch 16 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.35it/s, accuracy=0.895]
+Epoch 17 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.89548755186722
+Epoch 17 Training: 100%|██████████| 966/966 [02:11<00:00,  7.36it/s, loss=0.194, accuracy=0.906]
+Epoch 17 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.07it/s, accuracy=0.891]
+Epoch 18 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.8910788381742739
+Epoch 18 Training: 100%|██████████| 966/966 [02:05<00:00,  7.69it/s, loss=0.0828, accuracy=0.969]
+Epoch 18 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.94it/s, accuracy=0.901]
+Epoch 19 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.9009336099585062
+Epoch 19 Training: 100%|██████████| 966/966 [02:08<00:00,  7.52it/s, loss=0.0597, accuracy=1]
+Epoch 19 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.09it/s, accuracy=0.904]
+ [00:00<?, ?it/s]Accuracy: 0.9037863070539419
+
+实验1：拼音Probe，去掉了最后的融合层（不过保留了遗忘门）。对ReaLiSe模型“不进行”参数更新。分类头为 768*2->768>256->1。最终结果如下：
+
+Epoch 0 Training:   0%|          | 0/966 [00:00<?, ?it/s]D:\Projects\PythonProjects\ReaLiSe\src\models.py:809: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  pho_idx = torch.tensor(batch['pho_idx']).to("cuda")
+Epoch 0 Training: 100%|██████████| 966/966 [00:41<00:00, 23.31it/s, loss=0.658, accuracy=0.5]
+Epoch 0 Validation: 100%|██████████| 241/241 [00:08<00:00, 29.57it/s, accuracy=0.549]
+Epoch 1 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.5490145228215768
+Epoch 1 Training: 100%|██████████| 966/966 [00:34<00:00, 28.08it/s, loss=0.686, accuracy=0.531]
+Epoch 1 Validation: 100%|██████████| 241/241 [00:08<00:00, 29.07it/s, accuracy=0.583]
+Epoch 2 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.5828578838174274
+Epoch 2 Training: 100%|██████████| 966/966 [00:36<00:00, 26.47it/s, loss=0.745, accuracy=0.469]
+Epoch 2 Validation: 100%|██████████| 241/241 [00:07<00:00, 30.29it/s, accuracy=0.585]
+Epoch 3 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.5850622406639004
+Epoch 3 Training: 100%|██████████| 966/966 [00:35<00:00, 27.36it/s, loss=0.567, accuracy=0.719]
+Epoch 3 Validation: 100%|██████████| 241/241 [00:08<00:00, 28.81it/s, accuracy=0.616]
+Epoch 4 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6163122406639004
+Epoch 4 Training: 100%|██████████| 966/966 [00:37<00:00, 25.90it/s, loss=0.667, accuracy=0.531]
+Epoch 4 Validation: 100%|██████████| 241/241 [00:07<00:00, 32.18it/s, accuracy=0.627]
+Epoch 5 Training:   0%|          | 0/966 [00:00<?, ?it/s, loss=0.582, accuracy=0.656]Accuracy: 0.6268153526970954
+Epoch 5 Training: 100%|██████████| 966/966 [00:40<00:00, 23.84it/s, loss=0.488, accuracy=0.75]
+Epoch 5 Validation: 100%|██████████| 241/241 [00:08<00:00, 26.99it/s, accuracy=0.647]
+Epoch 6 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6473029045643154
+Epoch 6 Training: 100%|██████████| 966/966 [00:36<00:00, 26.51it/s, loss=0.523, accuracy=0.75]
+Epoch 6 Validation: 100%|██████████| 241/241 [00:07<00:00, 31.57it/s, accuracy=0.63]
+Epoch 7 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6304460580912863
+Epoch 7 Training: 100%|██████████| 966/966 [00:42<00:00, 22.94it/s, loss=0.626, accuracy=0.656]
+Epoch 7 Validation: 100%|██████████| 241/241 [00:07<00:00, 31.02it/s, accuracy=0.647]
+Epoch 8 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6470435684647303
+Epoch 8 Training: 100%|██████████| 966/966 [00:36<00:00, 26.81it/s, loss=0.48, accuracy=0.75]
+Epoch 8 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.95it/s, accuracy=0.643]
+Epoch 9 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6432831950207469
+Epoch 9 Training: 100%|██████████| 966/966 [00:42<00:00, 22.99it/s, loss=0.484, accuracy=0.75]
+Epoch 9 Validation: 100%|██████████| 241/241 [00:08<00:00, 29.62it/s, accuracy=0.656]
+Epoch 10 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6556016597510373
+Epoch 10 Training: 100%|██████████| 966/966 [00:41<00:00, 23.35it/s, loss=0.531, accuracy=0.781]
+Epoch 10 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.78it/s, accuracy=0.667]
+Epoch 11 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6668827800829875
+Epoch 11 Training: 100%|██████████| 966/966 [00:41<00:00, 23.54it/s, loss=0.638, accuracy=0.688]
+Epoch 11 Validation: 100%|██████████| 241/241 [00:08<00:00, 29.96it/s, accuracy=0.672]
+Epoch 12 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6718101659751037
+Epoch 12 Training: 100%|██████████| 966/966 [00:39<00:00, 24.23it/s, loss=0.547, accuracy=0.75]
+Epoch 12 Validation: 100%|██████████| 241/241 [00:07<00:00, 32.14it/s, accuracy=0.651]
+Epoch 13 Training:   0%|          | 0/966 [00:00<?, ?it/s, loss=0.424, accuracy=0.812]Accuracy: 0.6511929460580913
+Epoch 13 Training: 100%|██████████| 966/966 [00:35<00:00, 27.46it/s, loss=0.431, accuracy=0.844]
+Epoch 13 Validation: 100%|██████████| 241/241 [00:07<00:00, 31.34it/s, accuracy=0.668]
+Epoch 14 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6681794605809128
+Epoch 14 Training: 100%|██████████| 966/966 [00:40<00:00, 23.58it/s, loss=0.632, accuracy=0.719]
+Epoch 14 Validation: 100%|██████████| 241/241 [00:08<00:00, 29.12it/s, accuracy=0.665]
+Epoch 15 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6653267634854771
+Epoch 15 Training: 100%|██████████| 966/966 [00:34<00:00, 27.71it/s, loss=0.558, accuracy=0.75]
+Epoch 15 Validation: 100%|██████████| 241/241 [00:07<00:00, 31.32it/s, accuracy=0.671]
+Epoch 16 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6707728215767634
+Epoch 16 Training: 100%|██████████| 966/966 [00:37<00:00, 25.97it/s, loss=0.654, accuracy=0.656]
+Epoch 16 Validation: 100%|██████████| 241/241 [00:07<00:00, 31.12it/s, accuracy=0.684]
+Epoch 17 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6836099585062241
+Epoch 17 Training: 100%|██████████| 966/966 [00:39<00:00, 24.67it/s, loss=0.428, accuracy=0.75]
+Epoch 17 Validation: 100%|██████████| 241/241 [00:07<00:00, 30.73it/s, accuracy=0.67]
+Epoch 18 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6698651452282157
+Epoch 18 Training: 100%|██████████| 966/966 [00:41<00:00, 23.29it/s, loss=0.344, accuracy=0.938]
+Epoch 18 Validation: 100%|██████████| 241/241 [00:08<00:00, 29.95it/s, accuracy=0.685]
+Epoch 19 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6849066390041494
+Epoch 19 Training: 100%|██████████| 966/966 [00:36<00:00, 26.74it/s, loss=0.328, accuracy=0.938]
+Epoch 19 Validation: 100%|██████████| 241/241 [00:07<00:00, 32.18it/s, accuracy=0.678]
+Epoch 20 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6776452282157677
+Epoch 20 Training: 100%|██████████| 966/966 [00:42<00:00, 22.61it/s, loss=0.541, accuracy=0.719]
+Epoch 20 Validation: 100%|██████████| 241/241 [00:07<00:00, 31.09it/s, accuracy=0.677]
+Epoch 21 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.67673755186722
+Epoch 21 Training: 100%|██████████| 966/966 [00:36<00:00, 26.18it/s, loss=0.536, accuracy=0.75]
+Epoch 21 Validation: 100%|██████████| 241/241 [00:07<00:00, 31.75it/s, accuracy=0.678]
+Epoch 22 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6780342323651453
+
+实验3：拼音Probe，“保留融合层”（三层Transformer）。对ReaLiSe模型也进行参数更新。分类头为 768*2->768>256->1。最终结果如下：
+Epoch 0 Training: 100%|██████████| 966/966 [02:25<00:00,  6.63it/s, loss=0.693, accuracy=0.469]
+Epoch 0 Validation: 100%|██████████| 241/241 [00:11<00:00, 21.55it/s, accuracy=0.51]
+Epoch 1 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.5095954356846473
+Epoch 1 Training: 100%|██████████| 966/966 [02:19<00:00,  6.93it/s, loss=0.693, accuracy=0.438]
+Epoch 1 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.38it/s, accuracy=0.49]
+Epoch 2 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48975622406639
+Epoch 2 Training: 100%|██████████| 966/966 [02:22<00:00,  6.77it/s, loss=0.695, accuracy=0.406]
+Epoch 2 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.82it/s, accuracy=0.49]
+Epoch 3 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48988589211618255
+Epoch 3 Training: 100%|██████████| 966/966 [02:23<00:00,  6.71it/s, loss=0.693, accuracy=0.562]
+Epoch 3 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.46it/s, accuracy=0.491]
+Epoch 4 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.49066390041493774
+Epoch 4 Training: 100%|██████████| 966/966 [02:24<00:00,  6.70it/s, loss=0.694, accuracy=0.469]
+Epoch 4 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.27it/s, accuracy=0.489]
+Epoch 5 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48897821576763484
+Epoch 5 Training: 100%|██████████| 966/966 [02:21<00:00,  6.81it/s, loss=0.691, accuracy=0.656]
+Epoch 5 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.92it/s, accuracy=0.489]
+Epoch 6 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48897821576763484
+Epoch 6 Training: 100%|██████████| 966/966 [02:18<00:00,  6.97it/s, loss=0.692, accuracy=0.562]
+Epoch 6 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.04it/s, accuracy=0.49]
+Epoch 7 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48988589211618255
+Epoch 7 Training: 100%|██████████| 966/966 [02:22<00:00,  6.79it/s, loss=0.694, accuracy=0.438]
+Epoch 7 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.38it/s, accuracy=0.49]
+Epoch 8 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48988589211618255
+Epoch 8 Training: 100%|██████████| 966/966 [02:23<00:00,  6.72it/s, loss=0.696, accuracy=0.281]
+Epoch 8 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.00it/s, accuracy=0.49]
+Epoch 9 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48975622406639
+Epoch 9 Training: 100%|██████████| 966/966 [02:21<00:00,  6.81it/s, loss=0.699, accuracy=0.406]
+Epoch 9 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.21it/s, accuracy=0.491]
+Epoch 10 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.4905342323651452
+Epoch 10 Training: 100%|██████████| 966/966 [02:22<00:00,  6.78it/s, loss=0.695, accuracy=0.375]
+Epoch 10 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.11it/s, accuracy=0.49]
+Epoch 11 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48988589211618255
+Epoch 11 Training: 100%|██████████| 966/966 [02:18<00:00,  6.96it/s, loss=0.683, accuracy=0.625]
+Epoch 11 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.20it/s, accuracy=0.49]
+Epoch 12 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.4901452282157676
+Epoch 12 Training: 100%|██████████| 966/966 [02:22<00:00,  6.80it/s, loss=0.694, accuracy=0.469]
+Epoch 12 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.81it/s, accuracy=0.49]
+Epoch 13 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48975622406639
+Epoch 13 Training: 100%|██████████| 966/966 [02:20<00:00,  6.90it/s, loss=0.696, accuracy=0.344]
+Epoch 13 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.96it/s, accuracy=0.49]
+Epoch 14 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.4901452282157676
+Epoch 14 Training: 100%|██████████| 966/966 [02:22<00:00,  6.79it/s, loss=0.695, accuracy=0.375]
+Epoch 14 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.66it/s, accuracy=0.49]
+Epoch 15 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48975622406639
+Epoch 15 Training: 100%|██████████| 966/966 [02:20<00:00,  6.88it/s, loss=0.693, accuracy=0.531]
+Epoch 15 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.54it/s, accuracy=0.49]
+Epoch 16 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.4896265560165975
+Epoch 16 Training: 100%|██████████| 966/966 [02:20<00:00,  6.89it/s, loss=0.693, accuracy=0.469]
+Epoch 16 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.91it/s, accuracy=0.49]
+Epoch 17 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48975622406639
+Epoch 17 Training: 100%|██████████| 966/966 [02:24<00:00,  6.68it/s, loss=0.694, accuracy=0.438]
+Epoch 17 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.40it/s, accuracy=0.49]
+Epoch 18 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.4901452282157676
+Epoch 18 Training: 100%|██████████| 966/966 [02:21<00:00,  6.81it/s, loss=0.692, accuracy=0.688]
+Epoch 18 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.24it/s, accuracy=0.49]
+Epoch 19 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.49027489626556015
+Epoch 19 Training: 100%|██████████| 966/966 [02:21<00:00,  6.85it/s, loss=0.694, accuracy=0.438]
+Epoch 19 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.85it/s, accuracy=0.49]
+Epoch 20 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.4900155601659751
+Epoch 20 Training: 100%|██████████| 966/966 [02:21<00:00,  6.83it/s, loss=0.692, accuracy=0.625]
+Epoch 20 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.21it/s, accuracy=0.49]
+Epoch 21 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.4901452282157676
+Epoch 21 Training: 100%|██████████| 966/966 [02:24<00:00,  6.68it/s, loss=0.694, accuracy=0.406]
+Epoch 21 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.03it/s, accuracy=0.49]
+Epoch 22 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48988589211618255
+Epoch 22 Training: 100%|██████████| 966/966 [02:25<00:00,  6.64it/s, loss=0.694, accuracy=0.406]
+Epoch 22 Validation: 100%|██████████| 241/241 [00:10<00:00, 21.93it/s, accuracy=0.49]
+Epoch 23 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48975622406639
+Epoch 23 Training: 100%|██████████| 966/966 [02:20<00:00,  6.87it/s, loss=0.694, accuracy=0.438]
+Epoch 23 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.63it/s, accuracy=0.49]
+Epoch 24 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48975622406639
+Epoch 24 Training: 100%|██████████| 966/966 [02:19<00:00,  6.92it/s, loss=0.693, accuracy=0.531]
+Epoch 24 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.50it/s, accuracy=0.49]
+Epoch 25 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48988589211618255
+Epoch 25 Training: 100%|██████████| 966/966 [02:27<00:00,  6.53it/s, loss=0.693, accuracy=0.5]
+Epoch 25 Validation: 100%|██████████| 241/241 [00:10<00:00, 22.98it/s, accuracy=0.491]
+Epoch 26 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.49066390041493774
+Epoch 26 Training: 100%|██████████| 966/966 [02:27<00:00,  6.56it/s, loss=0.694, accuracy=0.375]
+Epoch 26 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.25it/s, accuracy=0.49]
+Epoch 27 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.4904045643153527
+Epoch 27 Training: 100%|██████████| 966/966 [02:20<00:00,  6.85it/s, loss=0.693, accuracy=0.469]
+Epoch 27 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.75it/s, accuracy=0.49]
+Epoch 28 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.4896265560165975
+Epoch 28 Training: 100%|██████████| 966/966 [02:25<00:00,  6.64it/s, loss=0.692, accuracy=0.594]
+Epoch 28 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.88it/s, accuracy=0.49]
+Epoch 29 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48988589211618255
+Epoch 29 Training: 100%|██████████| 966/966 [02:28<00:00,  6.51it/s, loss=0.694, accuracy=0.344]
+Epoch 29 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.58it/s, accuracy=0.489]
+Epoch 30 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.48949688796680496
+
+实验4：实验3：拼音Probe，“保留融合层”（三层Transformer）。对ReaLiSe模型不进行参数更新。分类头为 768*2->768>256->1。最终结果如下：
+  pho_idx = torch.tensor(batch['pho_idx']).to("cuda")
+Epoch 0 Training: 100%|██████████| 966/966 [00:47<00:00, 20.33it/s, loss=0.736, accuracy=0.562]
+Epoch 0 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.56it/s, accuracy=0.596]
+Epoch 1 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.595695020746888
+Epoch 1 Training: 100%|██████████| 966/966 [00:42<00:00, 22.84it/s, loss=0.632, accuracy=0.562]
+Epoch 1 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.34it/s, accuracy=0.593]
+Epoch 2 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.5925829875518672
+Epoch 2 Training: 100%|██████████| 966/966 [00:40<00:00, 23.87it/s, loss=0.619, accuracy=0.656]
+Epoch 2 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.75it/s, accuracy=0.61]
+Epoch 3 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6098288381742739
+Epoch 3 Training: 100%|██████████| 966/966 [00:45<00:00, 21.42it/s, loss=0.533, accuracy=0.688]
+Epoch 3 Validation: 100%|██████████| 241/241 [00:09<00:00, 24.89it/s, accuracy=0.621]
+Epoch 4 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6211099585062241
+Epoch 4 Training: 100%|██████████| 966/966 [00:46<00:00, 20.81it/s, loss=0.598, accuracy=0.719]
+Epoch 4 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.35it/s, accuracy=0.634]
+Epoch 5 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6336877593360996
+Epoch 5 Training: 100%|██████████| 966/966 [00:45<00:00, 21.09it/s, loss=0.605, accuracy=0.688]
+Epoch 5 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.20it/s, accuracy=0.631]
+Epoch 6 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6314834024896265
+Epoch 6 Training: 100%|██████████| 966/966 [00:42<00:00, 22.47it/s, loss=0.611, accuracy=0.75]
+Epoch 6 Validation: 100%|██████████| 241/241 [00:09<00:00, 25.07it/s, accuracy=0.654]
+Epoch 7 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6544346473029046
+Epoch 7 Training: 100%|██████████| 966/966 [00:44<00:00, 21.65it/s, loss=0.491, accuracy=0.719]
+Epoch 7 Validation: 100%|██████████| 241/241 [00:08<00:00, 26.85it/s, accuracy=0.664]
+Epoch 8 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6644190871369294
+Epoch 8 Training: 100%|██████████| 966/966 [00:47<00:00, 20.50it/s, loss=0.636, accuracy=0.75]
+Epoch 8 Validation: 100%|██████████| 241/241 [00:09<00:00, 24.20it/s, accuracy=0.655]
+Epoch 9 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6546939834024896
+Epoch 9 Training: 100%|██████████| 966/966 [00:45<00:00, 21.12it/s, loss=0.625, accuracy=0.75]
+Epoch 9 Validation: 100%|██████████| 241/241 [00:09<00:00, 25.31it/s, accuracy=0.671]
+Epoch 10 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6710321576763485
+Epoch 10 Training: 100%|██████████| 966/966 [00:48<00:00, 19.90it/s, loss=0.46, accuracy=0.844]
+Epoch 10 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.69it/s, accuracy=0.665]
+Epoch 11 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.664808091286307
+Epoch 11 Training: 100%|██████████| 966/966 [00:46<00:00, 20.81it/s, loss=0.526, accuracy=0.75]
+Epoch 11 Validation: 100%|██████████| 241/241 [00:09<00:00, 24.49it/s, accuracy=0.674]
+Epoch 12 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6738848547717843
+Epoch 12 Training: 100%|██████████| 966/966 [00:42<00:00, 22.81it/s, loss=0.662, accuracy=0.531]
+Epoch 12 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.41it/s, accuracy=0.675]
+Epoch 13 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6750518672199171
+Epoch 13 Training: 100%|██████████| 966/966 [00:46<00:00, 20.59it/s, loss=0.601, accuracy=0.656]
+Epoch 13 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.91it/s, accuracy=0.669]
+Epoch 14 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6690871369294605
+Epoch 14 Training: 100%|██████████| 966/966 [00:42<00:00, 22.49it/s, loss=0.644, accuracy=0.562]
+Epoch 14 Validation: 100%|██████████| 241/241 [00:10<00:00, 23.51it/s, accuracy=0.675]
+Epoch 15 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6751815352697096
+Epoch 15 Training: 100%|██████████| 966/966 [00:44<00:00, 21.86it/s, loss=0.471, accuracy=0.75]
+Epoch 15 Validation: 100%|██████████| 241/241 [00:09<00:00, 25.85it/s, accuracy=0.677]
+Epoch 16 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.676996887966805
+Epoch 16 Training: 100%|██████████| 966/966 [00:46<00:00, 20.57it/s, loss=0.385, accuracy=0.844]
+Epoch 16 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.00it/s, accuracy=0.675]
+Epoch 17 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.674792531120332
+Epoch 17 Training: 100%|██████████| 966/966 [00:40<00:00, 23.74it/s, loss=0.507, accuracy=0.812]
+Epoch 17 Validation: 100%|██████████| 241/241 [00:09<00:00, 25.60it/s, accuracy=0.68]
+Epoch 18 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6802385892116183
+Epoch 18 Training: 100%|██████████| 966/966 [00:40<00:00, 23.67it/s, loss=0.471, accuracy=0.719]
+Epoch 18 Validation: 100%|██████████| 241/241 [00:08<00:00, 27.48it/s, accuracy=0.683]
+Epoch 19 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6829616182572614
+Epoch 19 Training: 100%|██████████| 966/966 [00:42<00:00, 22.57it/s, loss=0.471, accuracy=0.719]
+Epoch 19 Validation: 100%|██████████| 241/241 [00:09<00:00, 24.11it/s, accuracy=0.684]
+Epoch 20 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6838692946058091
+Epoch 20 Training: 100%|██████████| 966/966 [00:46<00:00, 20.98it/s, loss=0.416, accuracy=0.75]
+Epoch 20 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.02it/s, accuracy=0.679]
+Epoch 21 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.679201244813278
+Epoch 21 Training: 100%|██████████| 966/966 [00:44<00:00, 21.93it/s, loss=0.632, accuracy=0.812]
+Epoch 21 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.35it/s, accuracy=0.684]
+Epoch 22 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6842582987551867
+Epoch 22 Training: 100%|██████████| 966/966 [00:46<00:00, 20.71it/s, loss=0.711, accuracy=0.656]
+Epoch 22 Validation: 100%|██████████| 241/241 [00:09<00:00, 24.14it/s, accuracy=0.689]
+Epoch 23 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6891856846473029
+Epoch 23 Training: 100%|██████████| 966/966 [00:46<00:00, 20.86it/s, loss=0.407, accuracy=0.781]
+Epoch 23 Validation: 100%|██████████| 241/241 [00:09<00:00, 25.00it/s, accuracy=0.689]
+Epoch 24 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6886670124481328
+Epoch 24 Training: 100%|██████████| 966/966 [00:46<00:00, 20.65it/s, loss=0.658, accuracy=0.562]
+Epoch 24 Validation: 100%|██████████| 241/241 [00:09<00:00, 26.07it/s, accuracy=0.697]
+Epoch 25 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6973547717842323
+Epoch 25 Training: 100%|██████████| 966/966 [00:45<00:00, 21.02it/s, loss=0.438, accuracy=0.75]
+Epoch 25 Validation: 100%|██████████| 241/241 [00:09<00:00, 25.32it/s, accuracy=0.69]
+Epoch 26 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6904823651452282
+Epoch 26 Training: 100%|██████████| 966/966 [00:45<00:00, 21.40it/s, loss=0.362, accuracy=0.812]
+Epoch 26 Validation: 100%|██████████| 241/241 [00:09<00:00, 24.11it/s, accuracy=0.696]
+Epoch 27 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6955394190871369
+Epoch 27 Training: 100%|██████████| 966/966 [00:45<00:00, 21.32it/s, loss=0.318, accuracy=0.875]
+Epoch 27 Validation: 100%|██████████| 241/241 [00:09<00:00, 24.58it/s, accuracy=0.696]
+Epoch 28 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6964470954356846
+Epoch 28 Training: 100%|██████████| 966/966 [00:47<00:00, 20.34it/s, loss=0.36, accuracy=0.812]
+Epoch 28 Validation: 100%|██████████| 241/241 [00:09<00:00, 24.77it/s, accuracy=0.7]
+Epoch 29 Training:   0%|          | 0/966 [00:00<?, ?it/s]Accuracy: 0.6995591286307054
