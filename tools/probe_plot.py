@@ -2,6 +2,9 @@
 绘制Probe任务的结果
 """
 
+
+import matplotlib.pyplot as plt
+
 # ReaLise模型，拼音Probe任务，有Fusion Module，模型参与训练
 realise_pinyin_wo_fm_w_t = [0.5901, 0.6591, 0.6980, 0.7506, 0.7721, 0.7939, 0.8213, 0.8366, 0.8477, 0.8511, 0.8718,
                             0.8747, 0.8768, 0.8794, 0.8865, 0.8892, 0.8954, 0.8910, 0.9009, 0.9037, ]
@@ -29,3 +32,24 @@ realise_zixing_wo_fm_w_t = [0.5038, 0.7010, 0.5046, 0.4969, 0.5034, 0.4949, 0.49
                             0.4969, 0.4953, 0.5034, 0.4961, 0.5023, 0.4957, 0.4969, 0.4949, 0.4969, ]
 
 
+def plot_probe_result(x_map):
+    fig, ax = plt.subplots(1, 1)
+    for model_name, data in x_map.items():
+        data = data.copy()
+        data = [0.5] + data
+        ax.plot(range(0, len(data)), data)
+
+    ax.legend(x_map.keys())
+    ax.set_xticks(range(0, 21))
+    fig.show()
+
+if __name__ == '__main__':
+    plot_probe_result({
+        "ReaLise_WF": realise_pinyin_w_fm_wo_t,
+        "ReaLise_WOF": realise_pinyin_wo_fm_wo_t,
+    })
+
+    plot_probe_result({
+        "ReaLise_WF": realise_zixing_w_fm_wo_t,
+        "ReaLise_WOF": realise_zixing_wo_fm_wo_t,
+    })
