@@ -29,7 +29,8 @@ def load_sentences_from_csv(filepath):
 
 def generate_word_frequency():
     sentences = load_sentences_from_csv("./datasets/cscd_ime_2m.csv") \
-                + load_sentences_from_csv("./datasets/cscd_ime_dev_bak.csv") \
+                + load_sentences_from_csv("./datasets/cscd_ime_train.csv") \
+                + load_sentences_from_csv("./datasets/cscd_ime_dev.csv") \
                 + load_sentences_from_csv("./datasets/cscd_ime_test.csv") \
                 + load_sentences_from_csv("./datasets/wang271k.csv")
 
@@ -45,11 +46,8 @@ def generate_word_frequency():
         if i > 1000:
             break
 
-    save_obj(counter, "./outputs/counter.pkl")
+    save_obj(counter, "./outputs/word_frequency.pkl")
 
 if __name__ == '__main__':
-    # counter = load_obj("./outputs/counter.pkl")
-
-    # print(counter)
     generate_word_frequency()
 
