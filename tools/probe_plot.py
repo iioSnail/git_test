@@ -36,16 +36,31 @@ mm_bert_pinyin_wo_t = [0.9718, 0.9765, 0.9888, 0.9736, 0.9869, 0.9902, 0.9901, 0
 mm_bert_zixing_wo_t = [0.8051, 0.8078, 0.8221, 0.8105, 0.8306, 0.8314, 0.8190, 0.8267, 0.8344, 0.8302, 0.8206, 0.8298,
                        0.8221, 0.8287, 0.8260, 0.8105, 0.8159, 0.8267, 0.8136, 0.8294, ]
 
+chinese_bert_pinyin_wo_t = [0.4932, 0.4944, 0.4940, 0.5060, 0.5076, 0.4942, 0.5058, 0.4948, 0.4942, 0.4949, 0.4939,
+                            0.4946, 0.4940, 0.4931, 0.4940, 0.5066, 0.4928, 0.4936, 0.4937, 0.4944, ]
 
-def plot_probe_result(x_map):
+chinese_bert_pinyin_w_t = [0.4998, 0.5000, 0.4992, 0.4994, 0.4996, 0.4989, 0.4993, 0.4992, 0.4985, 0.4992, 0.4992,
+                           0.4994, 0.5006, 0.5009, 0.4998, 0.4988, 0.4993, 0.4992, 0.4997, ]
+
+chinese_bert_zixing_wo_t = [0.5003, 0.5034, 0.5003, 0.5034, 0.5027, 0.5019, 0.5030, 0.5003, 0.5011, 0.5007, 0.5027,
+                            0.5038, 0.5038, 0.5011, 0.5003, 0.5046, 0.5003, 0.5023, 0.5034, 0.5007, ]
+
+chinese_bert_zixing_w_t = [0.4822, 0.5181, 0.4818, 0.4822, 0.4822, 0.4818, 0.4822, 0.4822, 0.4818, 0.4818, 0.4818,
+                           0.4822, 0.5181, 0.4818, 0.4822, 0.4822, 0.4822, 0.4818, 0.4818, 0.4822, ]
+
+
+def plot_probe_result(x_map, bbox_to_anchor=None):
     fig, ax = plt.subplots(1, 1)
     for model_name, data in x_map.items():
         data = data.copy()
         data = [0.5] + data
         ax.plot(range(0, len(data)), data)
 
-    ax.legend(x_map.keys())
+    ax.legend(x_map.keys(), bbox_to_anchor=bbox_to_anchor)
+    # ax.set_ylim(0, 1)
     ax.set_xticks(range(0, 21))
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Accuracy")
     fig.show()
 
 
@@ -53,11 +68,13 @@ if __name__ == '__main__':
     plot_probe_result({
         "ReaLiSe_WF": realise_pinyin_w_fm_wo_t,
         "ReaLiSe_WOF": realise_pinyin_wo_fm_wo_t,
+        "ChineseBERT": chinese_bert_pinyin_wo_t,
         "MM_BERT": mm_bert_pinyin_wo_t,
-    })
+    }, bbox_to_anchor=(0.95, 0.9))
 
     plot_probe_result({
         "ReaLiSe_WF": realise_zixing_w_fm_wo_t,
         "ReaLiSe_WOF": realise_zixing_wo_fm_wo_t,
+        "ChineseBERT": chinese_bert_zixing_wo_t,
         "MM_BERT": mm_bert_zixing_wo_t,
-    })
+    }, bbox_to_anchor=(0.95, 0.4))
