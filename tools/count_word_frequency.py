@@ -48,8 +48,8 @@ def generate_word_frequency():
     save_obj(counter, "./outputs/counter.pkl")
 
 if __name__ == '__main__':
-    counter = load_obj("./outputs/counter.pkl")
+    # counter = load_obj("./outputs/counter.pkl")
 
-    print(counter)
-
+    # print(counter)
+    generate_word_frequency()
 
