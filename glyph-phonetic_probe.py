@@ -235,10 +235,7 @@ class GlyphPhoneticModel(nn.Module):
         )
 
     def build_inputs(self, chars):
-        try:
-            inputs = self.tokenizer(chars, return_tensors='pt', add_special_tokens=False)
-        except:
-            print(1)
+        inputs = self.tokenizer(chars, return_tensors='pt', add_special_tokens=False)
         input_pinyins = self.encoder.input_helper.convert_tokens_to_pinyin_embeddings(inputs['input_ids'].view(-1))
         images = self.encoder.input_helper.convert_tokens_to_images(inputs['input_ids'].view(-1), None)
         return inputs.to("cuda"), input_pinyins.to("cuda"), images.to("cuda")

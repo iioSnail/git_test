@@ -172,7 +172,7 @@ def mock_args(**kwargs):
     return args
 
 
-def token_embeddings_visualise(embeddings, text):
+def token_embeddings_visualise(embeddings, text, filename=None):
     """
     将汉字文本embedding绘制成图像
     :param embeddings: 文本embedding后的向量，例如Shape为(55, 768)为55个token，每个token维度为768。
@@ -199,6 +199,10 @@ def token_embeddings_visualise(embeddings, text):
     # 4. 设置坐标边界
     plt.xlim(embeddings[:, 0].min() - 5, embeddings[:, 0].max() + 5)
     plt.ylim(embeddings[:, 1].min() - 5, embeddings[:, 1].max() + 5)
+
+    if filename:
+        plt.savefig(filename)
+
     plt.show()
 
 
