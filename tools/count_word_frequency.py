@@ -1,15 +1,15 @@
 import sys, os
 from collections import Counter
 
-from tqdm import tqdm
-
-from utils.str_utils import word_segment
-from utils.utils import save_obj, load_obj
-
 sys.path.insert(1, os.path.abspath("."))
 sys.path.insert(1, os.path.abspath(".."))
 
 os.chdir(os.path.pardir)
+
+from tqdm import tqdm
+
+from utils.str_utils import word_segment
+from utils.utils import save_obj, load_obj
 
 
 def load_sentences_from_csv(filepath):
@@ -34,7 +34,7 @@ def generate_word_frequency():
                 + load_sentences_from_csv("./datasets/wang271k.csv")
 
     counter = Counter()
-    batch_size = 32
+    batch_size = 64
     for i in tqdm(range(0, len(sentences) // batch_size)):
         start_index = i * batch_size
         end_index = (i + 1) * batch_size
