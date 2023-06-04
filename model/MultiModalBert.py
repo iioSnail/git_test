@@ -49,6 +49,16 @@ def convert_char_to_image(character, font_size=32):
     return torch.tensor(image)
 
 
+def convert_char_to_pinyin(character):
+    if not is_chinese(character):
+        return torch.LongTensor([0])
+
+    pinyin = pypinyin.pinyin(character, style=pypinyin.NORMAL)[0][0]
+    embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])
+
+    return embeddings
+
+
 class GlyphResnetEmbedding(nn.Module):
 
     def __init__(self, args, font_size=32):
@@ -272,20 +282,23 @@ class MultiModalBertModel(nn.Module):
         self.token_images_cache = None
         self.init_token_images_cache()
 
-    def convert_tokens_to_pinyin_embeddings(self, input_ids):
-        input_pinyins = [self.pinyin_embedding_cache.get(input_id.item(), torch.LongTensor([0])) for input_id in
-                         input_ids]
+    def convert_tokens_to_pinyin_embeddings(self, input_ids, characters):
+        input_pinyins = []
+        for i, input_id in enumerate(input_ids):
+            if input_id == 100:
+                # 如果这个字不在tokenizer里，那么用原始的字获取图片。
+                if characters and i - 1 > 0 and i - 1 < len(characters):
+                    input_pinyins.append(convert_char_to_pinyin(characters[i - 1]))
+                    continue
+
+            input_pinyins.append(self.pinyin_embedding_cache.get(input_id.item(), torch.LongTensor([0])))
+
         return pad_sequence(input_pinyins, batch_first=True).to(self.args.device)
 
     def init_pinyin_embedding_cache(self):
         self.pinyin_embedding_cache = {}
         for token, id in self.tokenizer.get_vocab().items():
-            if not is_chinese(token):
-                continue
-
-            pinyin = pypinyin.pinyin(token, style=pypinyin.NORMAL)[0][0]
-            embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])
-            self.pinyin_embedding_cache[id] = embeddings
+            self.pinyin_embedding_cache[id] = convert_char_to_pinyin(token)
 
     def init_token_images_cache(self):
         self.token_images_cache = {}
@@ -297,8 +310,16 @@ class MultiModalBertModel(nn.Module):
 
             self.token_images_cache[id] = convert_char_to_image(token, 32)
 
-    def convert_tokens_to_images(self, input_ids):
-        images = [self.token_images_cache.get(input_id.item(), torch.zeros(32, 32)) for input_id in input_ids]
+    def convert_tokens_to_images(self, input_ids, characters):
+        images = []
+        for i, input_id in enumerate(input_ids):
+            if input_id == 100:
+                # 如果这个字不在tokenizer里，那么用原始的字获取图片。
+                if characters and i - 1 > 0 and i - 1 < len(characters):
+                    images.append(convert_char_to_image(characters[i - 1], 32))
+                    continue
+
+            images.append(self.token_images_cache.get(input_id.item(), torch.zeros(32, 32)))
         return torch.stack(images).to(self.args.device)
 
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, characters=None, inputs_embeds=None):
@@ -309,11 +330,11 @@ class MultiModalBertModel(nn.Module):
         else:
             bert_outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
-        input_pinyins = self.convert_tokens_to_pinyin_embeddings(input_ids.view(-1))
+        input_pinyins = self.convert_tokens_to_pinyin_embeddings(input_ids.view(-1), characters)
         pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
         pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
 
-        images = self.convert_tokens_to_images(input_ids.view(-1))
+        images = self.convert_tokens_to_images(input_ids.view(-1), characters)
         glyph_embeddings = self.glyph_embeddings(images)
         glyph_embeddings = glyph_embeddings.view(batch_size, -1, 56)
 
@@ -448,6 +469,25 @@ class MultiModalBertCorrectionModel(nn.Module):
 
     def extract_outputs(self, outputs):
         outputs, input_ids = outputs
+        # outputs = outputs.softmax(-1)
+        # probs, hids = outputs.topk(2, dim=-1)
+
+        # for batch in range(probs.size(0)):
+        #     for i in range(probs.size(1)):
+        #         # 若模型认为该字正确的概率小于0.8(TODO, 超参数需要调一下)，则采用正常token
+        #         # 第二个字占比要大于0.9(TODO, 超参数需要调一下)，才选第二个字。
+        #         """
+        #         例如：对于预测结果为hids为[1, 123], prob为[0.6, 0.1]
+        #         则0.6<0.8，这个置信度比较低，然后再看0.1/(1-0.6)=0.25，候选字在剩下的占比也不算高，所以不采纳。
+        #         """
+        #         if hids[batch, i, 0] == 1 and probs[batch, i, 0] < float(self.args.threshold):
+        #             # and probs[batch, i, 1] / (1 - probs[batch, i, 0]) > 0.5:
+        #             if hids[batch, i, 1] in [5, 6, 7]:  # 忽略“他她它“
+        #                 continue
+        #
+        #             hids[batch, i, 0] = int(hids[batch, i, 1])
+        # outputs = hids[:, :, 0]
+
         outputs = outputs.argmax(-1)
 
         outputs = self._convert_hids_to_ids(outputs)
@@ -522,18 +562,31 @@ class MultiModalBertCorrectionModel(nn.Module):
     #
     #     self.loss_fnt.set_alpha(alpha)
 
-    def predict(self, src):
-        src = src.replace(" ", "")
+    def _predict(self, src):
         src = " ".join(src)
         inputs = self.tokenizer(src, return_tensors='pt').to(self.args.device)
+        inputs['characters'] = src.split(" ")
         outputs = self.forward(inputs)
         outputs = self.extract_outputs(outputs)
         outputs = self.tokenizer.convert_ids_to_tokens(outputs[0][1:-1])
         outputs = [outputs[i] if len(outputs[i]) == 1 else src[i] for i in range(len(outputs))]
-        # if ''.join(outputs) != tgt:   # 最后配合Detector，让softmax前5，用Detector来确定用哪一个
-        #     # self.tokenizer.convert_ids_to_tokens(prob[0][3].argsort(descending=True)[:5])
-        #     print()
-        return ''.join(outputs)
+
+        pred = ''.join(outputs).replace(" ", "?")
+        return pred
+
+    def predict(self, src):
+        src = src.replace(" ", "")
+
+        past_pred = [src]
+
+        for i in range(5):
+            pred = self._predict(past_pred[-1])
+            if pred in past_pred:
+                return pred
+            else:
+                past_pred.append(pred)
+
+        return pred
 
     def get_collate_fn(self):
         def word_segment_collate_fn(batch):
