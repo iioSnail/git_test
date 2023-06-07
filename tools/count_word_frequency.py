@@ -43,9 +43,6 @@ def generate_word_frequency():
         for segment in segments:
             counter.update(segment)
 
-        if i > 1000:
-            break
-
     save_obj(counter, "./outputs/word_frequency.pkl")
 
 if __name__ == '__main__':

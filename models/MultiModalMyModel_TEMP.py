@@ -1,4 +1,5 @@
 import argparse
+from collections import Counter
 
 import lightning.pytorch as pl
 import torch
@@ -10,7 +11,8 @@ from models.common import BertOnlyMLMHead, BERT
 from utils.log_utils import log
 from utils.loss import FocalLoss
 from utils.scheduler import WarmupExponentialLR
-from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image, pred_token_process
+from utils.str_utils import get_common_hanzi, word_segment, word_segment_labels
+from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image, pred_token_process, load_obj
 
 import os
 
@@ -114,6 +116,63 @@ class GlyphDenseEmbedding(nn.Module):
         return glyph_embedding
 
 
+class GlyphConvEncoder(nn.Module):
+
+    def __init__(self, font_size=32):
+        super(GlyphConvEncoder, self).__init__()
+        self.font_size = font_size
+        self.encoder = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=1, kernel_size=5, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=1, out_channels=1, kernel_size=4, stride=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1),
+            nn.Sigmoid(),
+            nn.Flatten(),
+        )
+
+    def forward(self, images):
+        batch_size = len(images)
+        images = images.view(batch_size, 1, 32, 32) / 255.
+        return self.encoder(images)
+
+    @staticmethod
+    def from_pretrained(pretrained_model_path):
+        state_dict = torch.load(pretrained_model_path)
+        glyph_encoder = GlyphConvEncoder()
+        glyph_encoder.encoder.load_state_dict(state_dict.state_dict())
+        return glyph_encoder
+
+
+class GlyphDenseEncoder(nn.Module):
+
+    def __init__(self, font_size=32):
+        super(GlyphDenseEncoder, self).__init__()
+        self.font_size = font_size
+        self.encoder = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 56),
+            nn.Tanh()
+        )
+
+    def forward(self, images):
+        batch_size = len(images)
+        images = images.view(batch_size, -1) / 255.
+        return self.encoder(images)
+
+    @staticmethod
+    def from_pretrained(pretrained_model_path):
+        state_dict = torch.load(pretrained_model_path)
+        glyph_encoder = GlyphDenseEncoder()
+        glyph_encoder.encoder.load_state_dict(state_dict.state_dict())
+        return glyph_encoder
+
+
 class MyModel(pl.LightningModule):
     bert_path = "hfl/chinese-macbert-base"
     tokenizer = AutoTokenizer.from_pretrained(bert_path)
@@ -144,12 +203,16 @@ class MyModel(pl.LightningModule):
         self.pinyin_embeddings = PinyinManualEmbeddings(self.args)
 
         self.glyph_feature_size = 56
-        self.glyph_embeddings = GlyphDenseEmbedding.from_pretrained('./ptm/hanzi_glyph_embedding.pt')
+        # self.glyph_embeddings = GlyphDenseEmbedding.from_pretrained('./ptm/hanzi_glyph_embedding.pt')
+        # self.glyph_embeddings = GlyphConvEncoder.from_pretrained('./ptm/glyph_conv_encoder.pt')
+        self.glyph_embeddings = GlyphDenseEncoder.from_pretrained('./ptm/glyph_dense_encoder.pt')
 
         self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size + self.glyph_feature_size, len(self._tokenizer),
                                    layer_num=1)
 
         self.loss_fnt = FocalLoss(device=self.args.device)
+
+        self.counter = None
 
     def _init_parameters(self):
         for layer in self.cls.predictions:
@@ -179,8 +242,8 @@ class MyModel(pl.LightningModule):
         glyph_embeddings = glyph_embeddings.view(batch_size, -1, self.glyph_feature_size)
 
         hidden_states = torch.concat([bert_outputs.last_hidden_state,
-                                   pinyin_embeddings,
-                                   glyph_embeddings], dim=-1)
+                                      pinyin_embeddings,
+                                      glyph_embeddings], dim=-1)
         if output_hidden_states:
             return self.cls(hidden_states), hidden_states
         else:
@@ -246,39 +309,183 @@ class MyModel(pl.LightningModule):
 
     def predict(self, sentence):
         sentence = sentence.replace(" ", "")
+        _src_tokens = list(sentence)
+        src_tokens = list(sentence)
+        pred_tokens = self._predict(sentence)
+
+        for _ in range(1):
+            record_index = []
+            # 遍历input和pred，找出修改了的token对应的index
+            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
+                if a != b:
+                    record_index.append(i)
+
+            src_tokens = pred_tokens
+            pred_tokens = self._predict(''.join(pred_tokens))
+            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
+                # 若这个token被修改了，且在窗口范围内，则什么都不做。
+                if a != b and any([abs(i - x) <= 1 for x in record_index]):
+                    pass
+                else:
+                    pred_tokens[i] = src_tokens[i]
+
+        return predict_process(_src_tokens, pred_tokens)
+
+    def segment_predict_bak(self, sentence):
+        if self.counter is None:
+            self.counter = load_obj("./ptm/word_frequency.pkl")
+
+        sentence = sentence.replace(" ", "")
+        pred_tokens = self._predict(sentence)
+        pred_sentence = ''.join(self._predict(sentence))
+
+        segment_labels = word_segment_labels([pred_sentence])[0]
+
+        word_index = []
+        for i, label in enumerate(segment_labels):
+            if label == 'S':
+                continue
+
+            if label in ['B', 'I', 'E']:
+                word_index.append(i)
+
+            if label == 'E':
+                old_word = sentence[word_index[0]:word_index[-1] + 1]
+                pred_word = pred_sentence[word_index[0]:word_index[-1] + 1]
+
+                if old_word != pred_word \
+                        and self.counter.get(old_word, 0) > 0 \
+                        and self.counter.get(pred_word, 0) == 0:
+                    for wi in word_index:
+                        pred_tokens[wi] = sentence[wi]
+
+                word_index.clear()
+
+        return ''.join(pred_tokens)
+
+    def segment_predict(self, sentence):
+        """
+        FIXME 存在错字导致分词不准的问题
+        """
+        sentence = sentence.replace(" ", "")
+        pred_tokens = self._predict(sentence)
+        pred_sentence = ''.join(pred_tokens)
+
+        segment_labels = word_segment_labels([pred_sentence])[0]
+
+        corrected_words = set()
+        for i in range(len(pred_sentence)):
+            if sentence[i] != pred_sentence[i]:
+                if segment_labels[i] == 'B':
+                    corrected_words.add((i, i + 1))
+
+                if segment_labels[i] == 'E':
+                    corrected_words.add((i - 1, i))
+
+        if len(corrected_words) > 0:
+            pred_token2 = self._predict(pred_sentence)
+
+            for words in corrected_words:
+                for i in words:
+                    pred_tokens[i] = pred_token2[i]
+
+        return ''.join(pred_tokens)
+
+    def continuous_predict_bak(self, sentence, max_num=9999):
+        """
+        连续预测
+        """
+        sentence = sentence.replace(" ", "")
+        src_tokens = list(sentence)
+        sentence_list = [sentence]
+        input_sentence = sentence
+        for _ in range(max_num):
+            pred_tokens = self._predict(input_sentence)
+
+            # 1. 对原文进行分词
+            # word_segment([sentence])
+
+            # 2. 对修正后的结果进行分词
+
+            # 3. 若原文是词，修正后变成了字，则恢复原始字
+
+            # 4. 若原文的词在词典中，修正后的字不在词典中，则恢复原始词
+
+            pred_sentence = predict_process(src_tokens, pred_tokens)
+            sentence_list.append(pred_sentence)
+            input_sentence = pred_sentence
+            if pred_sentence in sentence_list[:-1]:
+                break
+
+        return sentence_list[-1]
+
+    def continuous_predict(self, sentence):
+        """
+        连续预测
+        """
+        sentence = sentence.replace(" ", "")
         sent_tokens = list(sentence)
 
         pred_tokens = self._predict(sentence)
         pred_sentence = ''.join(pred_tokens)
 
         pred_tokens2 = self._predict(pred_sentence)
+        pred_sentence2 = ''.join(pred_tokens2)
+
+        correct_status = []
+        for i in range(len(sent_tokens)):
+            if sent_tokens[i] != pred_tokens[i] and pred_tokens[i] != pred_tokens2[i] and sent_tokens[i] != \
+                    pred_tokens2[i]:
+                correct_status.append("ABC")
+            elif sent_tokens[i] != pred_tokens[i] and sent_tokens[i] == pred_tokens2[i]:
+                correct_status.append("ABA")
+            elif sent_tokens[i] == pred_tokens[i] and sent_tokens[i] == pred_tokens2[i]:
+                correct_status.append("AAA")
+            elif sent_tokens[i] != pred_tokens[i] and pred_tokens[i] == pred_tokens2[i]:
+                correct_status.append("ABB")
+            elif sent_tokens[i] == pred_tokens[i] and pred_tokens[i] != pred_tokens2[i]:
+                correct_status.append("AAB")
+            else:
+                correct_status.append("???")
 
         for i in range(len(sent_tokens)):
-            if sent_tokens[i] != pred_tokens[i] \
-                    and pred_tokens[i] != pred_tokens2[i] \
-                    and sent_tokens[i] != pred_tokens2[i]:
+            if correct_status[i] in ("ABC", "ABA"):
                 pred_tokens2[i] = sent_tokens[i]
 
-            if sent_tokens[i] == pred_tokens[i] and pred_tokens[i] != pred_tokens2[i]:
-                if i == 0 and sent_tokens[i + 1] == pred_tokens[i + 1]:
-                    pred_tokens2[i] = sent_tokens[i]
-
-                if i == len(sent_tokens) - 1 and sent_tokens[i + 1] == pred_tokens[i + 1]:
-                    pred_tokens2[i] = sent_tokens[i]
-
-                if i > 0 and i < len(sent_tokens) - 1 \
-                        and sent_tokens[i + 1] == pred_tokens[i + 1] \
-                        and sent_tokens[i - 1] == pred_tokens[i - 1]:
+            if correct_status[i] == 'AAB':
+                if (i - 1 >= 0 and correct_status[i - 1] == 'ABB') \
+                        or (i + 1 < len(sent_tokens) and correct_status[i + 1] == 'ABB'):
+                    pass
+                else:
                     pred_tokens2[i] = sent_tokens[i]
 
         return ''.join(pred_tokens2)
+
+    def vote_predict(self, sentence):
+        sentence = sentence.replace(" ", "")
+        vote_tokens = [[token] for token in sentence]
+
+        input_sentence = sentence
+        for i in range(4):
+            pred_tokens = self._predict(input_sentence)
+            for ti, token in enumerate(pred_tokens):
+                vote_tokens[ti].append(token)
+
+            input_sentence = ''.join(pred_tokens)
+
+        pred_tokens = []
+        for tokens in vote_tokens:
+            counter = Counter(tokens)
+            pred_tokens.append(counter.most_common(1)[0][0])
+
+        return ''.join(pred_tokens)
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
         src, tgt = batch
 
         pred = []
         for sentence in src:
-            pred.append(self.predict(sentence))
+            pred.append(self.continuous_predict(sentence))
 
         return pred
 

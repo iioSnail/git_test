@@ -45,6 +45,10 @@ class C_Train(object):
             from models.MultiModalMyModel_SOTA import MyModel
             return MyModel(self.args)
 
+        if model == 'multimodalmymodel_temp':
+            from models.MultiModalMyModel_TEMP import MyModel
+            return MyModel(self.args)
+
         if model == 'multimodalmymodel_wo_multi':
             from models.MultiModalMyModel_wo_multi import MyModel
             return MyModel(self.args)
