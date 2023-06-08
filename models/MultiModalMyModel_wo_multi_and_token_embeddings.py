@@ -18,7 +18,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 default_params = {
     "dropout": 0.1,
-    "bert_base_lr": 2e-6,
+    "bert_base_lr": 2e-5,
     "lr_decay_factor": 0.95,
     "weight_decay": 0.01,
     "cls_lr": 2e-4,
@@ -124,27 +124,32 @@ class MyModel(pl.LightningModule):
 
     def predict(self, sentence):
         sentence = sentence.replace(" ", "")
-        _src_tokens = list(sentence)
-        src_tokens = list(sentence)
+        sent_tokens = list(sentence)
+
         pred_tokens = self._predict(sentence)
+        pred_sentence = ''.join(pred_tokens)
 
-        for _ in range(1):
-            record_index = []
-            # 遍历input和pred，找出修改了的token对应的index
-            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
-                if a != b:
-                    record_index.append(i)
+        pred_tokens2 = self._predict(pred_sentence)
 
-            src_tokens = pred_tokens
-            pred_tokens = self._predict(''.join(pred_tokens))
-            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
-                # 若这个token被修改了，且在窗口范围内，则什么都不做。
-                if a != b and any([abs(i - x) <= 1 for x in record_index]):
-                    pass
-                else:
-                    pred_tokens[i] = src_tokens[i]
+        for i in range(len(sent_tokens)):
+            if sent_tokens[i] != pred_tokens[i] \
+                    and pred_tokens[i] != pred_tokens2[i] \
+                    and sent_tokens[i] != pred_tokens2[i]:
+                pred_tokens2[i] = sent_tokens[i]
 
-        return predict_process(_src_tokens, pred_tokens, ignore_token=list("他她"))
+            if sent_tokens[i] == pred_tokens[i] and pred_tokens[i] != pred_tokens2[i]:
+                if i == 0 and sent_tokens[i + 1] == pred_tokens[i + 1]:
+                    pred_tokens2[i] = sent_tokens[i]
+
+                if i == len(sent_tokens) - 1 and sent_tokens[i + 1] == pred_tokens[i + 1]:
+                    pred_tokens2[i] = sent_tokens[i]
+
+                if i > 0 and i < len(sent_tokens) - 1 \
+                        and sent_tokens[i + 1] == pred_tokens[i + 1] \
+                        and sent_tokens[i - 1] == pred_tokens[i - 1]:
+                    pred_tokens2[i] = sent_tokens[i]
+
+        return ''.join(pred_tokens2)
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
         src, tgt = batch
