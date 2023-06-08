@@ -5,7 +5,6 @@ from pathlib import Path
 import dimsim
 import pypinyin
 import torch
-from ltp import LTP
 from torch.nn.utils.rnn import pad_sequence
 
 ltp = None
@@ -33,6 +32,7 @@ def is_chinese(uchar):
 def word_segment(sentences):
     global ltp
     if ltp is None:
+        from ltp import LTP
         ltp = LTP("LTP/small")
 
     if torch.cuda.is_available():

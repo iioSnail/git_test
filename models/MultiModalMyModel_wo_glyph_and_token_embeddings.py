@@ -10,7 +10,8 @@ from models.common import BertOnlyMLMHead, BERT
 from utils.log_utils import log
 from utils.loss import FocalLoss
 from utils.scheduler import WarmupExponentialLR
-from utils.utils import predict_process, pred_token_process
+from utils.str_utils import get_common_hanzi
+from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image, pred_token_process
 
 import os
 
@@ -24,9 +25,101 @@ default_params = {
     "cls_lr": 2e-4,
 }
 
+
+class InputHelper:
+
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
+        self.pinyin_embedding_cache = None
+        self._init_pinyin_embedding_cache()
+
+        self.token_images_cache = None
+        self._init_token_images_cache()
+
+    def _init_pinyin_embedding_cache(self):
+        self.pinyin_embedding_cache = {}
+        for token, id in self.tokenizer.get_vocab().items():
+            self.pinyin_embedding_cache[id] = convert_char_to_pinyin(token)
+
+    def _init_token_images_cache(self):
+        self.token_images_cache = {}
+        for token, id in self.tokenizer.get_vocab().items():
+            # FIXME，这个不能加，就算不是中文也需要有glyph信息，否则peformance就会很差
+            # 我也不知道啥原因，很奇怪。
+            # if not is_chinese(token):
+            #     continue
+
+            self.token_images_cache[id] = convert_char_to_image(token, 32)
+
+    def convert_tokens_to_pinyin_embeddings(self, input_ids):
+        input_pinyins = []
+        for i, input_id in enumerate(input_ids):
+            input_pinyins.append(self.pinyin_embedding_cache.get(input_id.item(), torch.LongTensor([0])))
+
+        return pad_sequence(input_pinyins, batch_first=True)
+
+    def convert_tokens_to_images(self, input_ids, characters):
+        images = []
+        for i, input_id in enumerate(input_ids):
+            if input_id == 100:
+                # 如果这个字不在tokenizer里，那么用原始的字获取图片。
+                if characters and i - 1 > 0 and i - 1 < len(characters):
+                    images.append(convert_char_to_image(characters[i - 1], 32))
+                    continue
+
+            images.append(self.token_images_cache.get(input_id.item(), torch.zeros(32, 32)))
+        return torch.stack(images)
+
+
+class PinyinManualEmbeddings(nn.Module):
+
+    def __init__(self, args):
+        super(PinyinManualEmbeddings, self).__init__()
+        self.args = args
+        self.pinyin_feature_size = 6
+
+    def forward(self, inputs):
+        fill = self.pinyin_feature_size - inputs.size(1)
+        if fill > 0:
+            inputs = torch.concat([inputs, torch.zeros((len(inputs), fill), device=self.args.device)], dim=1).long()
+        return inputs.float()
+
+
+class GlyphDenseEmbedding(nn.Module):
+
+    def __init__(self, font_size=32):
+        super(GlyphDenseEmbedding, self).__init__()
+        self.font_size = font_size
+        self.embeddings = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Dropout(0.15),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Dropout(0.15),
+            nn.Linear(256, 56),
+            nn.Tanh()
+        )
+
+    def forward(self, images):
+        batch_size = len(images)
+        images = images.view(batch_size, -1) / 255.
+        return self.embeddings(images)
+
+    @staticmethod
+    def from_pretrained(pretrained_model_path):
+        state_dict = torch.load(pretrained_model_path)
+        glyph_embedding = GlyphDenseEmbedding()
+        glyph_embedding.load_state_dict(state_dict)
+        return glyph_embedding
+
+
 class MyModel(pl.LightningModule):
     bert_path = "hfl/chinese-macbert-base"
     tokenizer = AutoTokenizer.from_pretrained(bert_path)
+
+    input_helper = InputHelper(tokenizer)
 
     def __init__(self, args: argparse.Namespace):
         super().__init__()
@@ -48,10 +141,12 @@ class MyModel(pl.LightningModule):
 
         self.token_forget_gate = nn.Linear(768, 768, bias=False)
 
-        self.cls = BertOnlyMLMHead(768, len(self._tokenizer),
-                                   layer_num=1)
+        self.pinyin_feature_size = 6
+        self.pinyin_embeddings = PinyinManualEmbeddings(self.args)
 
-        self.loss_fnt = nn.CrossEntropyLoss(ignore_index=0)
+        self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size, len(self._tokenizer), layer_num=1)
+
+        self.loss_fnt = FocalLoss(device=self.args.device)
 
     def _init_parameters(self):
         for layer in self.cls.predictions:
@@ -60,7 +155,7 @@ class MyModel(pl.LightningModule):
 
         nn.init.orthogonal_(self.token_forget_gate.weight, gain=1)
 
-    def forward(self, inputs):
+    def forward(self, inputs, input_pinyins, images):
         input_ids = inputs['input_ids']
         attention_mask = inputs['attention_mask']
         token_type_ids = inputs['token_type_ids']
@@ -70,11 +165,13 @@ class MyModel(pl.LightningModule):
                                  attention_mask=attention_mask,
                                  token_type_ids=token_type_ids)
 
-        token_embeddings = self.bert.embeddings(input_ids)
-        token_embeddings = token_embeddings * self.token_forget_gate(token_embeddings).sigmoid()
-        bert_outputs.last_hidden_state += token_embeddings
+        pinyin_embeddings = self.pinyin_embeddings(input_pinyins)
+        pinyin_embeddings = pinyin_embeddings.view(batch_size, -1, self.pinyin_feature_size)
 
-        return self.cls(bert_outputs.last_hidden_state)
+        cls_inputs = torch.concat([bert_outputs.last_hidden_state,
+                                   pinyin_embeddings], dim=-1)
+
+        return self.cls(cls_inputs)
 
     def compute_loss(self, outputs, targets):
         targets = targets.view(-1)
@@ -91,8 +188,8 @@ class MyModel(pl.LightningModule):
         return outputs
 
     def training_step(self, batch, batch_idx, *args, **kwargs):
-        inputs, targets, d_targets, loss_targets = batch
-        outputs = self.forward(inputs)
+        inputs, targets, d_targets, loss_targets, input_pinyins, images = batch
+        outputs = self.forward(inputs, input_pinyins, images)
 
         loss = self.compute_loss(outputs, loss_targets)
 
@@ -107,8 +204,8 @@ class MyModel(pl.LightningModule):
         }
 
     def validation_step(self, batch, batch_idx, *args, **kwargs):
-        inputs, targets, d_targets, loss_targets = batch
-        outputs = self.forward(inputs)
+        inputs, targets, d_targets, loss_targets, input_pinyins, images = batch
+        outputs = self.forward(inputs, input_pinyins, images)
         loss = self.compute_loss(outputs, loss_targets)
 
         outputs = outputs.argmax(-1)
@@ -125,7 +222,10 @@ class MyModel(pl.LightningModule):
         src_tokens = list(sentence)
         sentence = ' '.join(list(sentence))
         inputs = BERT.get_bert_inputs(sentence, tokenizer=self._tokenizer, max_length=9999).to(self.args.device)
-        outputs = self.forward(inputs)
+        input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(inputs['input_ids'].view(-1))
+        images = MyModel.input_helper.convert_tokens_to_images(inputs['input_ids'].view(-1), None)  # TODO
+        input_pinyins, images = input_pinyins.to(self.args.device), images.to(self.args.device)
+        outputs = self.forward(inputs, input_pinyins, images)
         ids_list = self.extract_outputs(outputs, inputs['input_ids'])
         pred_tokens = self._tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])
         pred_tokens = pred_token_process(src_tokens, pred_tokens)
@@ -244,4 +344,7 @@ class MyModel(pl.LightningModule):
         # 将没有出错的单个字变为1
         loss_targets[(~d_targets) & (loss_targets != 0)] = 1
 
-        return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets
+        input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(src['input_ids'].view(-1))
+        images = MyModel.input_helper.convert_tokens_to_images(src['input_ids'].view(-1), None)  # TODO
+
+        return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets, input_pinyins, images
