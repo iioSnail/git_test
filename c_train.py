@@ -89,6 +89,10 @@ class C_Train(object):
             from models.MultiModalMyModel_wo_pinyin_and_token_embeddings import MyModel
             return MyModel(self.args)
 
+        if model == 'multimodalmymodel_new_ft':
+            from models.MultiModalMyModel_new_ft import MyModel
+            return MyModel(self.args)
+
         if model == 'zeroshot':
             from models.zero_shot import AdjustProbByPinyin
             return AdjustProbByPinyin(self.args)
