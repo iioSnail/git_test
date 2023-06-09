@@ -150,6 +150,10 @@ class MyModel(pl.LightningModule):
                                  attention_mask=attention_mask,
                                  token_type_ids=token_type_ids)
 
+        token_embeddings = self.bert.embeddings(input_ids)
+        token_embeddings = token_embeddings * self.token_forget_gate(token_embeddings).sigmoid()
+        bert_outputs.last_hidden_state += token_embeddings
+
         glyph_embeddings = self.glyph_embeddings(images)
         glyph_embeddings = glyph_embeddings.view(batch_size, -1, self.glyph_feature_size)
 
