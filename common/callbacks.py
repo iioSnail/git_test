@@ -255,12 +255,15 @@ class SimpleProgressBar(Callback):
 
         c_p, c_r, c_f1 = self.train_metrics.get_train_matrix()
 
-        self.train_progress_bar.set_postfix({
+        postfix = {
             'loss': loss.item(),
             'c_precision': c_p,
             'c_recall': c_r,
             'c_f1_score': c_f1,
-        })
+        }
+        if 'bar_postfix' in outputs:
+            postfix.update(outputs['bar_postfix'])
+        self.train_progress_bar.set_postfix(postfix)
 
         if trainer.logger:
             trainer.logger.log_metrics({
