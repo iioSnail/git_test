@@ -172,11 +172,11 @@ class PinyinClassifier(nn.Module):
         self.pinyin=Pinyin()
         self.transform = BertPredictionHeadTransform(config)  # Pron Projection
         # 声母分类器
-        self.sm_classifier=nn.Linear(config.hidden_size,self.pinyin.sm_size)
+        self.sm_classifier = nn.Linear(config.hidden_size,self.pinyin.sm_size)
         # 韵母分类器
-        self.ym_classifier=nn.Linear(config.hidden_size,self.pinyin.ym_size)
+        self.ym_classifier = nn.Linear(config.hidden_size,self.pinyin.ym_size)
         # 声调分类器
-        self.sd_classifier=nn.Linear(config.hidden_size,self.pinyin.sd_size)
+        self.sd_classifier = nn.Linear(config.hidden_size,self.pinyin.sd_size)
 
     def forward(self, sequence_output):
         sequence_output = self.transform(sequence_output)
@@ -184,7 +184,7 @@ class PinyinClassifier(nn.Module):
         ym_scores = self.ym_classifier(sequence_output)
         sd_scores = self.sd_classifier(sequence_output)
         # 返回三种数据softmax前的数据
-        return sm_scores,ym_scores,sd_scores
+        return sm_scores, ym_scores, sd_scores
 
 
 class MyModel(pl.LightningModule):
@@ -230,6 +230,10 @@ class MyModel(pl.LightningModule):
 
     def _init_parameters(self):
         for layer in self.cls.predictions:
+            if isinstance(layer, nn.Linear):
+                nn.init.orthogonal_(layer.weight, gain=1)
+
+        for layer in self.pinyin_cls.predictions:
             if isinstance(layer, nn.Linear):
                 nn.init.orthogonal_(layer.weight, gain=1)
 
@@ -446,6 +450,17 @@ class MyModel(pl.LightningModule):
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
         for key, value in self.cls.named_parameters():
+            if not value.requires_grad:
+                continue
+
+            lr = self.args.hyper_params['cls_lr']
+            weight_decay = self.args.hyper_params['weight_decay']
+            if "bias" in key:
+                lr *= 2
+                weight_decay = 0
+            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+
+        for key, value in self.pinyin_cls.named_parameters():
             if not value.requires_grad:
                 continue
 
