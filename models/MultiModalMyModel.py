@@ -10,7 +10,6 @@ from models.common import BertOnlyMLMHead, BERT
 from utils.log_utils import log
 from utils.loss import FocalLoss
 from utils.scheduler import WarmupExponentialLR
-from utils.str_utils import get_common_hanzi
 from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image, pred_token_process
 
 import os
@@ -23,7 +22,8 @@ default_params = {
     "lr_decay_factor": 0.95,
     "weight_decay": 0.01,
     "cls_lr": 2e-4,
-    "k_head": 5,
+    "c_alpha": 1,
+    "e_alpha": 1,
 }
 
 
@@ -130,8 +130,6 @@ class MyModel(pl.LightningModule):
                 continue
             self.args.hyper_params[key] = value
 
-        default_params.update(self.args.hyper_params)
-
         log.info("Hyper-parameters:" + str(self.args.hyper_params))
 
         self.bert_config = AutoConfig.from_pretrained(MyModel.bert_path)
@@ -153,7 +151,8 @@ class MyModel(pl.LightningModule):
         self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size + self.glyph_feature_size, len(self._tokenizer),
                                    layer_num=1)
 
-        self.loss_fnt = FocalLoss(device=self.args.device)
+        alpha = [0, self.args.hyper_params['c_alpha']] + [self.args.hyper_params['e_alpha']] * (len(self._tokenizer) - 2)
+        self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
 
     def _init_parameters(self):
         for layer in self.cls.predictions:
@@ -162,7 +161,7 @@ class MyModel(pl.LightningModule):
 
         nn.init.orthogonal_(self.token_forget_gate.weight, gain=1)
 
-    def forward(self, inputs, input_pinyins, images):
+    def forward(self, inputs, input_pinyins, images, output_hidden_states=False):
         input_ids = inputs['input_ids']
         attention_mask = inputs['attention_mask']
         token_type_ids = inputs['token_type_ids']
@@ -182,23 +181,24 @@ class MyModel(pl.LightningModule):
         glyph_embeddings = self.glyph_embeddings(images)
         glyph_embeddings = glyph_embeddings.view(batch_size, -1, self.glyph_feature_size)
 
-        cls_inputs = torch.concat([bert_outputs.last_hidden_state,
+        hidden_states = torch.concat([bert_outputs.last_hidden_state,
                                    pinyin_embeddings,
                                    glyph_embeddings], dim=-1)
-
-        return self.cls(cls_inputs)
+        if output_hidden_states:
+            return self.cls(hidden_states), hidden_states
+        else:
+            return self.cls(hidden_states)
 
     def compute_loss(self, outputs, targets):
+        targets = targets.view(-1)
         return self.loss_fnt(outputs.view(-1, outputs.size(-1)), targets)
 
     def extract_outputs(self, outputs, input_ids):
-        outputs[:, :, 1] = outputs[:, :, 1:default_params['k_head'] + 1].max(-1).values
-        outputs[:, :, 2:default_params['k_head'] + 1] = torch.tensor(-99999., device=outputs.device)
         outputs = outputs.argmax(-1)
 
         for i in range(len(outputs)):
             for j in range(len(outputs[i])):
-                if outputs[i][j] <= default_params['k_head']:
+                if outputs[i][j] == 1 or outputs[i][j] == 0:
                     outputs[i][j] = input_ids[i][j]
 
         return outputs
@@ -209,15 +209,12 @@ class MyModel(pl.LightningModule):
 
         loss = self.compute_loss(outputs, loss_targets)
 
-        outputs[:, :, 1] = outputs[:, :, 1:default_params['k_head'] + 1].max(-1).values
-        outputs[:, :, 2:default_params['k_head'] + 1] = torch.tensor(-99999., device=outputs.device)
-
         outputs = outputs.argmax(-1)
 
         return {
             'loss': loss,
             'outputs': outputs,
-            'targets': targets,
+            'targets': loss_targets,
             'd_targets': d_targets,
             'attention_mask': inputs['attention_mask']
         }
@@ -227,15 +224,12 @@ class MyModel(pl.LightningModule):
         outputs = self.forward(inputs, input_pinyins, images)
         loss = self.compute_loss(outputs, loss_targets)
 
-        outputs[:, :, 1] = outputs[:, :, 1:default_params['k_head'] + 1].max(-1).values
-        outputs[:, :, 2:default_params['k_head'] + 1] = torch.tensor(-99999., device=outputs.device)
-
         outputs = outputs.argmax(-1)
 
         return {
             'loss': loss,
             'outputs': outputs,
-            'targets': targets,
+            'targets': loss_targets,
             'd_targets': d_targets,
             'attention_mask': inputs['attention_mask']
         }
@@ -255,27 +249,32 @@ class MyModel(pl.LightningModule):
 
     def predict(self, sentence):
         sentence = sentence.replace(" ", "")
-        _src_tokens = list(sentence)
-        src_tokens = list(sentence)
+        sent_tokens = list(sentence)
+
         pred_tokens = self._predict(sentence)
+        pred_sentence = ''.join(pred_tokens)
 
-        for _ in range(1):
-            record_index = []
-            # 遍历input和pred，找出修改了的token对应的index
-            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
-                if a != b:
-                    record_index.append(i)
+        pred_tokens2 = self._predict(pred_sentence)
 
-            src_tokens = pred_tokens
-            pred_tokens = self._predict(''.join(pred_tokens))
-            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
-                # 若这个token被修改了，且在窗口范围内，则什么都不做。
-                if a != b and any([abs(i - x) <= 1 for x in record_index]):
-                    pass
-                else:
-                    pred_tokens[i] = src_tokens[i]
+        for i in range(len(sent_tokens)):
+            if sent_tokens[i] != pred_tokens[i] \
+                    and pred_tokens[i] != pred_tokens2[i] \
+                    and sent_tokens[i] != pred_tokens2[i]:
+                pred_tokens2[i] = sent_tokens[i]
 
-        return predict_process(_src_tokens, pred_tokens, ignore_token=list("他她"))
+            if sent_tokens[i] == pred_tokens[i] and pred_tokens[i] != pred_tokens2[i]:
+                if i == 0 and sent_tokens[i + 1] == pred_tokens[i + 1]:
+                    pred_tokens2[i] = sent_tokens[i]
+
+                if i == len(sent_tokens) - 1 and sent_tokens[i + 1] == pred_tokens[i + 1]:
+                    pred_tokens2[i] = sent_tokens[i]
+
+                if i > 0 and i < len(sent_tokens) - 1 \
+                        and sent_tokens[i + 1] == pred_tokens[i + 1] \
+                        and sent_tokens[i - 1] == pred_tokens[i - 1]:
+                    pred_tokens2[i] = sent_tokens[i]
+
+        return ''.join(pred_tokens2)
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
         src, tgt = batch
@@ -365,18 +364,8 @@ class MyModel(pl.LightningModule):
 
         # 将没有出错的单个字变为1
         loss_targets[(~d_targets) & (loss_targets != 0)] = 1
-        targets = loss_targets.clone()
-
-        # 构造(seq_num, vocab_size)的loss_targets
-        idx = loss_targets.view(-1, 1).long()
-        one_hot_key = torch.zeros(idx.size(0), len(MyModel.tokenizer), dtype=torch.float32, device=idx.device)
-        one_hot_key = one_hot_key.scatter_(1, idx, 1)
-        one_hot_key[:, 0] = 0  # ignore 0 index.
-        # one_hot_key[:, 1:default_params['k_head'] + 1] = one_hot_key[:, 1:2] / default_params['k_head']
-        one_hot_key[:, 2:default_params['k_head'] + 1] = one_hot_key[:, 1:2]
-        loss_targets = one_hot_key
 
         input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(src['input_ids'].view(-1))
         images = MyModel.input_helper.convert_tokens_to_images(src['input_ids'].view(-1), None)  # TODO
 
-        return src, targets, (src['input_ids'] != tgt['input_ids']).float(), loss_targets, input_pinyins, images
+        return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets, input_pinyins, images
