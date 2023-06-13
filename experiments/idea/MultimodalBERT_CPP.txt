@@ -1,4 +1,4 @@
-模型：去掉拼音、字形、bert embedding融合。然后增加拼音预测辅助任务。
+模型：去掉拼音、bert embedding融合，仅保留了字形。然后增加拼音预测辅助任务。
 
 
 2023-06-12 22:06:21,327 - Namespace(batch_size=32, bert_path='../drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt', ckpt_dir='/root/autodl-tmp/csc_outputs/', ckpt_path=None, data=None, data_type='none', datas='wang271k,sighan15train,sighan14train,sighan13train,sighan15train,sighan14train,sighan13train', device='cuda', epochs=20, error_threshold=0.5, eval=True, finetune=False, hyper_params='bert_base_lr=2e-5', limit_batches=-1, max_length=256, model='MultiModalMyModel_CPP', model_path=None, output_path='./c_output', print_errors=False, resume=False, seed=0, test=False, test_data='sighan2015test', train_data='./data/Wang271K_processed.pkl', val_data=None, valid_ratio=0.05, work_dir=PosixPath('outputs'), workers=8)
