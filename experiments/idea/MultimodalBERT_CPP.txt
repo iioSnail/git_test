@@ -1,0 +1,219 @@
+模型：去掉拼音、字形、bert embedding融合。然后增加拼音预测辅助任务。
+
+
+2023-06-12 22:06:21,327 - Namespace(batch_size=32, bert_path='../drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt', ckpt_dir='/root/autodl-tmp/csc_outputs/', ckpt_path=None, data=None, data_type='none', datas='wang271k,sighan15train,sighan14train,sighan13train,sighan15train,sighan14train,sighan13train', device='cuda', epochs=20, error_threshold=0.5, eval=True, finetune=False, hyper_params='bert_base_lr=2e-5', limit_batches=-1, max_length=256, model='MultiModalMyModel_CPP', model_path=None, output_path='./c_output', print_errors=False, resume=False, seed=0, test=False, test_data='sighan2015test', train_data='./data/Wang271K_processed.pkl', val_data=None, valid_ratio=0.05, work_dir=PosixPath('outputs'), workers=8)
+Hyper parameters: {'bert_base_lr': 2e-05}
+2023-06-12 22:06:32,555 - Created a temporary directory at /tmp/tmp22st8l7n
+2023-06-12 22:06:32,556 - Writing /tmp/tmp22st8l7n/_remote_module_non_sriptable.py
+2023-06-12 22:06:32,667 - Hyper-parameters:{'bert_base_lr': 2e-05, 'dropout': 0.1, 'lr_decay_factor': 0.95, 'weight_decay': 0.01, 'cls_lr': 0.0002, 'pinyin_gamma': 1}
+Some weights of the model checkpoint at hfl/chinese-macbert-base were not used when initializing BertModel: ['cls.predictions.decoder.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.bias', 'cls.seq_relationship.weight', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.bias']
+- This IS expected if you are initializing BertModel from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing BertModel from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+2023-06-12 22:06:38,059 - Load dataset from /root/projects/csc/datasets/wang271k.csv
+2023-06-12 22:06:41,790 - Load completed. Success num: 271329, Failure num: 0.
+2023-06-12 22:06:41,804 - Load dataset from /root/projects/csc/datasets/sighan_2015_train.csv
+2023-06-12 22:06:41,817 - Load completed. Success num: 2339, Failure num: 0.
+2023-06-12 22:06:41,817 - Load dataset from /root/projects/csc/datasets/sighan_2014_train.csv
+2023-06-12 22:06:41,844 - Load completed. Success num: 3435, Failure num: 2.
+2023-06-12 22:06:41,844 - Load dataset from /root/projects/csc/datasets/sighan_2013_train.csv
+2023-06-12 22:06:41,849 - Load completed. Success num: 700, Failure num: 0.
+2023-06-12 22:06:41,849 - Load dataset from /root/projects/csc/datasets/sighan_2015_train.csv
+2023-06-12 22:06:41,862 - Load completed. Success num: 2339, Failure num: 0.
+2023-06-12 22:06:41,862 - Load dataset from /root/projects/csc/datasets/sighan_2014_train.csv
+2023-06-12 22:06:41,886 - Load completed. Success num: 3435, Failure num: 2.
+2023-06-12 22:06:41,887 - Load dataset from /root/projects/csc/datasets/sighan_2013_train.csv
+2023-06-12 22:06:41,891 - Load completed. Success num: 700, Failure num: 0.
+2023-06-12 22:06:41,909 - Load dataset from /root/projects/csc/datasets/sighan_2015_test.csv
+2023-06-12 22:06:41,917 - Load completed. Success num: 1100, Failure num: 0.
+Using 16bit Automatic Mixed Precision (AMP)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name              | Type                | Params
+----------------------------------------------------------
+0 | bert              | BertModel           | 102 M
+1 | token_forget_gate | Linear              | 589 K
+2 | glyph_embeddings  | GlyphDenseEmbedding | 670 K
+3 | cls               | BertOnlyMLMHead     | 18.1 M
+4 | pinyin_cls        | PinyinClassifier    | 642 K
+5 | loss_fnt          | FocalLoss           | 0
+6 | pinyin_loss_fnt   | CrossEntropyLoss    | 0
+----------------------------------------------------------
+122 M     Trainable params
+0         Non-trainable params
+122 M     Total params
+489.129   Total estimated model params size (MB)
+Epoch 0 Training: 100%|??????????| 8439/8439 [25:17<00:00,  5.56it/s, loss=0.0526, c_precision=0.91, c_recall=0.645, c_f1_score=0.755, pinyin_loss=0.0292]
+Epoch 0 Validation:   0%|          | 0/445 [00:00<?, ?it/s]/root/miniconda3/lib/python3.8/site-packages/lightning/pytorch/utilities/data.py:77: UserWarning: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 32. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+  warning_cache.warn(
+Epoch 0 Validation: 100%|??????????| 444/445 [00:27<00:00, 17.18it/s, loss=0.0203, c_precision=0.874, c_recall=0.711, c_f1_score=0.784]/root/miniconda3/lib/python3.8/site-packages/lightning/pytorch/utilities/data.py:77: UserWarning: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 5. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+  warning_cache.warn(
+Epoch 0 Validation: 100%|??????????| 445/445 [00:27<00:00, 16.22it/s, loss=0.0204, c_precision=0.874, c_recall=0.711, c_f1_score=0.784]2023-06-12 22:32:38,345 - Epoch 0 train, Correction Precision: 0.9104521625221773, Recall: 0.6453931940021929, F1-Score: 0.7553445158474725
+2023-06-12 22:32:38,345 - Epoch 0 val_loss 0.02039, Correction Precision: 0.8740384014009085, Recall: 0.7111959287531444, F1-Score: 0.7842532052629694
+
+Test: 100%|??????????| 1100/1100 [00:30<00:00, 36.49it/s]2023-06-12 22:33:26,561 - ------------------------------------------------------------
+2023-06-12 22:33:26,561 - Character-level Detect Acc: 0.9884, P: 0.7549, R: 0.6615, F1: 0.7051
+2023-06-12 22:33:26,561 - Character-level Correct Acc: 0.9875, P: 0.7410, R: 0.6145, F1: 0.6719
+2023-06-12 22:33:26,561 - Sentence-level Detect Acc: 0.7364, P: 0.8099, R: 0.6063, F1: 0.6934
+2023-06-12 22:33:26,561 - Sentence-level Correct Acc: 0.7182, P: 0.8000, R: 0.5693, F1: 0.6652
+2023-06-12 22:33:26,561 - ------------------------------------------------------------
+2023-06-12 22:33:26,561 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 1 Training: 100%|??????????| 8439/8439 [25:24<00:00,  5.54it/s, loss=0.0234, c_precision=0.943, c_recall=0.793, c_f1_score=0.861, pinyin_loss=0.013]
+Epoch 1 Validation: 100%|??????????| 445/445 [00:26<00:00, 16.81it/s, loss=0.0114, c_precision=0.923, c_recall=0.821, c_f1_score=0.869]2023-06-12 22:59:20,703 - Epoch 1 train, Correction Precision: 0.9429604867387706, Recall: 0.7926698288439252, F1-Score: 0.8613082181019766
+2023-06-12 22:59:20,703 - Epoch 1 val_loss 0.01144, Correction Precision: 0.9229668631602517, Recall: 0.8207124681933424, F1-Score: 0.8688414185680197
+
+Test: 100%|??????????| 1100/1100 [00:29<00:00, 36.95it/s]2023-06-12 23:00:09,723 - ------------------------------------------------------------
+2023-06-12 23:00:09,723 - Character-level Detect Acc: 0.9900, P: 0.7517, R: 0.7795, F1: 0.7654
+2023-06-12 23:00:09,723 - Character-level Correct Acc: 0.9892, P: 0.7422, R: 0.7411, F1: 0.7416
+2023-06-12 23:00:09,723 - Sentence-level Detect Acc: 0.7545, P: 0.7760, R: 0.7043, F1: 0.7384
+2023-06-12 23:00:09,723 - Sentence-level Correct Acc: 0.7373, P: 0.7669, R: 0.6691, F1: 0.7147
+2023-06-12 23:00:09,723 - ------------------------------------------------------------
+2023-06-12 23:00:09,724 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 2 Training: 100%|??????????| 8439/8439 [25:16<00:00,  5.57it/s, loss=0.0271, c_precision=0.955, c_recall=0.847, c_f1_score=0.898, pinyin_loss=0.0206]
+Epoch 2 Validation: 100%|??????????| 445/445 [00:27<00:00, 16.16it/s, loss=0.0092, c_precision=0.927, c_recall=0.86, c_f1_score=0.892]2023-06-12 23:25:56,968 - Epoch 2 train, Correction Precision: 0.9551438631416419, Recall: 0.8472435660486018, F1-Score: 0.8979639772700216
+2023-06-12 23:25:56,968 - Epoch 2 val_loss 0.00920, Correction Precision: 0.9266648396820538, Recall: 0.8604071246818901, F1-Score: 0.8923076918083324
+
+Test: 100%|??????????| 1100/1100 [00:28<00:00, 38.12it/s]2023-06-12 23:26:41,252 - ------------------------------------------------------------
+2023-06-12 23:26:41,252 - Character-level Detect Acc: 0.9916, P: 0.7820, R: 0.8265, F1: 0.8036
+2023-06-12 23:26:41,252 - Character-level Correct Acc: 0.9909, P: 0.7756, R: 0.7966, F1: 0.7860
+2023-06-12 23:26:41,252 - Sentence-level Detect Acc: 0.7955, P: 0.8198, R: 0.7486, F1: 0.7826
+2023-06-12 23:26:41,252 - Sentence-level Correct Acc: 0.7864, P: 0.8161, R: 0.7301, F1: 0.7707
+2023-06-12 23:26:41,252 - ------------------------------------------------------------
+2023-06-12 23:26:41,252 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 3 Training: 100%|??????????| 8439/8439 [25:17<00:00,  5.56it/s, loss=0.0181, c_precision=0.967, c_recall=0.885, c_f1_score=0.924, pinyin_loss=0.0119]
+Epoch 3 Validation: 100%|??????????| 445/445 [00:26<00:00, 16.89it/s, loss=0.00832, c_precision=0.951, c_recall=0.871, c_f1_score=0.909]2023-06-12 23:52:28,489 - Epoch 3 train, Correction Precision: 0.9674817875139472, Recall: 0.8847703041182573, F1-Score: 0.9242793232870847
+2023-06-12 23:52:28,489 - Epoch 3 val_loss 0.00832, Correction Precision: 0.950880702339226, Recall: 0.8708905852416859, F1-Score: 0.9091295450158304
+
+Test: 100%|??????????| 1100/1100 [00:30<00:00, 35.53it/s]2023-06-12 23:53:16,391 - ------------------------------------------------------------
+2023-06-12 23:53:16,391 - Character-level Detect Acc: 0.9926, P: 0.8370, R: 0.8037, F1: 0.8200
+2023-06-12 23:53:16,391 - Character-level Correct Acc: 0.9923, P: 0.8343, R: 0.7881, F1: 0.8105
+2023-06-12 23:53:16,391 - Sentence-level Detect Acc: 0.8191, P: 0.8654, R: 0.7486, F1: 0.8028
+2023-06-12 23:53:16,391 - Sentence-level Correct Acc: 0.8145, P: 0.8639, R: 0.7394, F1: 0.7968
+2023-06-12 23:53:16,392 - ------------------------------------------------------------
+2023-06-12 23:53:16,392 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 4 Training: 100%|??????????| 8439/8439 [25:13<00:00,  5.58it/s, loss=0.00433, c_precision=0.975, c_recall=0.925, c_f1_score=0.949, pinyin_loss=0.0034]
+Epoch 4 Validation: 100%|??????????| 445/445 [00:25<00:00, 17.45it/s, loss=0.00792, c_precision=0.95, c_recall=0.881, c_f1_score=0.914]2023-06-13 00:18:58,611 - Epoch 4 train, Correction Precision: 0.9749228044861631, Recall: 0.924755433506221, F1-Score: 0.949176699708794
+2023-06-13 00:18:58,611 - Epoch 4 val_loss 0.00792, Correction Precision: 0.9496734537072087, Recall: 0.8806106870228559, F1-Score: 0.9138390848166045
+
+Test: 100%|??????????| 1100/1100 [00:30<00:00, 35.80it/s]2023-06-13 00:19:45,205 - ------------------------------------------------------------
+2023-06-13 00:19:45,205 - Character-level Detect Acc: 0.9926, P: 0.8311, R: 0.8122, F1: 0.8216
+2023-06-13 00:19:45,205 - Character-level Correct Acc: 0.9922, P: 0.8271, R: 0.7895, F1: 0.8079
+2023-06-13 00:19:45,205 - Sentence-level Detect Acc: 0.8145, P: 0.8639, R: 0.7394, F1: 0.7968
+2023-06-13 00:19:45,205 - Sentence-level Correct Acc: 0.8091, P: 0.8621, R: 0.7283, F1: 0.7896
+2023-06-13 00:19:45,205 - ------------------------------------------------------------
+2023-06-13 00:19:45,205 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 5 Training: 100%|??????????| 8439/8439 [25:24<00:00,  5.53it/s, loss=0.00583, c_precision=0.977, c_recall=0.939, c_f1_score=0.958, pinyin_loss=0.00222]
+Epoch 5 Validation: 100%|??????????| 445/445 [00:27<00:00, 15.96it/s, loss=0.00784, c_precision=0.961, c_recall=0.881, c_f1_score=0.919]2023-06-13 00:45:41,430 - Epoch 5 train, Correction Precision: 0.9765055771627814, Recall: 0.9393880625771377, F1-Score: 0.9575872717782458
+2023-06-13 00:45:41,430 - Epoch 5 val_loss 0.00784, Correction Precision: 0.9610815012213546, Recall: 0.880966921119548, F1-Score: 0.9192820344432792
+
+Test: 100%|??????????| 1100/1100 [00:29<00:00, 37.26it/s]2023-06-13 00:46:27,885 - ------------------------------------------------------------
+2023-06-13 00:46:27,885 - Character-level Detect Acc: 0.9927, P: 0.8316, R: 0.8151, F1: 0.8233
+2023-06-13 00:46:27,885 - Character-level Correct Acc: 0.9922, P: 0.8274, R: 0.7909, F1: 0.8087
+2023-06-13 00:46:27,885 - Sentence-level Detect Acc: 0.8182, P: 0.8589, R: 0.7542, F1: 0.8031
+2023-06-13 00:46:27,885 - Sentence-level Correct Acc: 0.8091, P: 0.8559, R: 0.7357, F1: 0.7913
+2023-06-13 00:46:27,885 - ------------------------------------------------------------
+2023-06-13 00:46:27,886 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 6 Training: 100%|??????????| 8439/8439 [25:10<00:00,  5.59it/s, loss=0.00343, c_precision=0.982, c_recall=0.956, c_f1_score=0.969, pinyin_loss=0.00284]
+Epoch 6 Validation: 100%|??????????| 445/445 [00:26<00:00, 16.69it/s, loss=0.00774, c_precision=0.954, c_recall=0.888, c_f1_score=0.92]2023-06-13 01:12:08,869 - Epoch 6 train, Correction Precision: 0.9822543538248482, Recall: 0.9561869829937693, F1-Score: 0.9690453962080743
+2023-06-13 01:12:08,870 - Epoch 6 val_loss 0.00774, Correction Precision: 0.9538797814207128, Recall: 0.8883460559795986, F1-Score: 0.9199472985783181
+
+Test: 100%|??????????| 1100/1100 [00:28<00:00, 38.60it/s]2023-06-13 01:12:52,452 - ------------------------------------------------------------
+2023-06-13 01:12:52,452 - Character-level Detect Acc: 0.9923, P: 0.8187, R: 0.8094, F1: 0.8140
+2023-06-13 01:12:52,452 - Character-level Correct Acc: 0.9918, P: 0.8147, R: 0.7881, F1: 0.8012
+2023-06-13 01:12:52,452 - Sentence-level Detect Acc: 0.8009, P: 0.8440, R: 0.7301, F1: 0.7830
+2023-06-13 01:12:52,452 - Sentence-level Correct Acc: 0.7927, P: 0.8410, R: 0.7135, F1: 0.7720
+2023-06-13 01:12:52,452 - ------------------------------------------------------------
+2023-06-13 01:12:52,452 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 7 Training: 100%|??????????| 8439/8439 [25:16<00:00,  5.56it/s, loss=0.00365, c_precision=0.984, c_recall=0.957, c_f1_score=0.97, pinyin_loss=0.0016]
+Epoch 7 Validation: 100%|??????????| 445/445 [00:27<00:00, 16.00it/s, loss=0.0077, c_precision=0.964, c_recall=0.885, c_f1_score=0.923]2023-06-13 01:38:40,105 - Epoch 7 train, Correction Precision: 0.9835159767034316, Recall: 0.9565702546194216, F1-Score: 0.9698559915360608
+2023-06-13 01:38:40,106 - Epoch 7 val_loss 0.00770, Correction Precision: 0.963773334071846, Recall: 0.8854452926208201, F1-Score: 0.9229504278487248
+
+Test: 100%|??????????| 1100/1100 [00:29<00:00, 37.21it/s]2023-06-13 01:39:26,752 - ------------------------------------------------------------
+2023-06-13 01:39:26,752 - Character-level Detect Acc: 0.9928, P: 0.8343, R: 0.8165, F1: 0.8253
+2023-06-13 01:39:26,752 - Character-level Correct Acc: 0.9923, P: 0.8301, R: 0.7923, F1: 0.8108
+2023-06-13 01:39:26,752 - Sentence-level Detect Acc: 0.8200, P: 0.8657, R: 0.7505, F1: 0.8040
+2023-06-13 01:39:26,752 - Sentence-level Correct Acc: 0.8109, P: 0.8627, R: 0.7320, F1: 0.7920
+2023-06-13 01:39:26,752 - ------------------------------------------------------------
+2023-06-13 01:39:26,753 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 8 Training: 100%|??????????| 8439/8439 [25:16<00:00,  5.56it/s, loss=0.00102, c_precision=0.991, c_recall=0.969, c_f1_score=0.98, pinyin_loss=0.000424]
+Epoch 8 Validation: 100%|??????????| 445/445 [00:27<00:00, 16.40it/s, loss=0.00765, c_precision=0.962, c_recall=0.89, c_f1_score=0.925]2023-06-13 02:05:13,884 - Epoch 8 train, Correction Precision: 0.9905571930415007, Recall: 0.9694524321814041, F1-Score: 0.9798911874320112
+2023-06-13 02:05:13,884 - Epoch 8 val_loss 0.00765, Correction Precision: 0.9624635367933864, Recall: 0.8899236641220921, F1-Score: 0.9247732616176432
+
+Test: 100%|??????????| 1100/1100 [00:28<00:00, 38.89it/s]2023-06-13 02:05:57,570 - ------------------------------------------------------------
+2023-06-13 02:05:57,570 - Character-level Detect Acc: 0.9928, P: 0.8355, R: 0.8165, F1: 0.8259
+2023-06-13 02:05:57,570 - Character-level Correct Acc: 0.9925, P: 0.8326, R: 0.7994, F1: 0.8157
+2023-06-13 02:05:57,570 - Sentence-level Detect Acc: 0.8227, P: 0.8650, R: 0.7579, F1: 0.8079
+2023-06-13 02:05:57,570 - Sentence-level Correct Acc: 0.8164, P: 0.8630, R: 0.7449, F1: 0.7996
+2023-06-13 02:05:57,570 - ------------------------------------------------------------
+2023-06-13 02:05:57,570 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 9 Training: 100%|??????????| 8439/8439 [25:12<00:00,  5.58it/s, loss=0.00215, c_precision=0.991, c_recall=0.974, c_f1_score=0.982, pinyin_loss=0.00186]
+Epoch 9 Validation: 100%|??????????| 445/445 [00:26<00:00, 17.00it/s, loss=0.00767, c_precision=0.964, c_recall=0.891, c_f1_score=0.926]2023-06-13 02:31:39,921 - Epoch 9 train, Correction Precision: 0.9909390752980097, Recall: 0.9737587529696375, F1-Score: 0.9822737968726326
+2023-06-13 02:31:39,921 - Epoch 9 val_loss 0.00767, Correction Precision: 0.9644155558003215, Recall: 0.8909923664121684, F1-Score: 0.9262511898509613
+
+Test: 100%|??????????| 1100/1100 [00:27<00:00, 39.54it/s]2023-06-13 02:32:15,339 - ------------------------------------------------------------
+2023-06-13 02:32:15,339 - Character-level Detect Acc: 0.9926, P: 0.8252, R: 0.8193, F1: 0.8223
+2023-06-13 02:32:15,339 - Character-level Correct Acc: 0.9921, P: 0.8211, R: 0.7966, F1: 0.8087
+2023-06-13 02:32:15,339 - Sentence-level Detect Acc: 0.8109, P: 0.8520, R: 0.7449, F1: 0.7949
+2023-06-13 02:32:15,339 - Sentence-level Correct Acc: 0.8045, P: 0.8498, R: 0.7320, F1: 0.7865
+2023-06-13 02:32:15,339 - ------------------------------------------------------------
+2023-06-13 02:32:15,340 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 10 Training: 100%|??????????| 8439/8439 [25:13<00:00,  5.58it/s, loss=0.0012, c_precision=0.994, c_recall=0.979, c_f1_score=0.986, pinyin_loss=0.00106]
+Epoch 10 Validation: 100%|??????????| 445/445 [00:26<00:00, 16.70it/s, loss=0.00768, c_precision=0.965, c_recall=0.891, c_f1_score=0.927]2023-06-13 02:57:58,777 - Epoch 10 train, Correction Precision: 0.9938691914849414, Recall: 0.9791596473130818, F1-Score: 0.9864595867836923
+2023-06-13 02:57:58,778 - Epoch 10 val_loss 0.00768, Correction Precision: 0.9647518863247803, Recall: 0.8914503816793439, F1-Score: 0.9266537937716329
+
+Test: 100%|??????????| 1100/1100 [00:28<00:00, 39.14it/s]2023-06-13 02:58:34,401 - ------------------------------------------------------------
+2023-06-13 02:58:34,401 - Character-level Detect Acc: 0.9926, P: 0.8283, R: 0.8165, F1: 0.8223
+2023-06-13 02:58:34,401 - Character-level Correct Acc: 0.9922, P: 0.8245, R: 0.7952, F1: 0.8096
+2023-06-13 02:58:34,402 - Sentence-level Detect Acc: 0.8164, P: 0.8539, R: 0.7560, F1: 0.8020
+2023-06-13 02:58:34,402 - Sentence-level Correct Acc: 0.8100, P: 0.8517, R: 0.7431, F1: 0.7937
+2023-06-13 02:58:34,402 - ------------------------------------------------------------
+2023-06-13 02:58:34,402 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 11 Training: 100%|??????????| 8439/8439 [25:05<00:00,  5.61it/s, loss=0.00157, c_precision=0.991, c_recall=0.984, c_f1_score=0.987, pinyin_loss=0.000989]
+Epoch 11 Validation: 100%|??????????| 445/445 [00:26<00:00, 16.68it/s, loss=0.00775, c_precision=0.969, c_recall=0.89, c_f1_score=0.927]2023-06-13 03:24:09,220 - Epoch 11 train, Correction Precision: 0.9910642503969251, Recall: 0.9837891999271753, F1-Score: 0.9874133245894267
+2023-06-13 03:24:09,220 - Epoch 11 val_loss 0.00775, Correction Precision: 0.9685872576176748, Recall: 0.8897201017811251, F1-Score: 0.9274801056016471
+
+Test: 100%|??????????| 1100/1100 [00:31<00:00, 34.66it/s]2023-06-13 03:24:49,142 - ------------------------------------------------------------
+2023-06-13 03:24:49,143 - Character-level Detect Acc: 0.9929, P: 0.8370, R: 0.8179, F1: 0.8273
+2023-06-13 03:24:49,143 - Character-level Correct Acc: 0.9924, P: 0.8333, R: 0.7966, F1: 0.8145
+2023-06-13 03:24:49,143 - Sentence-level Detect Acc: 0.8200, P: 0.8595, R: 0.7579, F1: 0.8055
+2023-06-13 03:24:49,143 - Sentence-level Correct Acc: 0.8118, P: 0.8568, R: 0.7412, F1: 0.7948
+2023-06-13 03:24:49,143 - ------------------------------------------------------------
+2023-06-13 03:24:49,143 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 12 Training: 100%|??????????| 8439/8439 [25:13<00:00,  5.57it/s, loss=0.000815, c_precision=0.99, c_recall=0.984, c_f1_score=0.987, pinyin_loss=0.00072]
+Epoch 12 Validation: 100%|??????????| 445/445 [00:26<00:00, 16.65it/s, loss=0.00772, c_precision=0.97, c_recall=0.889, c_f1_score=0.928]2023-06-13 03:50:33,948 - Epoch 12 train, Correction Precision: 0.9899100626015712, Recall: 0.9843864331732223, F1-Score: 0.98714052046236
+2023-06-13 03:50:33,948 - Epoch 12 val_loss 0.00772, Correction Precision: 0.9697457533029327, Recall: 0.889007633587741, F1-Score: 0.9276231940633409
+
+Test: 100%|??????????| 1100/1100 [00:28<00:00, 38.40it/s]2023-06-13 03:51:10,343 - ------------------------------------------------------------
+2023-06-13 03:51:10,343 - Character-level Detect Acc: 0.9933, P: 0.8490, R: 0.8236, F1: 0.8361
+2023-06-13 03:51:10,343 - Character-level Correct Acc: 0.9927, P: 0.8446, R: 0.7966, F1: 0.8199
+2023-06-13 03:51:10,343 - Sentence-level Detect Acc: 0.8273, P: 0.8742, R: 0.7579, F1: 0.8119
+2023-06-13 03:51:10,343 - Sentence-level Correct Acc: 0.8182, P: 0.8715, R: 0.7394, F1: 0.8000
+2023-06-13 03:51:10,343 - ------------------------------------------------------------
+2023-06-13 03:51:10,343 - Total Sentences Num: 1100, Error Sentences Num: 0
+
+Epoch 13 Training: 100%|??????????| 8439/8439 [25:11<00:00,  5.58it/s, loss=0.00348, c_precision=0.995, c_recall=0.984, c_f1_score=0.99, pinyin_loss=0.00276]
+Epoch 13 Validation: 100%|??????????| 445/445 [00:27<00:00, 16.45it/s, loss=0.00775, c_precision=0.97, c_recall=0.889, c_f1_score=0.928]2023-06-13 04:16:52,159 - Epoch 13 train, Correction Precision: 0.9951949164810934, Recall: 0.9843623476334284, F1-Score: 0.989748992468282
+2023-06-13 04:16:52,159 - Epoch 13 val_loss 0.00775, Correction Precision: 0.9700266429839604, Recall: 0.8893638676844331, F1-Score: 0.927945626857128
+
+Test: 100%|??????????| 1100/1100 [00:28<00:00, 39.22it/s]2023-06-13 04:17:28,028 - ------------------------------------------------------------
+2023-06-13 04:17:28,028 - Character-level Detect Acc: 0.9932, P: 0.8529, R: 0.8165, F1: 0.8343
+2023-06-13 04:17:28,028 - Character-level Correct Acc: 0.9928, P: 0.8495, R: 0.7952, F1: 0.8215
+2023-06-13 04:17:28,029 - Sentence-level Detect Acc: 0.8255, P: 0.8753, R: 0.7523, F1: 0.8091
+2023-06-13 04:17:28,029 - Sentence-level Correct Acc: 0.8191, P: 0.8734, R: 0.7394, F1: 0.8008
+2023-06-13 04:17:28,029 - ------------------------------------------------------------
+2023-06-13 04:17:28,029 - Total Sentences Num: 1100, Error Sentences Num: 0
