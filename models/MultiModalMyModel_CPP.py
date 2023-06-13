@@ -1,7 +1,10 @@
 import argparse
+import json
 
 import lightning.pytorch as pl
+import pypinyin
 import torch
+from tokenizers.implementations import BertWordPieceTokenizer
 from torch import nn
 from torch.nn import CrossEntropyLoss
 from torch.nn.utils.rnn import pad_sequence
@@ -12,6 +15,7 @@ from models.common import BertOnlyMLMHead, BERT
 from utils.log_utils import log
 from utils.loss import FocalLoss
 from utils.scheduler import WarmupExponentialLR
+from utils.str_utils import is_chinese
 from utils.utils import predict_process, convert_char_to_pinyin, convert_char_to_image, pred_token_process, mock_args
 
 import os
@@ -37,16 +41,24 @@ class InputHelper:
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
 
-        self.pinyin_embedding_cache = None
-        self._init_pinyin_embedding_cache()
-
         self.token_images_cache = None
         self._init_token_images_cache()
 
-    def _init_pinyin_embedding_cache(self):
-        self.pinyin_embedding_cache = {}
+        self.pho_convertor = Pinyin()
+
+        self.pinyin_label_cache = None
+        self._init_pinyin_label_cache()
+
+
+    def _init_pinyin_label_cache(self):
+        self.pinyin_label_cache = {}
         for token, id in self.tokenizer.get_vocab().items():
-            self.pinyin_embedding_cache[id] = convert_char_to_pinyin(token)
+            if not is_chinese(token):
+                continue
+
+            pinyin = pypinyin.pinyin(token, style=pypinyin.Style.TONE3, neutral_tone_with_five=True)[0][0]
+            pinyin_label = self.pho_convertor.get_sm_ym_sd_labels(pinyin)
+            self.pinyin_label_cache[id] = torch.LongTensor(pinyin_label)
 
     def _init_token_images_cache(self):
         self.token_images_cache = {}
@@ -58,10 +70,10 @@ class InputHelper:
 
             self.token_images_cache[id] = convert_char_to_image(token, 32)
 
-    def convert_tokens_to_pinyin_embeddings(self, input_ids):
+    def convert_tokens_to_pinyin_labels(self, input_ids):
         input_pinyins = []
         for i, input_id in enumerate(input_ids):
-            input_pinyins.append(self.pinyin_embedding_cache.get(input_id.item(), torch.LongTensor([0])))
+            input_pinyins.append(self.pinyin_label_cache.get(input_id.item(), torch.LongTensor([0, 0, 0])))
 
         return pad_sequence(input_pinyins, batch_first=True)
 
@@ -160,11 +172,11 @@ class PinyinClassifier(nn.Module):
         self.pinyin=Pinyin()
         self.transform = BertPredictionHeadTransform(config)  # Pron Projection
         # 声母分类器
-        self.sm_classifier=nn.Linear(config.hidden_size,self.pinyin.sm_size)
+        self.sm_classifier = nn.Linear(config.hidden_size,self.pinyin.sm_size)
         # 韵母分类器
-        self.ym_classifier=nn.Linear(config.hidden_size,self.pinyin.ym_size)
+        self.ym_classifier = nn.Linear(config.hidden_size,self.pinyin.ym_size)
         # 声调分类器
-        self.sd_classifier=nn.Linear(config.hidden_size,self.pinyin.sd_size)
+        self.sd_classifier = nn.Linear(config.hidden_size,self.pinyin.sd_size)
 
     def forward(self, sequence_output):
         sequence_output = self.transform(sequence_output)
@@ -172,7 +184,7 @@ class PinyinClassifier(nn.Module):
         ym_scores = self.ym_classifier(sequence_output)
         sd_scores = self.sd_classifier(sequence_output)
         # 返回三种数据softmax前的数据
-        return sm_scores,ym_scores,sd_scores
+        return sm_scores, ym_scores, sd_scores
 
 
 class MyModel(pl.LightningModule):
@@ -221,6 +233,10 @@ class MyModel(pl.LightningModule):
             if isinstance(layer, nn.Linear):
                 nn.init.orthogonal_(layer.weight, gain=1)
 
+        for layer in self.pinyin_cls.predictions:
+            if isinstance(layer, nn.Linear):
+                nn.init.orthogonal_(layer.weight, gain=1)
+
         nn.init.orthogonal_(self.token_forget_gate.weight, gain=1)
 
     def forward(self, inputs, images, output_hidden_states=False):
@@ -262,7 +278,7 @@ class MyModel(pl.LightningModule):
                 active_loss, pinyin_labels[..., 0].view(-1),
                 torch.tensor(self.pinyin_loss_fnt.ignore_index).type_as(pinyin_labels)
             )
-            sm_loss = self.pinyin_loss_fnt(sm_scores.view(-1, self.cls.Phonetic_relationship.pinyin.sm_size),
+            sm_loss = self.pinyin_loss_fnt(sm_scores.view(-1, self.pinyin_cls.pinyin.sm_size),
                                            active_labels)
 
             # 计算韵母Loss
@@ -270,7 +286,7 @@ class MyModel(pl.LightningModule):
                 active_loss, pinyin_labels[..., 1].view(-1),
                 torch.tensor(self.pinyin_loss_fnt.ignore_index).type_as(pinyin_labels)
             )
-            ym_loss = self.pinyin_loss_fnt(ym_scores.view(-1, self.cls.Phonetic_relationship.pinyin.ym_size),
+            ym_loss = self.pinyin_loss_fnt(ym_scores.view(-1, self.pinyin_cls.pinyin.ym_size),
                                            active_labels)
 
             # 计算声调loss
@@ -278,7 +294,7 @@ class MyModel(pl.LightningModule):
                 active_loss, pinyin_labels[..., 2].view(-1),
                 torch.tensor(self.pinyin_loss_fnt.ignore_index).type_as(pinyin_labels)
             )
-            sd_loss = self.pinyin_loss_fnt(sd_scores.view(-1, self.cls.Phonetic_relationship.pinyin.sd_size),
+            sd_loss = self.pinyin_loss_fnt(sd_scores.view(-1, self.pinyin_cls.pinyin.sd_size),
                                            active_labels)
 
             # 最后将这三个loss相加，得到L^p
@@ -301,7 +317,10 @@ class MyModel(pl.LightningModule):
             'outputs': outputs,
             'targets': loss_targets,
             'd_targets': d_targets,
-            'attention_mask': inputs['attention_mask']
+            'attention_mask': inputs['attention_mask'],
+            'bar_postfix': {
+                'pinyin_loss': pinyin_loss.item()
+            }
         }
 
     def validation_step(self, batch, batch_idx, *args, **kwargs):
@@ -441,6 +460,17 @@ class MyModel(pl.LightningModule):
                 weight_decay = 0
             params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
+        for key, value in self.pinyin_cls.named_parameters():
+            if not value.requires_grad:
+                continue
+
+            lr = self.args.hyper_params['cls_lr']
+            weight_decay = self.args.hyper_params['weight_decay']
+            if "bias" in key:
+                lr *= 2
+                weight_decay = 0
+            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+
         optimizer = torch.optim.AdamW(params)
         return optimizer
 
@@ -459,6 +489,7 @@ class MyModel(pl.LightningModule):
         # 将没有出错的单个字变为1
         loss_targets[(~d_targets) & (loss_targets != 0)] = 1
 
+        pinyin_labels = MyModel.input_helper.convert_tokens_to_pinyin_labels(tgt['input_ids'].view(-1))
         images = MyModel.input_helper.convert_tokens_to_images(src['input_ids'].view(-1), None)  # TODO
 
-        return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets, images, "TODO"
+        return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets, images, pinyin_labels
