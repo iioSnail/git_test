@@ -117,7 +117,7 @@ class GlyphDenseEmbedding(nn.Module):
 
 
 class MyModel(pl.LightningModule):
-    bert_path = "hfl/chinese-macbert-base"
+    bert_path = "hfl/chinese-roberta-wwm-ext"
     tokenizer = AutoTokenizer.from_pretrained(bert_path)
 
     input_helper = InputHelper(tokenizer)
