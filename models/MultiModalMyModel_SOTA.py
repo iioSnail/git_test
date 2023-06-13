@@ -238,6 +238,9 @@ class MyModel(pl.LightningModule):
         input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(inputs['input_ids'].view(-1))
         images = MyModel.input_helper.convert_tokens_to_images(inputs['input_ids'].view(-1), None)  # TODO
         input_pinyins, images = input_pinyins.to(self.args.device), images.to(self.args.device)
+        # outputs[0, 5].sort(descending=True).values
+        # outputs[0, 5].sort(descending=True).indices
+        # self.tokenizer.convert_ids_to_tokens(outputs[0, 5].sort(descending=True).indices)[:10]
         outputs = self.forward(inputs, input_pinyins, images)
         ids_list = self.extract_outputs(outputs, inputs['input_ids'])
         pred_tokens = self._tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])

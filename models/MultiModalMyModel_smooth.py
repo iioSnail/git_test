@@ -14,6 +14,10 @@ from utils.utils import convert_char_to_pinyin, convert_char_to_image, pred_toke
 
 import os
 
+"""
+Smooth Label: 对于正确字，在进行损失计算时，不是将label直接固定为1，而是 x的1，(1-x)的对应index
+"""
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 default_params = {
@@ -22,8 +26,7 @@ default_params = {
     "lr_decay_factor": 0.95,
     "weight_decay": 0.01,
     "cls_lr": 2e-4,
-    "c_alpha": 1,
-    "e_alpha": 1,
+    "smooth_alpha": 0.7,
 }
 
 
@@ -117,7 +120,7 @@ class GlyphDenseEmbedding(nn.Module):
 
 
 class MyModel(pl.LightningModule):
-    bert_path = "hfl/chinese-roberta-wwm-ext"
+    bert_path = "hfl/chinese-macbert-base"
     tokenizer = AutoTokenizer.from_pretrained(bert_path)
 
     input_helper = InputHelper(tokenizer)
@@ -130,6 +133,7 @@ class MyModel(pl.LightningModule):
                 continue
             self.args.hyper_params[key] = value
 
+        default_params.update(self.args.hyper_params)
         log.info("Hyper-parameters:" + str(self.args.hyper_params))
 
         self.bert_config = AutoConfig.from_pretrained(MyModel.bert_path)
@@ -151,8 +155,7 @@ class MyModel(pl.LightningModule):
         self.cls = BertOnlyMLMHead(768 + self.pinyin_feature_size + self.glyph_feature_size, len(self._tokenizer),
                                    layer_num=1)
 
-        alpha = [0, self.args.hyper_params['c_alpha']] + [self.args.hyper_params['e_alpha']] * (len(self._tokenizer) - 2)
-        self.loss_fnt = FocalLoss(alpha=alpha, device=self.args.device)
+        self.loss_fnt = FocalLoss(device=self.args.device)
 
     def _init_parameters(self):
         for layer in self.cls.predictions:
@@ -190,7 +193,6 @@ class MyModel(pl.LightningModule):
             return self.cls(hidden_states)
 
     def compute_loss(self, outputs, targets):
-        targets = targets.view(-1)
         return self.loss_fnt(outputs.view(-1, outputs.size(-1)), targets)
 
     def extract_outputs(self, outputs, input_ids):
@@ -204,10 +206,10 @@ class MyModel(pl.LightningModule):
         return outputs
 
     def training_step(self, batch, batch_idx, *args, **kwargs):
-        inputs, targets, d_targets, loss_targets, input_pinyins, images = batch
+        inputs, targets, d_targets, loss_targets, input_pinyins, images, smooth_targets = batch
         outputs = self.forward(inputs, input_pinyins, images)
 
-        loss = self.compute_loss(outputs, loss_targets)
+        loss = self.compute_loss(outputs, smooth_targets)
 
         outputs = outputs.argmax(-1)
 
@@ -220,9 +222,9 @@ class MyModel(pl.LightningModule):
         }
 
     def validation_step(self, batch, batch_idx, *args, **kwargs):
-        inputs, targets, d_targets, loss_targets, input_pinyins, images = batch
+        inputs, targets, d_targets, loss_targets, input_pinyins, images, smooth_targets = batch
         outputs = self.forward(inputs, input_pinyins, images)
-        loss = self.compute_loss(outputs, loss_targets)
+        loss = self.compute_loss(outputs, smooth_targets)
 
         outputs = outputs.argmax(-1)
 
@@ -241,6 +243,9 @@ class MyModel(pl.LightningModule):
         input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(inputs['input_ids'].view(-1))
         images = MyModel.input_helper.convert_tokens_to_images(inputs['input_ids'].view(-1), None)  # TODO
         input_pinyins, images = input_pinyins.to(self.args.device), images.to(self.args.device)
+        # outputs[0, 5].sort(descending=True).values
+        # outputs[0, 5].sort(descending=True).indices
+        # self.tokenizer.convert_ids_to_tokens(outputs[0, 5].sort(descending=True).indices)[:10]
         outputs = self.forward(inputs, input_pinyins, images)
         ids_list = self.extract_outputs(outputs, inputs['input_ids'])
         pred_tokens = self._tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])
@@ -362,10 +367,20 @@ class MyModel(pl.LightningModule):
 
         d_targets = (src['input_ids'] != tgt['input_ids']).bool()
 
-        # 将没有出错的单个字变为1
+        # 将没有出错的单个字变为1，
         loss_targets[(~d_targets) & (loss_targets != 0)] = 1
+
+        # Smooth Label
+        num_labels = len(MyModel.tokenizer)
+        idx = loss_targets.view(-1, 1).long()
+        smooth_targets = torch.zeros(idx.size(0), num_labels, dtype=torch.float32, device=idx.device)
+        smooth_targets = smooth_targets.scatter_(1, idx, 1)
+        smooth_targets[:, 0] = 0  # ignore 0 index.
+        smooth_targets[:, 1] = smooth_targets[:, 1] * default_params['smooth_alpha']
+        smooth_targets = smooth_targets.scatter(1, tgt.input_ids.view(-1, 1), (1-default_params['smooth_alpha']))
+        smooth_targets[:, 0] = 0
 
         input_pinyins = MyModel.input_helper.convert_tokens_to_pinyin_embeddings(src['input_ids'].view(-1))
         images = MyModel.input_helper.convert_tokens_to_images(src['input_ids'].view(-1), None)  # TODO
 
-        return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets, input_pinyins, images
+        return src, tgt, (src['input_ids'] != tgt['input_ids']).float(), loss_targets, input_pinyins, images, smooth_targets

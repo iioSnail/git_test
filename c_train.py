@@ -101,6 +101,10 @@ class C_Train(object):
             from models.MultiModalMyModel_CPP import MyModel
             return MyModel(self.args)
 
+        if model == 'multimodalmymodel_smooth':
+            from models.MultiModalMyModel_smooth import MyModel
+            return MyModel(self.args)
+
         if model == 'zeroshot':
             from models.zero_shot import AdjustProbByPinyin
             return AdjustProbByPinyin(self.args)
