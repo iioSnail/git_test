@@ -17,9 +17,15 @@ python c_train.py \
        --max-length 512 \
        --no-resume \
        --accumulate_grad_batches 2 \
+       --eval \
+       --epochs 30 \
+       --min_epochs 20 \
+       --val-data sighan15test \
+       --test-data sighan15test \
        --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1
 
---datas sighan13train,sighan14train,sighan15train,wang271k --model SCOPE --bert-path FPT --seed 2333 --max-length 512 --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1,accumulate_grad_batches=2
+For debug in local:
+--limit-batches 40 --no-resume --batch-size 4 --datas sighan13train,sighan14train,sighan15train,wang271k --model SCOPE --bert-path FPT --seed 2333 --max-length 128 --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1 --accumulate_grad_batches 2
 ```
 
 Note:
@@ -123,7 +129,7 @@ class SCOPE_CSC_Model(pl.LightningModule):
 
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
 
-    def forward(self, input_ids, pinyin_ids, labels=None, pinyin_labels=None, tgt_pinyin_ids=None, var=1):
+    def forward(self, input_ids, pinyin_ids, labels=None, pinyin_labels=None, tgt_pinyin_ids=None):
         """"""
         attention_mask = (input_ids != 0).long()
         return self.model(
@@ -138,47 +144,62 @@ class SCOPE_CSC_Model(pl.LightningModule):
 
     def compute_loss(self, batch):
         input_ids, pinyin_ids, labels, tgt_pinyin_ids, pinyin_labels = batch
-        loss_mask = (input_ids != 0) * (input_ids != 101) * (input_ids != 102).long()
         batch_size, length = input_ids.shape
         pinyin_ids = pinyin_ids.view(batch_size, length, 8)
         tgt_pinyin_ids = tgt_pinyin_ids.view(batch_size, length, 8)
         outputs = self.forward(
-            input_ids, pinyin_ids, labels=labels, pinyin_labels=pinyin_labels, tgt_pinyin_ids=tgt_pinyin_ids,
-            var=self.args.var if 'var' in self.args else 1
+            input_ids, pinyin_ids, labels=labels, pinyin_labels=pinyin_labels, tgt_pinyin_ids=tgt_pinyin_ids
         )
         loss = outputs.loss
-        return loss
+        return loss, outputs
 
     def training_step(self, batch, batch_idx):
-        """todo"""
-        # ' '.join([self.tokenizer.id_to_token(id) for id in batch[0][0]])
-        loss = self.compute_loss(batch)
-        tf_board_logs = {
-            "train_loss": loss.item(),
-            "lr": self.trainer.optimizers[0].param_groups[0]["lr"],
+        input_ids, pinyin_ids, labels, tgt_pinyin_ids, pinyin_labels = batch
+        mask = (input_ids != 0) * (input_ids != 101) * (input_ids != 102).long()
+        loss, outputs = self.compute_loss(batch)
+        return {
+            "loss": loss,
+            "outputs": outputs.logits.argmax(-1),
+            "targets": labels,
+            "d_targets": (input_ids != labels).int(),
+            "attention_mask": mask,
         }
-        # torch.cuda.empty_cache()
-        return {"loss": loss, "log": tf_board_logs}
 
     def validation_step(self, batch, batch_idx):
-        """todo"""
-        input_ids, pinyin_ids, labels, pinyin_labels, ids, srcs, tokens_size = batch
+        input_ids, pinyin_ids, labels, tgt_pinyin_ids, pinyin_labels = batch
         mask = (input_ids != 0) * (input_ids != 101) * (input_ids != 102).long()
-        batch_size, length = input_ids.shape
-        pinyin_ids = pinyin_ids.view(batch_size, length, 8)
-        logits = self.forward(
-            input_ids,
-            pinyin_ids,
-        ).logits
-        predict_scores = F.softmax(logits, dim=-1)
-        predict_labels = torch.argmax(predict_scores, dim=-1) * mask
+        loss, outputs = self.compute_loss(batch)
         return {
-            "tgt_idx": labels.cpu(),
-            "pred_idx": predict_labels.cpu(),
-            "id": ids,
-            "src": srcs,
-            "tokens_size": tokens_size,
+            "loss": loss,
+            "outputs": outputs.logits.argmax(-1),
+            "targets": labels,
+            "d_targets": (input_ids != labels).int(),
+            "attention_mask": mask,
         }
+
+    def test_step(self, batch, batch_idx, *args, **kwargs):
+        src, tgt = batch
+
+        pred = []
+        for sentence in src:
+            pred.append(self.predict(sentence))
+
+        return pred
+
+    def predict(self, sentence):
+        encoded = SCOPE_CSC_Model.tokenizer.encode(sentence)
+        pinyin_ids = SCOPE_CSC_Model.dataset_helper.convert_sentence_to_pinyin_ids(sentence, encoded)
+
+        input_ids = torch.LongTensor(encoded.ids).unsqueeze(0)
+        pinyin_ids = torch.LongTensor(pinyin_ids).unsqueeze(0)
+
+        outputs = self.forward(
+            input_ids, pinyin_ids
+        )
+
+        pred_tokens = outputs.logits.argmax(-1)[0, 1:-1].tolist()
+        pred = self.tokenizer.decode(pred_tokens).replace(" ", "")
+        return pred
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         # 注意，这里一个batch是一条句子。即一次预测一句
@@ -264,7 +285,7 @@ class SCOPE_CSC_Model(pl.LightningModule):
             pinyin_ids = SCOPE_CSC_Model.dataset_helper.convert_sentence_to_pinyin_ids(sent, encoded)
 
             input_ids_list.append(torch.LongTensor(encoded.ids))
-            input_pinyin_ids.append(pinyin_ids)
+            input_pinyin_ids.append(torch.LongTensor(pinyin_ids))
 
         label_list = []
         tgt_pinyin_ids = []
@@ -275,12 +296,18 @@ class SCOPE_CSC_Model(pl.LightningModule):
             pinyin_label = SCOPE_CSC_Model.dataset_helper.convert_sentence_to_shengmu_yunmu_shengdiao_ids(sent, encoded)
 
             label_list.append(torch.LongTensor(encoded.ids))
-            tgt_pinyin_ids.append(pinyin_ids)
-            pinyin_label_list.append(pinyin_label)
+            tgt_pinyin_ids.append(torch.LongTensor(pinyin_ids))
+            pinyin_label_list.append(torch.LongTensor(pinyin_label))
 
-        input_ids = pad_sequence(label_list, batch_first=True, padding_value=0)
+        input_ids = pad_sequence(input_ids_list, batch_first=True, padding_value=0)
+        labels = pad_sequence(label_list, batch_first=True, padding_value=0)
+        input_pinyin_ids = pad_sequence(input_pinyin_ids, batch_first=True)
+        input_pinyin_ids = input_pinyin_ids.view(input_pinyin_ids.size(0), -1)
+        tgt_pinyin_ids = pad_sequence(tgt_pinyin_ids, batch_first=True)
+        tgt_pinyin_ids = input_pinyin_ids.view(tgt_pinyin_ids.size(0), -1)
+        pinyin_labels = pad_sequence(pinyin_label_list, batch_first=True)
 
-        return input_ids
+        return input_ids, input_pinyin_ids, labels, tgt_pinyin_ids, pinyin_labels
 
 
 ########################### ChineseBERT from SCOPE Source #################################

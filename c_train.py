@@ -144,7 +144,7 @@ class C_Train(object):
 
         early_stop_callback = EarlyStopping(
             monitor="val_loss",
-            patience=5,
+            patience=self.args.early_stop if self.args.early_stop > 0 else 9999999,
             mode='min',
         )
 
@@ -211,6 +211,9 @@ class C_Train(object):
         parser = argparse.ArgumentParser()
         parser.add_argument('--model', type=str, default='bert',
                             help='The model name you want to evaluate.')
+        parser.add_argument('--device', type=str, default='auto',
+                            help='The device for training. auto, cpu or cuda')
+        parser.add_argument('--seed', type=int, default=0, help='The random seed.')
         parser.add_argument('--data', type=str, default=None, help='The data you want to load. e.g. wang271k.')
         parser.add_argument('--val-data', type=str, default=None, help='The data you want to load for validation. e.g. wang271k.')
         parser.add_argument('--test-data', type=str, default=None,  # Fixme
@@ -241,8 +244,6 @@ class C_Train(object):
         parser.add_argument('--ckpt-path', type=str, default=None,
                             help='The filepath of checkpoint for test. '
                                  'Default: ${ckpt_dir}/best.ckpt')
-        parser.add_argument('--finetune', action='store_true', default=False,
-                            help="The finetune flag means that the training into the fine-tuning phase.")
         parser.add_argument('--print-errors', action='store_true', default=False,
                             help="Print sentences which is failure to predict.")
         parser.add_argument('--hyper-params', type=str, default="",
@@ -258,6 +259,9 @@ class C_Train(object):
                             help='The parameters of pytorch lightning Trainer.')
         parser.add_argument('--gradient_clip_algorithm', type=int, default=None,
                             help='The parameters of pytorch lightning Trainer.')
+        parser.add_argument('--early-stop', type=int, default=-1,
+                            help="The epochs for early stop check. -1 means do not early stop.")
+
 
         ###############################################################################################################
 
@@ -269,10 +273,6 @@ class C_Train(object):
         parser.add_argument('--train-data', type=str, default="./data/Wang271K_processed.pkl",
                             help='The file path of training data.')
 
-        parser.add_argument('--device', type=str, default='auto',
-                            help='The device for training. auto, cpu or cuda')
-        parser.add_argument('--seed', type=int, default=0, help='The random seed.')
-
         parser.add_argument('--output-path', type=str, default='./c_output',
                             help='The path of output files while running, '
                                  'including model state file, tensorboard files, etc.')
@@ -281,6 +281,8 @@ class C_Train(object):
                             help='When detection logit greater than {error_threshold}, '
                                  'the token will be treated as error.')
         parser.add_argument('--eval', action='store_true', default=False, help='Eval model after every epoch.')
+        parser.add_argument('--finetune', action='store_true', default=False,
+                            help="The finetune flag means that the training into the fine-tuning phase.")
 
         args = parser.parse_known_args()[0]
 

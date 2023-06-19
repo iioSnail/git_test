@@ -348,11 +348,16 @@ class EvalInTrainMetricsCallback(Callback):
 
     def __init__(self, args):
         super().__init__()
+        self.args = args
         if not args.eval:
             return
-        self.args = args
+
         self.csc_metrics = CSCMetrics()
-        self.dataset = CSCDataset(self.args.test_data)
+        test_data = "sighan15test"
+        if self.args.test_data:
+            test_data = self.args.test_data
+
+        self.dataset = CSCDataset(test_data)
 
     def on_test_batch_end(
             self,
