@@ -22,6 +22,7 @@ python c_train.py \
        --min_epochs 20 \
        --val-data sighan15test \
        --test-data sighan15test \
+       --ckpt-dir /root/autodl-tmp/csc_outputs/ \
        --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1
 
 For debug in local:
@@ -190,8 +191,8 @@ class SCOPE_CSC_Model(pl.LightningModule):
         encoded = SCOPE_CSC_Model.tokenizer.encode(sentence)
         pinyin_ids = SCOPE_CSC_Model.dataset_helper.convert_sentence_to_pinyin_ids(sentence, encoded)
 
-        input_ids = torch.LongTensor(encoded.ids).unsqueeze(0)
-        pinyin_ids = torch.LongTensor(pinyin_ids).unsqueeze(0)
+        input_ids = torch.LongTensor(encoded.ids, device=self.args.device).unsqueeze(0)
+        pinyin_ids = torch.LongTensor(pinyin_ids, device=self.args.device).unsqueeze(0)
 
         outputs = self.forward(
             input_ids, pinyin_ids
