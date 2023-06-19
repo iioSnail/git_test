@@ -113,12 +113,19 @@ class C_Train(object):
             from models.PinyinBert import BertCSCModel
             return BertCSCModel(self.args)
 
+        if model == 'scope':
+            from models.SCOPE import SCOPE_CSC_Model
+            return SCOPE_CSC_Model(self.args)
+
         raise Exception("Can't find any model!")
 
     def train(self):
         collate_fn = self.model.collate_fn if 'collate_fn' in dir(self.model) else None
         tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else None
-        train_loader, valid_loader = create_dataloader(self.args, collate_fn, tokenizer)
+        train_loader, val_loader = create_dataloader(self.args, collate_fn, tokenizer)
+
+        self.args.train_loader = train_loader
+        self.args.val_loader = val_loader
 
         checkpoint_callback = CheckpointCallback(dir_path=self.args.ckpt_dir)
 
@@ -147,7 +154,7 @@ class C_Train(object):
             limit_train_batches = self.args.limit_batches
             limit_val_batches = int(self.args.limit_batches * self.args.valid_ratio / (1 - self.args.valid_ratio))
 
-        precision = '16-mixed'
+        precision = self.args.precision
         if str(self.args.device) == 'cpu':
             precision = '32-true'
 
@@ -165,17 +172,19 @@ class C_Train(object):
                        EvalInTrainMetricsCallback(self.args),   # FIXME Only for adjust hyper-parameters.
                        ],
             max_epochs=self.args.epochs,
-            num_sanity_val_steps=0,
+            min_epochs=self.args.min_epochs,
+            num_sanity_val_steps=self.args.num_sanity_val_steps,
             enable_progress_bar=False,  # Use custom progress bar
             precision=precision,
-            gradient_clip_val=0.5,
-            gradient_clip_algorithm="norm",
+            gradient_clip_val=self.args.gradient_clip_val,
+            gradient_clip_algorithm=self.args.gradient_clip_algorithm,
             logger=TensorBoardLogger(self.args.work_dir),
+            accumulate_grad_batches=self.args.accumulate_grad_batches
         )
 
         trainer.fit(self.model,
                     train_dataloaders=train_loader,
-                    val_dataloaders=valid_loader,
+                    val_dataloaders=val_loader,
                     ckpt_path=ckpt_path
                     )
 
@@ -186,8 +195,6 @@ class C_Train(object):
                                            ignore_de='13' in self.args.data
                                            )]
         )
-
-
 
         test_dataloader = create_test_dataloader(self.args)
 
@@ -223,6 +230,7 @@ class C_Train(object):
                             help='The filepath of last checkpoint and best checkpoint. '
                                  'The default value is ${work_dir}')
         parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
+        parser.add_argument('--min-epochs', type=int, default=1, help='The minimum number of training epochs.')
         parser.add_argument('--resume', action='store_true', help='Resume training.')
         parser.add_argument('--no-resume', dest='resume', action='store_false', help='Not Resume training.')
         parser.set_defaults(resume=True)
@@ -239,12 +247,22 @@ class C_Train(object):
                             help="Print sentences which is failure to predict.")
         parser.add_argument('--hyper-params', type=str, default="",
                             help='The hyper parameters of your model. The type must be json.')
+        parser.add_argument('--bert-path', type=str, help="The pretrained model path.")
+        parser.add_argument('--accumulate_grad_batches', type=int, default=1)
+        parser.add_argument('--precision', type=str, default="32-true")
+        parser.add_argument('--max-length', type=int, default=256,
+                            help='The max length of sentence. Sentence will be truncated if its length long than it.')
+        parser.add_argument('--num_sanity_val_steps', type=int, default=0,
+                            help='The parameters of pytorch lightning Trainer.')
+        parser.add_argument('--gradient_clip_val', type=int, default=None,
+                            help='The parameters of pytorch lightning Trainer.')
+        parser.add_argument('--gradient_clip_algorithm', type=int, default=None,
+                            help='The parameters of pytorch lightning Trainer.')
 
         ###############################################################################################################
 
         parser.add_argument('--model-path', type=str, default=None,
                             help='The filepath of pretrain model.')
-        parser.add_argument('--bert-path', type=str, default='../drive/MyDrive/MultiModalBertModel/multi-modal-bert.pt')
 
         parser.add_argument('--data-type', type=str, default="none",
                             help='The type of training data.')
@@ -263,8 +281,6 @@ class C_Train(object):
                             help='When detection logit greater than {error_threshold}, '
                                  'the token will be treated as error.')
         parser.add_argument('--eval', action='store_true', default=False, help='Eval model after every epoch.')
-        parser.add_argument('--max-length', type=int, default=256,
-                            help='The max length of sentence. Sentence will be truncated if its length long than it.')
 
         args = parser.parse_known_args()[0]
 
