@@ -26,7 +26,7 @@ python c_train.py \
        --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1
 
 For debug in local:
---limit-batches 40 --no-resume --batch-size 4 --datas sighan13train,sighan14train,sighan15train,wang271k --model SCOPE --bert-path FPT --seed 2333 --max-length 128 --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1 --accumulate_grad_batches 2
+--workers 0 --limit-batches 40 --no-resume --batch-size 4 --datas sighan13train,sighan14train,sighan15train,wang271k --model SCOPE --bert-path FPT --seed 2333 --max-length 128 --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1 --accumulate_grad_batches 2
 ```
 
 Note:
@@ -191,8 +191,8 @@ class SCOPE_CSC_Model(pl.LightningModule):
         encoded = SCOPE_CSC_Model.tokenizer.encode(sentence)
         pinyin_ids = SCOPE_CSC_Model.dataset_helper.convert_sentence_to_pinyin_ids(sentence, encoded)
 
-        input_ids = torch.LongTensor(encoded.ids, device=self.args.device).unsqueeze(0)
-        pinyin_ids = torch.LongTensor(pinyin_ids, device=self.args.device).unsqueeze(0)
+        input_ids = torch.LongTensor(encoded.ids).unsqueeze(0).to(self.args.device)
+        pinyin_ids = torch.LongTensor(pinyin_ids).unsqueeze(0).to(self.args.device)
 
         outputs = self.forward(
             input_ids, pinyin_ids
