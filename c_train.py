@@ -142,12 +142,6 @@ class C_Train(object):
             log.info("Load pre-trained model from " + str(self.args.ckpt_path))
             self.model.load_state_dict(torch.load(self.args.ckpt_path)['state_dict'])
 
-        early_stop_callback = EarlyStopping(
-            monitor="val_loss",
-            patience=self.args.early_stop if self.args.early_stop > 0 else 9999999,
-            mode='min',
-        )
-
         limit_train_batches = None
         limit_val_batches = None
         if self.args.limit_batches > 0:
@@ -160,17 +154,29 @@ class C_Train(object):
 
         train_metrics_callback = TrainMetricsCallback()
 
+        # Building callbacks
+        callbacks = []
+        callbacks.append(checkpoint_callback)
+        if self.args.early_stop > 0:
+            callbacks.append(EarlyStopping(
+                monitor="val_loss",
+                patience=self.args.early_stop,
+                mode='min',
+            ))
+        callbacks.append(train_metrics_callback)
+        callbacks.append(SimpleProgressBar(train_metrics_callback)),
+        if self.args.swa:
+            callbacks.append(CscStochasticWeightAveraging(train_metrics_callback))
+
+        if self.args.eval:
+            # FIXME Only for adjust hyper-parameters.
+            callbacks.append(EvalInTrainMetricsCallback(self.args))
+
         trainer = pl.Trainer(
             default_root_dir=self.args.work_dir,
             limit_train_batches=limit_train_batches,
             limit_val_batches=limit_val_batches,
-            callbacks=[checkpoint_callback,
-                       early_stop_callback,
-                       train_metrics_callback,
-                       SimpleProgressBar(train_metrics_callback),
-                       CscStochasticWeightAveraging(train_metrics_callback),
-                       EvalInTrainMetricsCallback(self.args),   # FIXME Only for adjust hyper-parameters.
-                       ],
+            callbacks=callbacks,
             max_epochs=self.args.epochs,
             min_epochs=self.args.min_epochs,
             num_sanity_val_steps=self.args.num_sanity_val_steps,
@@ -261,8 +267,7 @@ class C_Train(object):
                             help='The parameters of pytorch lightning Trainer.')
         parser.add_argument('--early-stop', type=int, default=-1,
                             help="The epochs for early stop check. -1 means do not early stop.")
-
-        parser.add_argument('--swa', action='store_true', help='Introduce Stochastic Weight Averaging.')
+        parser.add_argument('--swa', action='store_true', default=False, help='Introduce Stochastic Weight Averaging.')
 
         ###############################################################################################################
 
