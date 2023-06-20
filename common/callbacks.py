@@ -303,10 +303,11 @@ class SimpleProgressBar(Callback):
 
 class TestMetricsCallback(Callback):
 
-    def __init__(self, print_errors=False, ignore_de=False):
+    def __init__(self, print_errors=False, ignore_de=False, export_sighan_format=False):
         super().__init__()
         self.print_errors = print_errors
         self.ignore_de = ignore_de
+        self.export_sighan_format = export_sighan_format
 
         self.csc_metrics = CSCMetrics()
 
@@ -342,6 +343,9 @@ class TestMetricsCallback(Callback):
         if self.print_errors:
             self.csc_metrics.print_errors()
             self.csc_metrics.print_abnormal_pairs()
+
+        if self.export_sighan_format:
+            self.csc_metrics.export_sigan_format()
 
 
 class EvalInTrainMetricsCallback(Callback):

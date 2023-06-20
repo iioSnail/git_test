@@ -24,6 +24,20 @@ python c_train.py \
        --test-data sighan15test \
        --ckpt-dir /root/autodl-tmp/csc_outputs/ \
        --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1
+```
+
+> You can use download the well-trained model from 链接：https://pan.baidu.com/s/10Ma2bPXrZHhqQzOV8k1cNw?pwd=4h17
+
+4. For eval, run the following command:
+```
+python c_eval.py \
+       --model SCOPE \
+       --bert-path FPT \
+       --data sighan15test \
+       --batch-size 1 \
+       --ckpt-path ./TrainedModels/SCOPE/scope.ckpt \
+       --print-errors
+```
 
 For debug in local:
 --workers 0 --limit-batches 40 --no-resume --batch-size 4 --datas sighan13train,sighan14train,sighan15train,wang271k --model SCOPE --bert-path FPT --seed 2333 --max-length 128 --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1 --accumulate_grad_batches 2
@@ -56,13 +70,10 @@ import torch
 from tokenizers.implementations import BertWordPieceTokenizer
 from torch import nn
 from torch.nn.utils.rnn import pad_sequence
-from transformers import AutoModel, AutoTokenizer, AutoConfig, BertConfig, AdamW, get_linear_schedule_with_warmup
+from transformers import BertConfig, AdamW, get_linear_schedule_with_warmup
 
-from models.common import BertOnlyMLMHead, BERT
-from utils.log_utils import log
-from utils.loss import FocalLoss
-from utils.scheduler import WarmupExponentialLR
-from utils.utils import convert_char_to_pinyin, convert_char_to_image, pred_token_process
+from models.common import BertOnlyMLMHead
+from utils.utils import predict_process
 
 
 class SCOPE_CSC_Model(pl.LightningModule):
@@ -82,13 +93,12 @@ class SCOPE_CSC_Model(pl.LightningModule):
 
         self.model = Dynamic_GlyceBertForMultiTask.from_pretrained(self.bert_dir)
         self.vocab_size = self.bert_config.vocab_size
-        self.loss_fct = CrossEntropyLoss()
 
         self.tokenizer = BertWordPieceTokenizer(os.path.join(self.bert_dir, 'vocab.txt'))
 
         SCOPE_CSC_Model.tokenizer = self.tokenizer
-        SCOPE_CSC_Model.max_length = self.args.max_length
-        SCOPE_CSC_Model.dataset_helper = ChineseBertDataset(self.bert_dir, max_length=args.max_length)
+        SCOPE_CSC_Model.max_length = self.args.max_length if hasattr(self.args, 'max_length') else 9999999
+        SCOPE_CSC_Model.dataset_helper = ChineseBertDataset(self.bert_dir)
 
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
@@ -188,6 +198,30 @@ class SCOPE_CSC_Model(pl.LightningModule):
         return pred
 
     def predict(self, sentence):
+        sentence = sentence.replace(" ", "")
+        _src_tokens = list(sentence)
+        src_tokens = list(sentence)
+        pred_tokens = self._predict(sentence)
+
+        for _ in range(1):
+            record_index = []
+            # 遍历input和pred，找出修改了的token对应的index
+            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
+                if a != b:
+                    record_index.append(i)
+
+            src_tokens = pred_tokens
+            pred_tokens = self._predict(''.join(pred_tokens))
+            for i, (a, b) in enumerate(zip(src_tokens, pred_tokens)):
+                # 若这个token被修改了，且在窗口范围内，则什么都不做。
+                if a != b and any([abs(i - x) <= 1 for x in record_index]):
+                    pass
+                else:
+                    pred_tokens[i] = src_tokens[i]
+
+        return predict_process(_src_tokens, pred_tokens)
+
+    def _predict(self, sentence):
         encoded = SCOPE_CSC_Model.tokenizer.encode(sentence)
         pinyin_ids = SCOPE_CSC_Model.dataset_helper.convert_sentence_to_pinyin_ids(sentence, encoded)
 
@@ -199,13 +233,23 @@ class SCOPE_CSC_Model(pl.LightningModule):
         )
 
         pred_tokens = outputs.logits.argmax(-1)[0, 1:-1].tolist()
-        pred = self.tokenizer.decode(pred_tokens).replace(" ", "")
-        return pred
+        pred_tokens = list(self.tokenizer.decode(pred_tokens).replace(" ", ""))
+        return pred_tokens
 
     @staticmethod
     def collate_fn(batch):
         src, tgt = zip(*batch)
         src_sents, tgt_sents = list(src), list(tgt)
+        src_sents[0] = "当 然 这 个 家 庭 抱 括 孩 子 们 。 我 非 常 努 力 工 作 赚 钱 ， 照 顾 妻 子 与 父 母 。"
+        src_sents[1] = "对 我 来 说 ， 我 父 母 是 最 棒 的 父 母 ， 因 为 他 们 可 以 当 我 的 朋 又 ， 我 的 爱 人 ， 也 当 我 的 老 师 。 虽 然 他 们 有 的 时 候 骂 我 一 顿 ， 有 的 时 候 不 让 我 做 我 喜 欢 的 事 情 ， 但 是 他 们 其 实 很 疼 喔 。"
+        src_sents[2] = "他 长 的 很 有 高 又 漂 亮 ， 你 知 道 吗 ？ 他 在 讲 的 时 候 大 家 都 很 专 心 的 在 听 ， 他 说 的 中 问 让 别 人 感 觉 到 他 是 一 个 很 有 知 识 的 人 。"
+        src_sents[3] = "我 们 可 以 在 这 里 吃 很 多 台 湾 好 吃 的 东 西 ， 打 球 还 有 奇 脚 踏 车 ， 做 别 的 事 ， 然 后 我 们 可 以 去 宫 殿 博 物 馆 ， 看 待 万 的 历 史 ， 然 后 我 们 会 去 看 别 的 地 方 。"
+
+        tgt_sents[0] = "当 然 这 个 家 庭 包 括 孩 子 们 。 我 非 常 努 力 工 作 赚 钱 ， 照 顾 妻 子 与 父 母 。"
+        tgt_sents[1] = "对 我 来 说 ， 我 父 母 是 最 棒 的 父 母 ， 因 为 他 们 可 以 当 我 的 朋 友 ， 我 的 爱 人 ， 也 当 我 的 老 师 。 虽 然 他 们 有 的 时 候 骂 我 一 顿 ， 有 的 时 候 不 让 我 做 我 喜 欢 的 事 情 ， 但 是 他 们 其 实 很 疼 我 。"
+        tgt_sents[2] = "他 长 得 很 又 高 又 漂 亮 ， 你 知 道 吗 ？ 他 在 讲 的 时 候 大 家 都 很 专 心 地 在 听 ， 他 说 的 中 间 让 别 人 感 觉 到 他 是 一 个 很 有 知 识 的 人 。"
+        tgt_sents[3] = "我 们 可 以 在 这 里 吃 很 多 台 湾 好 吃 的 东 西 ， 打 球 还 有 骑 脚 踏 车 ， 做 别 的 事 ， 然 后 我 们 可 以 去 宫 殿 博 物 馆 ， 看 台 湾 的 历 史 ， 然 后 我 们 会 去 看 别 的 地 方 。"
+
 
         input_ids_list = []
         input_pinyin_ids = []
@@ -246,9 +290,7 @@ import warnings
 import tokenizers
 
 import json
-import os
 import math
-import torch
 from torch.nn import CrossEntropyLoss, MSELoss
 from transformers.models.bert.modeling_bert import BertEncoder, BertPooler, BertOnlyMLMHead, BertPreTrainedModel, \
     BertLMPredictionHead
@@ -256,24 +298,21 @@ from transformers.models.bert.modeling_bert import BertModel, BertPredictionHead
 from transformers.modeling_outputs import BaseModelOutputWithPooling, MaskedLMOutput, SequenceClassifierOutput, \
     QuestionAnsweringModelOutput, TokenClassifierOutput
 
-from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import Dataset
 
 
 class ChineseBertDataset(Dataset):
 
-    def __init__(self, chinese_bert_path, max_length: int = 512):
+    def __init__(self, chinese_bert_path):
         """
         Dataset Base class
         Args:
             chinese_bert_path: pretrain model path
-            max_length: max sentence length
         """
         super().__init__()
         self.vocab_file = os.path.join(chinese_bert_path, 'vocab.txt')
         self.config_path = os.path.join(chinese_bert_path, 'config')
-        self.max_length = max_length
         self.tokenizer = BertWordPieceTokenizer(self.vocab_file)
         # load pinyin map dict
         with open(os.path.join(self.config_path, 'pinyin_map.json'), encoding='utf8') as fin:

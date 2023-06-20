@@ -135,6 +135,48 @@ class CSCMetrics:
             print("pred: %s" % pred)
 
 
+    def export_sigan_format(self, dir_path='outputs'):
+        abnormal_pairs = []
+
+        truth_lines = []
+        result_lines = []
+        for index, pairs in enumerate(self.result_pairs):
+            src, tgt, pred = pairs
+            src_tokens, tgt_tokens, pred_tokens = list(src), list(tgt), list(pred)
+            if len(src_tokens) != len(tgt_tokens) or len(tgt_tokens) != len(pred_tokens):
+                abnormal_pairs.append(pairs)
+                continue
+
+            truth_items = []
+            result_items = []
+            for i in range(len(src_tokens)):
+                if src_tokens[i] != tgt_tokens[i]:
+                    truth_items.append("%d, %s" % (i + 1, tgt_tokens[i]))
+
+                if src_tokens[i] != pred_tokens[i]:
+                    result_items.append("%d, %s" % (i + 1, pred_tokens[i]))
+
+            if len(truth_items) == 0:
+                truth_lines.append("A%.5d, 0\n" % index)
+            else:
+                truth_lines.append("A%.5d, %s\n" % (index, ', '.join(truth_items)))
+
+            if len(result_items) == 0:
+                result_lines.append("A%.5d, 0\n" % index)
+            else:
+                result_lines.append("A%.5d, %s\n" % (index, ', '.join(result_items)))
+
+        mkdir(dir_path)
+        path = Path(dir_path)
+        with open(path / 'sighan_truth.txt', mode='w', encoding='utf-8') as f:
+            f.writelines(truth_lines)
+
+        with open(path / 'sighan_result.txt', mode='w', encoding='utf-8') as f:
+            f.writelines(result_lines)
+
+        print("Export SIGHAN result to", dir_path, ". The number of abnormal pairs:", len(abnormal_pairs))
+
+
 class SighanCSCMetrics:
     """
     SIGHAN 官方的评价指标实现

@@ -7,10 +7,10 @@ from pathlib import Path
 
 import lightning.pytorch as pl
 import torch
-from lightning.pytorch.callbacks import EarlyStopping, StochasticWeightAveraging
+from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.loggers import TensorBoardLogger
 
-from common.callbacks import CheckpointCallback, SimpleProgressBar, TestMetricsCallback, TestCallback, \
+from common.callbacks import CheckpointCallback, SimpleProgressBar, TestMetricsCallback, \
     TrainMetricsCallback, EvalInTrainMetricsCallback
 from common.stochastic_weight_avg import CscStochasticWeightAveraging
 from utils.dataloader import create_dataloader, create_test_dataloader
@@ -25,97 +25,98 @@ class C_Train(object):
         super(C_Train, self).__init__()
         self.args = self.parse_args()
 
-        self.model = self.model_select()
+        self.model = self.model_select(self.args)
 
-    def model_select(self):
-        model = self.args.model.lower()
+    @staticmethod
+    def model_select(args):
+        model = args.model.lower()
         if model == 'bert':
             from models.BertCorrectionModel import BertCSCModel
-            return BertCSCModel(self.args)
+            return BertCSCModel(args)
 
         if model == 'pinyinmymodel':
             from models.PinyinMyModel import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel':
             from models.MultiModalMyModel import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_sota':
             from models.MultiModalMyModel_SOTA import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_temp':
             from models.MultiModalMyModel_TEMP import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_multi':
             from models.MultiModalMyModel_wo_multi import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_focal_loss':
             from models.MultiModalMyModel_wo_focal_loss import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_multi_and_focal_loss':
             from models.MultiModalMyModel_wo_multi_and_focal_loss import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_token_embeddings':
             from models.MultiModalMyModel_wo_token_embeddings import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_fix_index':
             from models.MultiModalMyModel_wo_fix_index import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_multi_and_token_embeddings':
             from models.MultiModalMyModel_wo_multi_and_token_embeddings import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_glyph':
             from models.MultiModalMyModel_wo_glyph import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_glyph_and_token_embeddings':
             from models.MultiModalMyModel_wo_glyph_and_token_embeddings import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_pinyin':
             from models.MultiModalMyModel_wo_pinyin import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_pinyin_and_token_embeddings':
             from models.MultiModalMyModel_wo_pinyin_and_token_embeddings import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_new_ft':
             from models.MultiModalMyModel_new_ft import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_wo_ft':
             from models.MultiModalMyModel_wo_ft import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_cpp':
             from models.MultiModalMyModel_CPP import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'multimodalmymodel_smooth':
             from models.MultiModalMyModel_smooth import MyModel
-            return MyModel(self.args)
+            return MyModel(args)
 
         if model == 'zeroshot':
             from models.zero_shot import AdjustProbByPinyin
-            return AdjustProbByPinyin(self.args)
+            return AdjustProbByPinyin(args)
 
         if model == 'pinyinbert':
             from models.PinyinBert import BertCSCModel
-            return BertCSCModel(self.args)
+            return BertCSCModel(args)
 
         if model == 'scope':
             from models.SCOPE import SCOPE_CSC_Model
-            return SCOPE_CSC_Model(self.args)
+            return SCOPE_CSC_Model(args)
 
         raise Exception("Can't find any model!")
 
@@ -148,10 +149,6 @@ class C_Train(object):
             limit_train_batches = self.args.limit_batches
             limit_val_batches = int(self.args.limit_batches * self.args.valid_ratio / (1 - self.args.valid_ratio))
 
-        precision = self.args.precision
-        if str(self.args.device) == 'cpu':
-            precision = '32-true'
-
         train_metrics_callback = TrainMetricsCallback()
 
         # Building callbacks
@@ -181,7 +178,7 @@ class C_Train(object):
             min_epochs=self.args.min_epochs,
             num_sanity_val_steps=self.args.num_sanity_val_steps,
             enable_progress_bar=False,  # Use custom progress bar
-            precision=precision,
+            precision=self.args.precision,
             gradient_clip_val=self.args.gradient_clip_val,
             gradient_clip_algorithm=self.args.gradient_clip_algorithm,
             logger=TensorBoardLogger(self.args.work_dir),
@@ -211,12 +208,16 @@ class C_Train(object):
         assert self.args.ckpt_path and os.path.exists(self.args.ckpt_path), \
             "Checkpoint file is not found! ckpt_path:%s" % self.args.ckpt_path
 
-        trainer.test(self.model, dataloaders=test_dataloader, ckpt_path=self.args.ckpt_path)
+        ckpt_states = torch.load(self.args.ckpt_path, map_location='cpu')
+        self.model.load_state_dict(ckpt_states['state_dict'])
+        self.model = self.model.to(self.args.device)
+
+        trainer.test(self.model, dataloaders=test_dataloader)
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('--model', type=str, default='bert',
-                            help='The model name you want to evaluate.')
+                            help='The model name you want to train.')
         parser.add_argument('--device', type=str, default='auto',
                             help='The device for training. auto, cpu or cuda')
         parser.add_argument('--seed', type=int, default=0, help='The random seed.')

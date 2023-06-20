@@ -78,7 +78,11 @@ def create_test_dataloader(args, data=None):
         data = args.data
     dataset = CSCDataset(data)
 
+    workers = 0
+    if hasattr(args, "workers"):
+        workers = args.workers
+
     return DataLoader(dataset,
                       batch_size=args.batch_size,
                       shuffle=False,
-                      num_workers=args.workers)
+                      num_workers=workers)
