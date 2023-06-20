@@ -258,6 +258,7 @@ class C_Train(object):
                             help='The parameters of pytorch lightning Trainer.')
         parser.add_argument('--gradient_clip_algorithm', type=int, default=None,
                             help='The parameters of pytorch lightning Trainer.')
+        parser.add_argument('--swa', action='store_true', help='Introduce Stochastic Weight Averaging.')
 
         ###############################################################################################################
 
