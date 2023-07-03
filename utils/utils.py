@@ -246,7 +246,7 @@ def convert_char_to_image(character, font_size=32):
 
 def convert_char_to_pinyin(character, size=-1):
     if not is_chinese(character):
-        return torch.LongTensor([0])
+        return torch.LongTensor([0] * max(size, 1))
 
     pinyin = pypinyin.pinyin(character, style=pypinyin.NORMAL)[0][0]
     embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])
