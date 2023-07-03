@@ -4,26 +4,24 @@ Paper links: https://arxiv.org/pdf/2210.10996.pdf
 publish date: 2022-10
 github: https://github.com/jiahaozhenbang/SCOPE
 
-Need to do for reproduction:
-1. Download the pre-trained model from "https://rec.ustc.edu.cn/share/18549500-4936-11ed-bdbb-75a980e00e16" or "https://pan.baidu.com/s/1xhNkFm1zpO5pPigK-_5sxg?pwd=it2t"
-2. Extract it to the root directory of this projects.
-3. run the following command:
 ```
 python c_train.py \
-       --model SCOPE \
-       --datas sighan13train,sighan14train,sighan15train,wang271k \
+       --model SCOPE_FL \
+       --datas wang271k,sighan13train,sighan14train,sighan15train,sighan13train,sighan14train,sighan15train \
        --bert-path FPT \
+       --ckpt-path ./TrainedModels/scope.ckpt \
        --seed 2333 \
        --max-length 512 \
        --no-resume \
        --accumulate_grad_batches 2 \
        --eval \
-       --epochs 30 \
-       --min_epochs 20 \
+       --epochs 5 \
+       --min_epochs 5 \
        --val-data sighan15test \
        --test-data sighan15test \
-       --ckpt-dir /root/autodl-tmp/csc_outputs/ \
-       --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1
+       --ckpt-path /TrainedModels/scope.ckpt \
+       --finetune \
+       --hyper-params weight_decay=0,lr=6e-5,warmup_proporation=0
 ```
 
 > You can use download the well-trained model from 链接：https://pan.baidu.com/s/10Ma2bPXrZHhqQzOV8k1cNw?pwd=4h17
@@ -31,7 +29,7 @@ python c_train.py \
 4. For eval, run the following command:
 ```
 python c_eval.py \
-       --model SCOPE \
+       --model SCOPE_FL \
        --bert-path FPT \
        --data sighan15test \
        --batch-size 1 \
@@ -42,22 +40,6 @@ python c_eval.py \
 For debug in local:
 --workers 0 --limit-batches 40 --no-resume --batch-size 4 --datas sighan13train,sighan14train,sighan15train,wang271k --model SCOPE --bert-path FPT --seed 2333 --max-length 128 --hyper-params weight_decay=0,lr=5e-5,warmup_proporation=0.1 --accumulate_grad_batches 2
 ```
-
-Note:
-    1. Finetune Namespaces is
-       accelerator=None, accumulate_grad_batches=2, adam_epsilon=1e-08, amp_backend=None, amp_level=None,
-       auto_lr_find=False, auto_scale_batch_size=False, auto_select_gpus=None, batch_size=1, benchmark=None,
-       bert_path='./FPT', check_val_every_n_epoch=1, checkpoint_path=None, ckpt_path=None, data_dir='./data',
-       default_root_dir=None, detect_anomaly=False, devices=None, enable_checkpointing=True, enable_model_summary=True,
-       enable_progress_bar=True, fast_dev_run=False, gamma=1, gpus=0, gradient_clip_algorithm=None, gradient_clip_val=None,
-       inference_mode=True, ipus=None, label_file='data/test.sighan15.lbl.tsv', limit_predict_batches=None, limit_test_batches=None,
-       limit_train_batches=None, limit_val_batches=None, log_every_n_steps=50, logger=True, lr=5e-05, max_epochs=30,
-       max_length=512, max_steps=-1, max_time=None, min_epochs=None, min_steps=None, mode='train', move_metrics_to_cpu=False,
-       multiple_trainloader_mode='max_size_cycle', num_nodes=1, num_processes=None, num_sanity_val_steps=2, overfit_batches=0.0,
-       plugins=None, precision=32, profiler=None, reload_dataloaders_every_n_epochs=1, replace_sampler_ddp=True,
-       resume_from_checkpoint=None, save_path='./outputs', save_topk=5, strategy=None, sync_batchnorm=False, tpu_cores=None,
-       track_grad_norm=-1, use_memory=False, val_check_interval=None, warmup_proporation=0.1, warmup_steps=0,
-       weight_decay=0.0, workers=8)
 """
 
 import os
@@ -72,7 +54,7 @@ from torch import nn
 from torch.nn.utils.rnn import pad_sequence
 from transformers import BertConfig, AdamW, get_linear_schedule_with_warmup
 
-from models.common import BertOnlyMLMHead
+from utils.loss import FocalLoss
 from utils.utils import predict_process
 
 
@@ -133,9 +115,9 @@ class SCOPE_CSC_Model(pl.LightningModule):
                 // self.args.accumulate_grad_batches
                 * self.args.epochs
         )
-        warmup_steps = int(self.hyper_params['warmup_proporation'] * t_total)
+
         scheduler = get_linear_schedule_with_warmup(
-            optimizer, num_warmup_steps=warmup_steps, num_training_steps=t_total
+            optimizer, num_warmup_steps=0, num_training_steps=t_total
         )
 
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
@@ -285,12 +267,11 @@ import tokenizers
 
 import json
 import math
-from torch.nn import CrossEntropyLoss, MSELoss
-from transformers.models.bert.modeling_bert import BertEncoder, BertPooler, BertOnlyMLMHead, BertPreTrainedModel, \
+from torch.nn import CrossEntropyLoss
+from transformers.models.bert.modeling_bert import BertEncoder, BertPooler, BertPreTrainedModel, \
     BertLMPredictionHead
 from transformers.models.bert.modeling_bert import BertModel, BertPredictionHeadTransform
-from transformers.modeling_outputs import BaseModelOutputWithPooling, MaskedLMOutput, SequenceClassifierOutput, \
-    QuestionAnsweringModelOutput, TokenClassifierOutput
+from transformers.modeling_outputs import BaseModelOutputWithPooling, MaskedLMOutput
 
 from torch.nn import functional as F
 from torch.utils.data import Dataset
@@ -767,376 +748,6 @@ class GlyceBertModel(BertModel):
         )
 
 
-class GlyceBertForMaskedLM(BertPreTrainedModel):
-    def __init__(self, config):
-        super(GlyceBertForMaskedLM, self).__init__(config)
-
-        self.bert = GlyceBertModel(config)
-        self.cls = BertOnlyMLMHead(config)
-
-        self.init_weights()
-
-    def get_output_embeddings(self):
-        return self.cls.predictions.decoder
-
-    def forward(
-            self,
-            input_ids=None,
-            pinyin_ids=None,
-            attention_mask=None,
-            token_type_ids=None,
-            position_ids=None,
-            head_mask=None,
-            inputs_embeds=None,
-            encoder_hidden_states=None,
-            encoder_attention_mask=None,
-            labels=None,
-            output_attentions=None,
-            output_hidden_states=None,
-            return_dict=None,
-            **kwargs
-    ):
-        r"""
-        labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
-            Labels for computing the masked language modeling loss.
-            Indices should be in ``[-100, 0, ..., config.vocab_size]`` (see ``input_ids`` docstring)
-            Tokens with indices set to ``-100`` are ignored (masked), the loss is only computed for the tokens with labels
-            in ``[0, ..., config.vocab_size]``
-        kwargs (:obj:`Dict[str, any]`, optional, defaults to `{}`):
-            Used to hide legacy arguments that have been deprecated.
-        """
-        if "masked_lm_labels" in kwargs:
-            warnings.warn(
-                "The `masked_lm_labels` argument is deprecated and will be removed in a future version, use `labels` instead.",
-                FutureWarning,
-            )
-            labels = kwargs.pop("masked_lm_labels")
-        assert "lm_labels" not in kwargs, "Use `BertWithLMHead` for autoregressive language modeling task."
-        assert kwargs == {}, f"Unexpected keyword arguments: {list(kwargs.keys())}."
-
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        outputs = self.bert(
-            input_ids,
-            pinyin_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
-            head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
-            encoder_hidden_states=encoder_hidden_states,
-            encoder_attention_mask=encoder_attention_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
-        sequence_output = outputs[0]
-        prediction_scores = self.cls(sequence_output)
-
-        masked_lm_loss = None
-        if labels is not None:
-            loss_fct = CrossEntropyLoss()  # -100 index = padding token
-            masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), labels.view(-1))
-
-        if not return_dict:
-            output = (prediction_scores,) + outputs[2:]
-            return ((masked_lm_loss,) + output) if masked_lm_loss is not None else output
-
-        return MaskedLMOutput(
-            loss=masked_lm_loss,
-            logits=prediction_scores,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
-
-
-class GlyceBertForSequenceClassification(BertPreTrainedModel):
-    def __init__(self, config):
-        super().__init__(config)
-        self.num_labels = config.num_labels
-
-        self.bert = GlyceBertModel(config)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.classifier = nn.Linear(config.hidden_size, config.num_labels)
-
-        self.init_weights()
-
-    def forward(
-            self,
-            input_ids=None,
-            pinyin_ids=None,
-            attention_mask=None,
-            token_type_ids=None,
-            position_ids=None,
-            head_mask=None,
-            inputs_embeds=None,
-            labels=None,
-            output_attentions=None,
-            output_hidden_states=None,
-            return_dict=None,
-    ):
-        r"""
-        labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`):
-            Labels for computing the sequence classification/regression loss.
-            Indices should be in :obj:`[0, ..., config.num_labels - 1]`.
-            If :obj:`config.num_labels == 1` a regression loss is computed (Mean-Square loss),
-            If :obj:`config.num_labels > 1` a classification loss is computed (Cross-Entropy).
-        """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        outputs = self.bert(
-            input_ids,
-            pinyin_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
-            head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
-        pooled_output = outputs[1]
-
-        pooled_output = self.dropout(pooled_output)
-        logits = self.classifier(pooled_output)
-
-        loss = None
-        if labels is not None:
-            if self.num_labels == 1:
-                #  We are doing regression
-                loss_fct = MSELoss()
-                loss = loss_fct(logits.view(-1), labels.view(-1))
-            else:
-                loss_fct = CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-
-        if not return_dict:
-            output = (logits,) + outputs[2:]
-            return ((loss,) + output) if loss is not None else output
-
-        return SequenceClassifierOutput(
-            loss=loss,
-            logits=logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
-
-
-class GlyceBertForQuestionAnswering(BertPreTrainedModel):
-    """BERT model for Question Answering (span extraction).
-    This module is composed of the BERT model with a linear layer on top of
-    the sequence output that computes start_logits and end_logits
-
-    Params:
-        `config`: a BertConfig class instance with the configuration to build a new model.
-
-    Inputs:
-        `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
-            with the word token indices in the vocabulary(see the tokens preprocessing logic in the scripts
-            `extract_features.py`, `run_classifier.py` and `run_squad.py`)
-        `token_type_ids`: an optional torch.LongTensor of shape [batch_size, sequence_length] with the token
-            types indices selected in [0, 1]. Type 0 corresponds to a `sentence A` and type 1 corresponds to
-            a `sentence B` token (see BERT paper for more details).
-        `attention_mask`: an optional torch.LongTensor of shape [batch_size, sequence_length] with indices
-            selected in [0, 1]. It's a mask to be used if the input sequence length is smaller than the max
-            input sequence length in the current batch. It's the mask that we typically use for attention when
-            a batch has varying length sentences.
-        `start_positions`: position of the first token for the labeled span: torch.LongTensor of shape [batch_size].
-            Positions are clamped to the length of the sequence and position outside of the sequence are not taken
-            into account for computing the loss.
-        `end_positions`: position of the last token for the labeled span: torch.LongTensor of shape [batch_size].
-            Positions are clamped to the length of the sequence and position outside of the sequence are not taken
-            into account for computing the loss.
-
-    Outputs:
-        if `start_positions` and `end_positions` are not `None`:
-            Outputs the total_loss which is the sum of the CrossEntropy loss for the start and end token positions.
-        if `start_positions` or `end_positions` is `None`:
-            Outputs a tuple of start_logits, end_logits which are the logits respectively for the start and end
-            position tokens of shape [batch_size, sequence_length].
-
-    Example usage:
-    ```python
-    # Already been converted into WordPiece token ids
-    input_ids = torch.LongTensor([[31, 51, 99], [15, 5, 0]])
-    input_mask = torch.LongTensor([[1, 1, 1], [1, 1, 0]])
-    token_type_ids = torch.LongTensor([[0, 0, 1], [0, 1, 0]])
-
-    config = BertConfig(vocab_size_or_config_json_file=32000, hidden_size=768,
-        num_hidden_layers=12, num_attention_heads=12, intermediate_size=3072)
-
-    model = BertForQuestionAnswering(config)
-    start_logits, end_logits = model(input_ids, token_type_ids, input_mask)
-    ```
-    """
-
-    def __init__(self, config):
-        super().__init__(config)
-        self.num_labels = config.num_labels
-
-        self.bert = GlyceBertModel(config)
-        self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
-
-        self.init_weights()
-
-    def forward(
-            self,
-            input_ids=None,
-            pinyin_ids=None,
-            attention_mask=None,
-            token_type_ids=None,
-            position_ids=None,
-            head_mask=None,
-            inputs_embeds=None,
-            start_positions=None,
-            end_positions=None,
-            output_attentions=None,
-            output_hidden_states=None,
-            return_dict=None,
-    ):
-        r"""
-        start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`):
-            Labels for position (index) of the start of the labelled span for computing the token classification loss.
-            Positions are clamped to the length of the sequence (:obj:`sequence_length`).
-            Position outside of the sequence are not taken into account for computing the loss.
-        end_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`):
-            Labels for position (index) of the end of the labelled span for computing the token classification loss.
-            Positions are clamped to the length of the sequence (:obj:`sequence_length`).
-            Position outside of the sequence are not taken into account for computing the loss.
-        """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        outputs = self.bert(
-            input_ids,
-            pinyin_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
-            head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
-        sequence_output = outputs[0]
-
-        logits = self.qa_outputs(sequence_output)
-        start_logits, end_logits = logits.split(1, dim=-1)
-        start_logits = start_logits.squeeze(-1)
-        end_logits = end_logits.squeeze(-1)
-
-        total_loss = None
-        if start_positions is not None and end_positions is not None:
-            # If we are on multi-GPU, split add a dimension
-            if len(start_positions.size()) > 1:
-                start_positions = start_positions.squeeze(-1)
-            if len(end_positions.size()) > 1:
-                end_positions = end_positions.squeeze(-1)
-            # sometimes the start/end positions are outside our model inputs, we ignore these terms
-            ignored_index = start_logits.size(1)
-            start_positions.clamp_(0, ignored_index)
-            end_positions.clamp_(0, ignored_index)
-
-            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
-            start_loss = loss_fct(start_logits, start_positions)
-            end_loss = loss_fct(end_logits, end_positions)
-            total_loss = (start_loss + end_loss) / 2
-
-        if not return_dict:
-            output = (start_logits, end_logits) + outputs[2:]
-            return ((total_loss,) + output) if total_loss is not None else output
-
-        return QuestionAnsweringModelOutput(
-            loss=total_loss,
-            start_logits=start_logits,
-            end_logits=end_logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
-
-
-class GlyceBertForTokenClassification(BertPreTrainedModel):
-    def __init__(self, config, mlp=False):
-        super().__init__(config)
-        self.num_labels = config.num_labels
-
-        self.bert = GlyceBertModel(config)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        if mlp:
-            self.classifier = BertMLP(config)
-        else:
-            self.classifier = nn.Linear(config.hidden_size, config.num_labels)
-
-        self.init_weights()
-
-    def forward(self,
-                input_ids=None,
-                pinyin_ids=None,
-                attention_mask=None,
-                token_type_ids=None,
-                position_ids=None,
-                head_mask=None,
-                inputs_embeds=None,
-                labels=None,
-                output_attentions=None,
-                output_hidden_states=None,
-                return_dict=None,
-                ):
-        r"""
-                labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
-                    Labels for computing the token classification loss.
-                    Indices should be in :obj:`[0, ..., config.num_labels - 1]`.
-                """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        outputs = self.bert(
-            input_ids,
-            pinyin_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
-            head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
-        sequence_output = outputs[0]
-
-        sequence_output = self.dropout(sequence_output)
-        logits = self.classifier(sequence_output)
-
-        loss = None
-        if labels is not None:
-            loss_fct = CrossEntropyLoss()
-            # Only keep the active parts of the loss
-            if attention_mask is not None:
-                active_loss = attention_mask.view(-1) == 1
-                active_logits = logits.view(-1, self.num_labels)
-                active_labels = torch.where(
-                    active_loss, labels.view(-1), torch.tensor(loss_fct.ignore_index).type_as(labels)
-                )
-                loss = loss_fct(active_logits, active_labels)
-            else:
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-
-        if not return_dict:
-            output = (logits,) + outputs[2:]
-            return ((loss,) + output) if loss is not None else output
-
-        return TokenClassifierOutput(
-            loss=loss,
-            logits=logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
-
-
 class Pinyin(object):
     """docstring for Pinyin"""
 
@@ -1238,121 +849,6 @@ class AblationHeads(nn.Module):
         return prediction_scores, pinyin_scores
 
 
-class GlyceBertForMultiTask(BertPreTrainedModel):
-    def __init__(self, config):
-        super(GlyceBertForMultiTask, self).__init__(config)
-
-        self.bert = GlyceBertModel(config)
-        self.cls = MultiTaskHeads(config)
-        self.loss_fct = CrossEntropyLoss()
-
-        self.init_weights()
-
-    def get_output_embeddings(self):
-        return self.cls.predictions.decoder
-
-    def forward(
-            self,
-            input_ids=None,
-            pinyin_ids=None,
-            attention_mask=None,
-            token_type_ids=None,
-            position_ids=None,
-            head_mask=None,
-            inputs_embeds=None,
-            encoder_hidden_states=None,
-            encoder_attention_mask=None,
-            labels=None,
-            pinyin_labels=None,
-            output_attentions=None,
-            output_hidden_states=None,
-            return_dict=None,
-            gamma=1,
-            **kwargs
-    ):
-        r"""
-        labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
-            Labels for computing the masked language modeling loss.
-            Indices should be in ``[-100, 0, ..., config.vocab_size]`` (see ``input_ids`` docstring)
-            Tokens with indices set to ``-100`` are ignored (masked), the loss is only computed for the tokens with labels
-            in ``[0, ..., config.vocab_size]``
-        kwargs (:obj:`Dict[str, any]`, optional, defaults to `{}`):
-            Used to hide legacy arguments that have been deprecated.
-        """
-        if "masked_lm_labels" in kwargs:
-            warnings.warn(
-                "The `masked_lm_labels` argument is deprecated and will be removed in a future version, use `labels` instead.",
-                FutureWarning,
-            )
-            labels = kwargs.pop("masked_lm_labels")
-        assert "lm_labels" not in kwargs, "Use `BertWithLMHead` for autoregressive language modeling task."
-        assert kwargs == {}, f"Unexpected keyword arguments: {list(kwargs.keys())}."
-
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        loss_mask = (input_ids != 0) * (input_ids != 101) * (input_ids != 102).long()
-        outputs = self.bert(
-            input_ids,
-            pinyin_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
-            head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
-            encoder_hidden_states=encoder_hidden_states,
-            encoder_attention_mask=encoder_attention_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
-        sequence_output = outputs[0]
-        prediction_scores, sm_scores, ym_scores, sd_scores = self.cls(sequence_output)
-
-        masked_lm_loss = None
-        loss_fct = self.loss_fct  # -100 index = padding token
-        if labels is not None:
-            active_loss = loss_mask.view(-1) == 1
-            active_labels = torch.where(
-                active_loss, labels.view(-1), torch.tensor(loss_fct.ignore_index).type_as(labels)
-            )
-            masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), active_labels)
-
-        phonetic_loss = None
-        if pinyin_labels is not None:
-            active_loss = loss_mask.view(-1) == 1
-            active_labels = torch.where(
-                active_loss, pinyin_labels[..., 0].view(-1), torch.tensor(loss_fct.ignore_index).type_as(pinyin_labels)
-            )
-            sm_loss = loss_fct(sm_scores.view(-1, self.cls.Phonetic_relationship.pinyin.sm_size), active_labels)
-            active_labels = torch.where(
-                active_loss, pinyin_labels[..., 1].view(-1), torch.tensor(loss_fct.ignore_index).type_as(pinyin_labels)
-            )
-            ym_loss = loss_fct(ym_scores.view(-1, self.cls.Phonetic_relationship.pinyin.ym_size), active_labels)
-            active_labels = torch.where(
-                active_loss, pinyin_labels[..., 2].view(-1), torch.tensor(loss_fct.ignore_index).type_as(pinyin_labels)
-            )
-            sd_loss = loss_fct(sd_scores.view(-1, self.cls.Phonetic_relationship.pinyin.sd_size), active_labels)
-            phonetic_loss = (sm_loss + ym_loss + sd_loss) / 3
-
-        loss = None
-        if masked_lm_loss is not None:
-            loss = masked_lm_loss
-            if phonetic_loss is not None:
-                loss += phonetic_loss * gamma
-
-        if not return_dict:
-            output = (prediction_scores, sm_scores, ym_scores, sd_scores,) + outputs[2:]
-            return ((loss,) + output) if loss is not None else output
-
-        return MaskedLMOutput(
-            loss=loss,
-            logits=prediction_scores,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
-
-
 class Attention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -1423,6 +919,7 @@ class Dynamic_GlyceBertForMultiTask(BertPreTrainedModel):
         self.bert = GlyceBertModel(config)
         self.cls = MultiTaskHeads(config)
         self.loss_fct = CrossEntropyLoss(reduction='none')
+        self.floss_fct = FocalLoss()
 
         self.init_weights()
 
@@ -1504,9 +1001,10 @@ class Dynamic_GlyceBertForMultiTask(BertPreTrainedModel):
             active_loss = loss_mask.view(-1) == 1
 
             active_labels = torch.where(
-                active_loss, labels.view(-1), torch.tensor(loss_fct.ignore_index).type_as(labels)
+                active_loss, labels.view(-1), torch.tensor(0).type_as(labels)
             )
-            masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), active_labels)
+            # 预测汉字的还使用FocalLoss
+            masked_lm_loss = self.floss_fct(prediction_scores.view(-1, self.config.vocab_size), active_labels)
 
             active_labels = torch.where(
                 active_loss, pinyin_labels[..., 0].view(-1), torch.tensor(loss_fct.ignore_index).type_as(pinyin_labels)
@@ -1527,7 +1025,6 @@ class Dynamic_GlyceBertForMultiTask(BertPreTrainedModel):
             def weighted_mean(weight, input):
                 return torch.sum(weight * input) / torch.sum(weight)
 
-            masked_lm_loss = weighted_mean(torch.ones_like(masked_lm_loss), masked_lm_loss)
             phonetic_loss = weighted_mean(factor.view(-1), phonetic_loss)
 
         loss = None

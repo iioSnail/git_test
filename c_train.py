@@ -118,6 +118,10 @@ class C_Train(object):
             from models.SCOPE import SCOPE_CSC_Model
             return SCOPE_CSC_Model(args)
 
+        if model == 'scope_fl':
+            from models.SCOPE_FL import SCOPE_CSC_Model
+            return SCOPE_CSC_Model(args)
+
         raise Exception("Can't find any model!")
 
     def train(self):
@@ -140,6 +144,9 @@ class C_Train(object):
                 log.info("Resume training from last checkpoint.")
 
         if not self.args.resume and self.args.finetune:
+            if self.args.ckpt_path is None:
+                log.error("If you finetune your model, you must specify the pre-trained model by ckpt-path parameters.")
+                exit(0)
             log.info("Load pre-trained model from " + str(self.args.ckpt_path))
             self.model.load_state_dict(torch.load(self.args.ckpt_path)['state_dict'])
 
