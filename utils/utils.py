@@ -53,7 +53,7 @@ def load_obj(filepath):
         return pickle.load(f)
 
 
-def render_color_for_text(text, indices, color='red'):
+def render_color_for_text(text, indices, color='red', format='console'):
     color_indices = {
         'black': '30',
         'red': '31',
@@ -65,7 +65,10 @@ def render_color_for_text(text, indices, color='red'):
     char_list = list(text)
     for i in range(len(indices)):
         if indices[i]:
-            char_list[i] = "\033[" + color_indices.get(color, '30') + "m" + text[i] + "\033[0m"
+            if format in ['console', "sh", "shell"]:
+                char_list[i] = "\033[" + color_indices.get(color, '30') + "m" + text[i] + "\033[0m"
+            elif format in ['markdown', "md"]:
+                char_list[i] = ":%s[%s]" % (color, char_list[i])
 
     return ''.join(char_list)
 

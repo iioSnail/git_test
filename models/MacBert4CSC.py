@@ -18,9 +18,6 @@ class MacBert4CSC_Model(pl.LightningModule):
         self.tokenizer = BertTokenizer.from_pretrained("shibing624/macbert4csc-base-chinese")
         self.model = BertForMaskedLM.from_pretrained("shibing624/macbert4csc-base-chinese")
 
-    def configure_optimizers(self):
-        return
-
     def test_step(self, batch, batch_idx, *args, **kwargs):
         src, tgt = batch
 
@@ -31,5 +28,9 @@ class MacBert4CSC_Model(pl.LightningModule):
         return pred
 
     def predict(self, sentence):
-        sentence = sentence.replace(" ", "")
-        return
+        sentence = ' '.join(sentence.replace(" ", ""))
+
+        texts = [sentence]
+        outputs = self.model(**self.tokenizer(texts, return_tensors='pt').to(self.args.device)).logits
+
+        return self.tokenizer.decode(outputs.argmax(-1)[0], skip_special_tokens=True).replace(' ', '')

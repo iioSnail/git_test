@@ -2,7 +2,6 @@
 import os
 from pathlib import Path
 
-import dimsim
 import pypinyin
 import torch
 from torch.nn.utils.rnn import pad_sequence
@@ -146,6 +145,7 @@ def to_full_pinyin(hanzi, tone=False):
 
 
 def pinyin_distance(pinyin1, pinyin2):
+    import dimsim
     if pinyin1[-1] not in list("1234567890"):
         pinyin1 += '0'
 
