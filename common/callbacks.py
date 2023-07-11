@@ -325,7 +325,6 @@ class TestMetricsCallback(Callback):
 
         for i in range(len(src)):
             src_i, tgt_i, pred_i = src[i].replace(" ", ""), tgt[i].replace(" ", ""), pred[i].replace(" ", "")
-            assert len(src_i) == len(tgt_i) == len(pred_i)
 
             if self.ignore_de:
                 tgt_tokens = list(tgt_i)

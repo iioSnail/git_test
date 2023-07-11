@@ -2,7 +2,7 @@ import argparse
 
 import torch
 
-from utils.utils import render_color_for_text, compare_text
+from utils.utils import render_color_for_text, compare_text, mock_args
 
 
 def parse_args():
@@ -24,6 +24,12 @@ def parse_args():
 def load_model(model_name: str, args):
     model_name = model_name.replace(" ", "").strip().lower()
     model = None
+    if model_name == "multimodalbert":
+        from models.MultiModalMyModel import MyModel
+        model = MyModel(mock_args(device=args.device, hyper_params={}))
+        ckpt_states = torch.load("./TrainedModels/multimodal-sota.ckpt", map_location='cpu')
+        model.load_state_dict(ckpt_states['state_dict'])
+
     if model_name == "macbert4csc":
         from models.MacBert4CSC import MacBert4CSC_Model
         model = MacBert4CSC_Model(args)

@@ -122,6 +122,10 @@ class C_Train(object):
             from models.SCOPE_FL import SCOPE_CSC_Model
             return SCOPE_CSC_Model(args)
 
+        if model == 'macbert4csc':
+            from models.MacBert4CSC import MacBert4CSC_Model
+            return MacBert4CSC_Model(args)
+
         raise Exception("Can't find any model!")
 
     def train(self):

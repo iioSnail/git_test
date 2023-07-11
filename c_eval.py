@@ -11,7 +11,17 @@ from utils.log_utils import add_file_handler, log
 from utils.str_utils import is_float
 import lightning.pytorch as pl
 
-
+"""
+python c_eval.py \
+    --model SCOPE \
+    --bert-path FPT \
+    --data sighan15test \
+    --test \
+    --batch-size 1 \
+    --ckpt-path my_model/scope-last.ckpt \
+    --print-errors \
+    --export-sighan-format
+"""
 class C_Eval(object):
 
     def __init__(self):
@@ -29,7 +39,7 @@ class C_Eval(object):
 
         test_dataloader = create_test_dataloader(self.args)
 
-        if self.args.ckpt_path == 'None':
+        if self.args.ckpt_path is None or self.args.ckpt_path == 'None':
             trainer.test(self.model, dataloaders=test_dataloader)
             return
 
