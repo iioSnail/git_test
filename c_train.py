@@ -38,6 +38,10 @@ class C_Train(object):
             from models.PinyinMyModel import MyModel
             return MyModel(args)
 
+        if model == 'multimodalmodel':
+            from models.MultiModalModel import MMModelForCSC
+            return MMModelForCSC(args)
+
         if model == 'multimodalmymodel':
             from models.MultiModalMyModel import MyModel
             return MyModel(args)
