@@ -16,7 +16,7 @@ import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-bert_path = "iioSnail\ChineseBERT-for-csc"
+bert_path = "iioSnail/ChineseBERT-for-csc"
 
 default_params = {
     "dropout": 0.1,
