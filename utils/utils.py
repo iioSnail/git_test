@@ -279,7 +279,8 @@ def pred_token_process(src_tokens, pred_tokens, ignore_token: list = None):
         return pred_tokens
 
     for i in range(len(src_tokens)):
-        if src_tokens[i] == '[MASK]':
+        if src_tokens[i] != pred_tokens[i] and len(pred_tokens[i]) != 1:
+            pred_tokens[i] = src_tokens[i]
             continue
 
         if not is_chinese(src_tokens[i]) \

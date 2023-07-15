@@ -83,6 +83,12 @@ class CSCDataset(Dataset):
             filepath = ROOT / 'datasets' / 'cscd_ime_dev.csv'
         elif data_name in ['cscdime2m']:
             filepath = ROOT / 'datasets' / 'cscd_ime_2m.csv'
+        elif data_name in ['mcsctrain']:
+            filepath = ROOT / 'datasets' / 'mcsc_train.csv'
+        elif data_name in ['mcscdev']:
+            filepath = ROOT / 'datasets' / 'mcsc_dev.csv'
+        elif data_name in ['mcsctest']:
+            filepath = ROOT / 'datasets' / 'mcsc_test.csv'
         elif data_name in ['customdata']:
             filepath = ROOT / 'datasets' / 'custom_data.csv'
 
