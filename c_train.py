@@ -38,6 +38,10 @@ class C_Train(object):
             from models.PinyinMyModel import MyModel
             return MyModel(args)
 
+        if model == 'multimodalmodel':
+            from models.MultiModalModel import MMModelForCSC
+            return MMModelForCSC(args)
+
         if model == 'multimodalmymodel':
             from models.MultiModalMyModel import MyModel
             return MyModel(args)
@@ -121,6 +125,10 @@ class C_Train(object):
         if model == 'scope_fl':
             from models.SCOPE_FL import SCOPE_CSC_Model
             return SCOPE_CSC_Model(args)
+
+        if model == 'macbert4csc':
+            from models.MacBert4CSC import MacBert4CSC_Model
+            return MacBert4CSC_Model(args)
 
         raise Exception("Can't find any model!")
 

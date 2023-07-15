@@ -53,7 +53,7 @@ def load_obj(filepath):
         return pickle.load(f)
 
 
-def render_color_for_text(text, indices, color='red'):
+def render_color_for_text(text, indices, color='red', format='console'):
     color_indices = {
         'black': '30',
         'red': '31',
@@ -65,7 +65,10 @@ def render_color_for_text(text, indices, color='red'):
     char_list = list(text)
     for i in range(len(indices)):
         if indices[i]:
-            char_list[i] = "\033[" + color_indices.get(color, '30') + "m" + text[i] + "\033[0m"
+            if format in ['console', "sh", "shell"]:
+                char_list[i] = "\033[" + color_indices.get(color, '30') + "m" + text[i] + "\033[0m"
+            elif format in ['markdown', "md"]:
+                char_list[i] = ":%s[%s]" % (color, char_list[i])
 
     return ''.join(char_list)
 
@@ -246,7 +249,7 @@ def convert_char_to_image(character, font_size=32):
 
 def convert_char_to_pinyin(character, size=-1):
     if not is_chinese(character):
-        return torch.LongTensor([0])
+        return torch.LongTensor([0] * max(size, 1))
 
     pinyin = pypinyin.pinyin(character, style=pypinyin.NORMAL)[0][0]
     embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])

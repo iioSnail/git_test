@@ -73,7 +73,7 @@ from torch.nn.utils.rnn import pad_sequence
 from transformers import BertConfig, AdamW, get_linear_schedule_with_warmup
 
 from models.common import BertOnlyMLMHead
-from utils.utils import predict_process
+from utils.utils import predict_process, mock_args
 
 
 class SCOPE_CSC_Model(pl.LightningModule):
@@ -275,6 +275,19 @@ class SCOPE_CSC_Model(pl.LightningModule):
         pinyin_labels = pad_sequence(pinyin_label_list, batch_first=True)
 
         return input_ids, input_pinyin_ids, labels, tgt_pinyin_ids, pinyin_labels
+
+    @staticmethod
+    def load_from_ckpt(bert_path:str, ckpt_path: str, device: str):
+        model = SCOPE_CSC_Model(
+            mock_args(device=device, bert_path=bert_path, max_length=999, hyper_params={
+                'window': 1
+            })
+        )
+
+        ckpt = torch.load(ckpt_path, map_location='cpu')
+        model.load_state_dict(ckpt['state_dict'])
+        model = model.to(device)
+        return model
 
 
 ########################### ChineseBERT from SCOPE Source #################################
