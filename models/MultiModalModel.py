@@ -253,7 +253,7 @@ class MMModelForCSC(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = self.make_optimizer()
 
-        scheduler = StepLR(optimizer, step_size=1, gamma=0.5)
+        scheduler = StepLR(optimizer, step_size=1, gamma=0.75)
 
         return [optimizer], [{'scheduler': scheduler, 'interval': 'epoch'}]
 
