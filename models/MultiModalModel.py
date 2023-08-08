@@ -225,6 +225,8 @@ class MMModelForCSC(pl.LightningModule):
 
     def predict(self, sentence: str):
         sentence = sentence.replace(" ", "").strip()
+
+        src_tokens = list(sentence)
         sentence = ' '.join(list(sentence))
         inputs = BERT.get_bert_inputs([sentence], tokenizer=self._tokenizer, max_length=9999).to(self.args.device)
 
@@ -236,6 +238,7 @@ class MMModelForCSC(pl.LightningModule):
         ids_list = output.argmax(-1)
 
         pred_tokens = self._tokenizer.convert_ids_to_tokens(ids_list[0, 1:-1])
+        pred_tokens = pred_token_process(src_tokens, pred_tokens)
         return ''.join(pred_tokens)
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
@@ -250,7 +253,7 @@ class MMModelForCSC(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = self.make_optimizer()
 
-        scheduler = StepLR(optimizer, step_size=1, gamma=0.5)
+        scheduler = StepLR(optimizer, step_size=1, gamma=0.75)
 
         return [optimizer], [{'scheduler': scheduler, 'interval': 'epoch'}]
 
