@@ -18,7 +18,7 @@ class Predictor(object):
         )
 
     def load_model(self):
-        from models.MultiModalMyModel_SOTA import MyModel
+        from models.MultiModalMyModel_SOTA_TEMP import MyModel
 
         args = self.parse_args()
         model = MyModel(args)

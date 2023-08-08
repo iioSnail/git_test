@@ -182,6 +182,13 @@ class AdjustProbByPinyin(pl.LightningModule):
             # 获取第i个字的可能取值对应的输出
             # logits[i].sort(descending=True).values[:15]
 
+            # 无 = wu
+            # wu  wu  wu
+            # 高  绳  舞
+            # 14  13  12.5  std=2
+            # 14  13  14.5
+            # 舞  高  绳
+
             # 拼音相同的，logits加1个标准差，拼音相似的，logits加0.x个标准差，拼音完全不相似的，不加标准差
             logits[i] = logits[i] + sims * std
 

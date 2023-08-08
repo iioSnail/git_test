@@ -59,7 +59,7 @@ Note:
        track_grad_norm=-1, use_memory=False, val_check_interval=None, warmup_proporation=0.1, warmup_steps=0,
        weight_decay=0.0, workers=8)
 """
-
+import logging
 import os
 import argparse
 
@@ -73,6 +73,7 @@ from torch.nn.utils.rnn import pad_sequence
 from transformers import BertConfig, AdamW, get_linear_schedule_with_warmup
 
 from models.common import BertOnlyMLMHead
+from utils.log_utils import log
 from utils.utils import predict_process, mock_args
 
 
@@ -226,7 +227,13 @@ class SCOPE_CSC_Model(pl.LightningModule):
         return predict_process(_src_tokens, pred_tokens)
 
     def _predict(self, sentence):
+        src_tokens = list(sentence)
+        sentence = " ".join(src_tokens)
         encoded = SCOPE_CSC_Model.tokenizer.encode(sentence)
+        if len(encoded) - 2 != len(src_tokens):
+            print("Can't correctly encode the sentence: %s" % ("".join(src_tokens)))
+            return src_tokens
+
         pinyin_ids = SCOPE_CSC_Model.dataset_helper.convert_sentence_to_pinyin_ids(sentence, encoded)
 
         input_ids = torch.LongTensor(encoded.ids).unsqueeze(0).to(self.args.device)
@@ -236,8 +243,8 @@ class SCOPE_CSC_Model(pl.LightningModule):
             input_ids, pinyin_ids
         )
 
-        pred_tokens = outputs.logits.argmax(-1)[0, 1:-1].tolist()
-        pred_tokens = list(self.tokenizer.decode(pred_tokens).replace(" ", ""))
+        pred_ids = outputs.logits.argmax(-1)[0, 1:-1].tolist()
+        pred_tokens = [self.tokenizer.id_to_token(id) for id in pred_ids]
         return pred_tokens
 
     @staticmethod

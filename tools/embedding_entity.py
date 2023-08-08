@@ -17,13 +17,19 @@ max_length = 10
 pinyin_size = 6
 
 
-def load_entities():
-    with open("./datasets/medical_entities.txt", encoding='utf-8') as f:
+def load_entities(txt_file):
+    """
+    txt_file: A file that including many words. Every word is in one line.
+    """
+    with open(txt_file, encoding='utf-8') as f:
         lines = f.readlines()
 
     entities = []
     for word in lines:
         word = word.replace(" ", "").strip()
+
+        if len(word) <= 1:
+            continue
 
         if len(word) > 10:
             entities.append(word[:10])
@@ -64,11 +70,22 @@ def embedding_entities(entities):
     return embeddings
 
 
-def main():
-    entities = load_entities()
+def main(txt_file):
+    entities = load_entities(txt_file)
     embeddings = embedding_entities(entities)
-    save_obj(embeddings, "outputs/entity_embeddings.pkl")
+    save_obj(embeddings, txt_file[:-4] + ".pkl")
 
 
 if __name__ == '__main__':
-    main()
+    main("./tools/temp/1_人文科学.txt")
+    main("./tools/temp/2_农林渔畜.txt")
+    main("./tools/temp/3_医学.txt")
+    main("./tools/temp/4_城市信息大全.txt")
+    main("./tools/temp/5_娱乐.txt")
+    main("./tools/temp/6_工程与应用科学.txt")
+    main("./tools/temp/7_生活.txt")
+    main("./tools/temp/8_电子游戏.txt")
+    main("./tools/temp/9_社会科学.txt")
+    main("./tools/temp/10_自然科学.txt")
+    main("./tools/temp/11_艺术.txt")
+    main("./tools/temp/12_运动休闲.txt")
