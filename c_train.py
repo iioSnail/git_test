@@ -130,6 +130,14 @@ class C_Train(object):
             from models.MacBert4CSC import MacBert4CSC_Model
             return MacBert4CSC_Model(args)
 
+        if model == 'soft-masked':
+            from models.soft_masked_bert import SoftMaskedBERT
+            return SoftMaskedBERT(args)
+
+        if model == 'bert-mft':
+            from models.bert_mft import BertMFT
+            return BertMFT(args)
+
         raise Exception("Can't find any model!")
 
     def train(self):

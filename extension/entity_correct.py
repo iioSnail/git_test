@@ -105,6 +105,8 @@ class MedicalNer(object):
 
 medical_query_entity = None
 medical_ner = None
+
+
 def medical_entity_correct(sentence):
     global medical_query_entity
     if medical_query_entity is None:

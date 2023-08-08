@@ -20,3 +20,4 @@ lightning[extra]
 dimsim
 scipy
 streamlit
+hanlp
