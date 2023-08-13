@@ -247,12 +247,25 @@ def convert_char_to_image(character, font_size=32):
     return torch.tensor(image)
 
 
-def convert_char_to_pinyin(character, size=-1):
+def convert_char_to_pinyin(character, size=-1, tone=False):
     if not is_chinese(character):
         return torch.LongTensor([0] * max(size, 1))
 
-    pinyin = pypinyin.pinyin(character, style=pypinyin.NORMAL)[0][0]
-    embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])
+    if tone:
+        pinyin = pypinyin.pinyin(character, style=pypinyin.TONE3)[0][0]
+    else:
+        pinyin = pypinyin.pinyin(character, style=pypinyin.NORMAL)[0][0]
+
+    if not tone:
+        embeddings = torch.tensor([ord(letter) - 96 for letter in pinyin])
+    else:
+        embeddings = []
+        for letter in pinyin:
+            if letter.isnumeric():
+                embeddings.append(int(letter) + 27)
+            else:
+                embeddings.append(ord(letter) - 96)
+        embeddings = torch.tensor(embeddings)
 
     if size > len(embeddings):
         padding = torch.zeros(size - len(embeddings))

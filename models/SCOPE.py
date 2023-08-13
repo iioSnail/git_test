@@ -72,6 +72,7 @@ from torch import nn
 from torch.nn.utils.rnn import pad_sequence
 from transformers import BertConfig, AdamW, get_linear_schedule_with_warmup
 
+from extension.general_entity_correct import GeneralEntityCorrect
 from models.common import BertOnlyMLMHead
 from utils.log_utils import log
 from utils.utils import predict_process, mock_args
@@ -100,6 +101,8 @@ class SCOPE_CSC_Model(pl.LightningModule):
         SCOPE_CSC_Model.tokenizer = self.tokenizer
         SCOPE_CSC_Model.max_length = self.args.max_length if hasattr(self.args, 'max_length') else 9999999
         SCOPE_CSC_Model.dataset_helper = ChineseBertDataset(self.bert_dir)
+
+        self.entity_corrector = GeneralEntityCorrect()
 
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
@@ -224,7 +227,9 @@ class SCOPE_CSC_Model(pl.LightningModule):
                 else:
                     pred_tokens[i] = src_tokens[i]
 
-        return predict_process(_src_tokens, pred_tokens)
+        pred_sent = predict_process(_src_tokens, pred_tokens)
+        pred_sent = self.entity_corrector.correct(pred_sent)
+        return pred_sent
 
     def _predict(self, sentence):
         src_tokens = list(sentence)
