@@ -122,6 +122,10 @@ class C_Train(object):
             from models.SCOPE import SCOPE_CSC_Model
             return SCOPE_CSC_Model(args)
 
+        if model == 'scope-p':
+            from models.ScopeWithPlugin import ScopeWithPlugin
+            return ScopeWithPlugin(args)
+
         if model == 'scope_fl':
             from models.SCOPE_FL import SCOPE_CSC_Model
             return SCOPE_CSC_Model(args)
