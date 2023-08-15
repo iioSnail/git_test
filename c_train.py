@@ -18,6 +18,7 @@ from utils.log_utils import log, init_log, add_file_handler
 from utils.str_utils import is_float
 from utils.utils import setup_seed, mkdir
 
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 class C_Train(object):
 
@@ -249,6 +250,7 @@ class C_Train(object):
                             help='The device for training. auto, cpu or cuda')
         parser.add_argument('--seed', type=int, default=0, help='The random seed.')
         parser.add_argument('--data', type=str, default=None, help='The data you want to load. e.g. wang271k.')
+        parser.add_argument('--data-type', type=str, default='sentence', help='sentence or word')
         parser.add_argument('--val-data', type=str, default=None, help='The data you want to load for validation. e.g. wang271k.')
         parser.add_argument('--test-data', type=str, default=None,  # Fixme
                             help='The data you want to load for te. e.g. wang271k.')
@@ -267,7 +269,7 @@ class C_Train(object):
                             help='The filepath of last checkpoint and best checkpoint. '
                                  'The default value is ${work_dir}')
         parser.add_argument('--epochs', type=int, default=100, help='The number of training epochs.')
-        parser.add_argument('--min-epochs', type=int, default=1, help='The minimum number of training epochs.')
+        parser.add_argument('--min-epochs', type=int, default=10, help='The minimum number of training epochs.')
         parser.add_argument('--resume', action='store_true', help='Resume training.')
         parser.add_argument('--no-resume', dest='resume', action='store_false', help='Not Resume training.')
         parser.set_defaults(resume=True)
@@ -302,8 +304,6 @@ class C_Train(object):
         parser.add_argument('--model-path', type=str, default=None,
                             help='The filepath of pretrain model.')
 
-        parser.add_argument('--data-type', type=str, default="none",
-                            help='The type of training data.')
         parser.add_argument('--train-data', type=str, default="./data/Wang271K_processed.pkl",
                             help='The file path of training data.')
 

@@ -74,7 +74,8 @@ class Predictor(object):
 if __name__ == '__main__':
     predictor = Predictor()
     while True:
-        sent = input("请输入要修改的句子：")
+        # sent = input("请输入要修改的句子：")
+        sent = "辱创澜倒骨头会死人吗"
         if sent == 'exit':
             break
 

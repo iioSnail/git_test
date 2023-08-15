@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader, ConcatDataset
 
 from models.common import BERT
-from utils.dataset import CSCDataset
+from utils.dataset import CSCDataset, WordsDataset
 from utils.log_utils import log
 
 
@@ -27,12 +27,22 @@ class DefaultCollateFn(object):
                {}  # 补充内容
 
 
+
 def create_dataloader(args, collate_fn=None, tokenizer=None):
     dataset = None
+    DatasetClass = None
+    if args.data_type == 'sentence':
+        DatasetClass = CSCDataset
+    elif args.data_type == 'word':
+        DatasetClass = WordsDataset
+    else:
+        log.exception("Wrong data-type arg.")
+        exit()
+
     if args.data is not None:
-        dataset = CSCDataset(args.data)
+        dataset = DatasetClass(args.data)
     elif args.datas is not None:
-        dataset = ConcatDataset([CSCDataset(data) for data in args.datas.split(",")])
+        dataset = ConcatDataset([DatasetClass(data) for data in args.datas.split(",")])
     else:
         log.exception("Please specify data or datas.")
         exit()
@@ -49,7 +59,7 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
             train_dataset = dataset
             valid_dataset = None
     else:
-        valid_dataset = CSCDataset(args.val_data)
+        valid_dataset = DatasetClass(args.val_data)
 
     if collate_fn is None:
         collate_fn = DefaultCollateFn(args, tokenizer)

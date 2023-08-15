@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 from pathlib import Path
 
+from utils.confusions import confuse_word
 from utils.log_utils import log
 
 FILE = Path(__file__).resolve()
@@ -89,12 +90,66 @@ class CSCDataset(Dataset):
             filepath = ROOT / 'datasets' / 'mcsc_dev.csv'
         elif data_name in ['mcsctest']:
             filepath = ROOT / 'datasets' / 'mcsc_test.csv'
+        elif data_name in ['mcscsm']:
+            filepath = ROOT / 'datasets' / 'mcsc_sm.csv'
         elif data_name in ['customdata']:
             filepath = ROOT / 'datasets' / 'custom_data.csv'
+        elif data_name in ['eclaw']:
+            filepath = ROOT / 'datasets' / 'ec_law.csv'
+        elif data_name in ['ecmed']:
+            filepath = ROOT / 'datasets' / 'ec_med.csv'
+        elif data_name in ['ecodw']:
+            filepath = ROOT / 'datasets' / 'ec_odw.csv'
+
+        if filepath is None:
+            raise Exception("Can't find data file:%s" % data_name)
+
+        return filepath
+
+
+class WordsDataset(Dataset):
+
+    def __init__(self, data_name: str, filepath=None):
+        super(WordsDataset, self).__init__()
+
+        if filepath is not None:
+            filepath = filepath
+        else:
+            filepath = self.get_filepath_by_name(data_name)
+
+        self.words = self.load_words_from_txt(filepath)
+
+    def __getitem__(self, index):
+        word = self.words[index]
+        src = confuse_word(word)
+        tgt = word
+        src = ' '.join(src).replace("?", "[MASK]")
+        tgt = ' '.join(tgt)
+        return src, tgt
+
+    def __len__(self):
+        return len(self.words)
+
+    def load_words_from_txt(self, filepath):
+        log.info("Load dataset from %s", filepath)
+        with open(filepath, mode='r', encoding='utf-8') as f:
+            lines = f.readlines()
+
+        words = []
+        for item in lines:
+            item = item.strip().replace(" ", "").replace(u"\u3000", "")
+
+            if item != "":
+                words.append(item)
+
+        log.info("Load completed. Success num: %d.", len(words), )
+
+        return words
+
+    def get_filepath_by_name(self, data_name):
+        filepath = ROOT / 'datasets' / ('%s.txt' % data_name)
 
         if filepath is None:
             raise Exception("Can't find data file:" % data_name)
 
         return filepath
-
-
