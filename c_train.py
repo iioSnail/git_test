@@ -20,6 +20,7 @@ from utils.utils import setup_seed, mkdir
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
+
 class C_Train(object):
 
     def __init__(self):
@@ -143,6 +144,10 @@ class C_Train(object):
             from models.bert_mft import BertMFT
             return BertMFT(args)
 
+        if model == 'word-csc':
+            from models.WordCSCModel import ScopeWithPlugin
+            return ScopeWithPlugin(args)
+
         raise Exception("Can't find any model!")
 
     def train(self):
@@ -251,7 +256,8 @@ class C_Train(object):
         parser.add_argument('--seed', type=int, default=0, help='The random seed.')
         parser.add_argument('--data', type=str, default=None, help='The data you want to load. e.g. wang271k.')
         parser.add_argument('--data-type', type=str, default='sentence', help='sentence or word')
-        parser.add_argument('--val-data', type=str, default=None, help='The data you want to load for validation. e.g. wang271k.')
+        parser.add_argument('--val-data', type=str, default=None,
+                            help='The data you want to load for validation. e.g. wang271k.')
         parser.add_argument('--test-data', type=str, default=None,  # Fixme
                             help='The data you want to load for te. e.g. wang271k.')
         parser.add_argument('--datas', type=str, default=None,
@@ -361,7 +367,8 @@ class C_Train(object):
                 hyper_params[key] = value
             args.hyper_params = hyper_params
         except:
-            log.error("Failed to resolve hyper-params. The pattern must look like 'key=value,key=value'. hyper_params: %s" % args.hyper_params)
+            log.error(
+                "Failed to resolve hyper-params. The pattern must look like 'key=value,key=value'. hyper_params: %s" % args.hyper_params)
             exit(0)
 
         if len(args.hyper_params) > 0:
@@ -376,6 +383,7 @@ if __name__ == '__main__':
     from multiprocessing import freeze_support
 
     import torch.multiprocessing
+
     torch.multiprocessing.set_sharing_strategy('file_system')
 
     freeze_support()

@@ -10,7 +10,7 @@ ROOT = FILE.parents[1]
 
 class CSCDataset(Dataset):
 
-    def __init__(self, data_name: str, filepath=None):
+    def __init__(self, data_name: str, filepath=None, **kwargs):
         super(CSCDataset, self).__init__()
 
         if filepath is not None:
@@ -109,7 +109,7 @@ class CSCDataset(Dataset):
 
 class WordsDataset(Dataset):
 
-    def __init__(self, data_name: str, filepath=None):
+    def __init__(self, data_name: str, filepath=None, limit_size=0, **kwargs):
         super(WordsDataset, self).__init__()
 
         if filepath is not None:
@@ -118,6 +118,8 @@ class WordsDataset(Dataset):
             filepath = self.get_filepath_by_name(data_name)
 
         self.words = self.load_words_from_txt(filepath)
+        if limit_size > 0:
+            self.words = self.words[:limit_size]
 
     def __getitem__(self, index):
         word = self.words[index]

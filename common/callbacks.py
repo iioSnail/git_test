@@ -104,6 +104,8 @@ class TrainMetricsCallback(Callback):
         self.train_matrix = np.zeros([4])
         self.valid_matrix = np.zeros([4])
 
+        self.train_sent_acc = 0.
+
         self.val_total_loss = 0.
         self.val_total_num = 0
 
@@ -123,13 +125,21 @@ class TrainMetricsCallback(Callback):
             self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any,
             batch_idx: int
     ) -> None:
-        targets = outputs['targets'].view(-1)
-        d_targets = outputs['d_targets'].view(-1)
-        attention_mask = outputs['attention_mask'].view(-1)
-        outputs = outputs['outputs'].view(-1)
+        targets = outputs['targets']
+        d_targets = outputs['d_targets']
+        attention_mask = (targets != 0).int()
+        preds = outputs['outputs']
+        preds = preds * attention_mask
+
+        self.train_sent_acc = (((preds == targets).sum(-1) == preds.size(1)).sum() / preds.size(0)).item()
+
+        targets = targets.view(-1)
+        d_targets = d_targets.view(-1)
+        attention_mask = attention_mask.view(-1)
+        preds = preds.view(-1)
 
         self.train_matrix *= 0.96  # 每次让之前的值衰减0.96，差不多100次刚好衰减完，相当于matrix展示的是近100次的平均值
-        self.train_matrix += self.character_level_confusion_matrix(outputs, targets, d_targets, attention_mask)
+        self.train_matrix += self.character_level_confusion_matrix(preds, targets, d_targets, attention_mask)
 
     def on_validation_batch_end(
             self,
@@ -257,9 +267,10 @@ class SimpleProgressBar(Callback):
 
         postfix = {
             'loss': loss.item(),
-            'c_precision': c_p,
-            'c_recall': c_r,
-            'c_f1_score': c_f1,
+            'acc': self.train_metrics.train_sent_acc,
+            'pre': c_p,
+            'rec': c_r,
+            'f1': c_f1,
         }
         if 'bar_postfix' in outputs:
             postfix.update(outputs['bar_postfix'])
@@ -291,9 +302,9 @@ class SimpleProgressBar(Callback):
 
         self.val_progress_bar.set_postfix({
             'loss': self.train_metrics.get_val_avg_loss(),
-            'c_precision': c_p,
-            'c_recall': c_r,
-            'c_f1_score': c_f1,
+            'pre': c_p,
+            'rec': c_r,
+            'f1': c_f1,
         })
 
         self.val_progress_bar.update(1)

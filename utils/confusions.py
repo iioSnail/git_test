@@ -143,15 +143,15 @@ def replace_one_char(word):
 
 
 def confuse_word(word: str):
-    if random.random() < 0.5:
+    if random.random() < 0.3:
         return word
 
     word = replace_one_char(word)
 
-    if random.random() < 0.2:
+    if random.random() < 0.05:
         word = replace_one_char(word)
 
-    if random.random() < 0.05:
+    if random.random() < 0.01:
         word = replace_one_char(word)
 
     return word

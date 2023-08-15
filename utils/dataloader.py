@@ -7,6 +7,7 @@ from models.common import BERT
 from utils.dataset import CSCDataset, WordsDataset
 from utils.log_utils import log
 
+samples = set()  # FIXME Test Code
 
 class DefaultCollateFn(object):
 
@@ -18,6 +19,9 @@ class DefaultCollateFn(object):
         src, tgt = zip(*batch)
         src, tgt = list(src), list(tgt)
 
+        for item in tgt: # FIXME Test Code
+            samples.add(item)
+
         src = BERT.get_bert_inputs(src, tokenizer=self.tokenizer, max_length=self.args.max_length)
         tgt = BERT.get_bert_inputs(tgt, tokenizer=self.tokenizer, max_length=self.args.max_length)
 
@@ -25,7 +29,6 @@ class DefaultCollateFn(object):
                tgt, \
                (src['input_ids'] != tgt['input_ids']).float(), \
                {}  # 补充内容
-
 
 
 def create_dataloader(args, collate_fn=None, tokenizer=None):
@@ -39,8 +42,10 @@ def create_dataloader(args, collate_fn=None, tokenizer=None):
         log.exception("Wrong data-type arg.")
         exit()
 
+    limit_size = args.limit_batches * args.batch_size
+
     if args.data is not None:
-        dataset = DatasetClass(args.data)
+        dataset = DatasetClass(args.data, limit_size=limit_size)
     elif args.datas is not None:
         dataset = ConcatDataset([DatasetClass(data) for data in args.datas.split(",")])
     else:
