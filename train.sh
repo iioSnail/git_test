@@ -23,6 +23,7 @@ python c_train.py \
   --model scope-p \
   --data medical_entities \
   --data-type word \
+  --valid-ratio 0 \
   --limit-batches -2 \
   --batch-size 128 \
   --workers 4 \
