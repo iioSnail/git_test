@@ -57,8 +57,9 @@ class TestCallback(Callback):
 
 class CheckpointCallback(Callback):
 
-    def __init__(self, dir_path: Path):
+    def __init__(self, dir_path: Path, args=None):
         super().__init__()
+        self.args = args
         self.dir_path = dir_path
         self.ckpt_path = dir_path / 'last.ckpt'
         self.best_ckpt_path = dir_path / 'best.ckpt'
@@ -67,10 +68,16 @@ class CheckpointCallback(Callback):
         self.best_val_loss = 9999999.
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        if self.args is not None and 0 < self.args.limit_batches <= 200:
+            return
         trainer.save_checkpoint(self.ckpt_path)
 
     def on_exception(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", exception: BaseException) -> None:
         log.error("Program occurred exception, save the last checkpoint at " + str(self.ckpt_path))
+
+        if self.args is not None and 0 < self.args.limit_batches <= 200:
+            return
+
         trainer.save_checkpoint(self.ckpt_path)
 
     def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
@@ -89,6 +96,9 @@ class CheckpointCallback(Callback):
         self.val_loss += loss.item()
 
     def on_validation_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        if self.args is not None and 0 < self.args.limit_batches <= 200:
+            return
+
         if self.val_loss >= self.best_val_loss:
             return
 

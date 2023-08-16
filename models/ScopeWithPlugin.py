@@ -49,21 +49,23 @@ class ScopeWithPlugin(pl.LightningModule):
     def __init__(self, args: argparse.Namespace):
         super(ScopeWithPlugin, self).__init__()
 
-        print("Version: 15:54")
+        print("Version: 09:40")
 
         self.args = args
         self.hyper_params = args.hyper_params
         self.tokenizer = AutoTokenizer.from_pretrained("iioSnail/ChineseBERT-for-csc", trust_remote_code=True)
         self.model = AutoModel.from_pretrained("iioSnail/ChineseBERT-for-csc", trust_remote_code=True)
 
-        self.plugin_model = PluginModel(args)
+        # self.plugin_model = PluginModel(args)
+
+        self.plugin_model = copy.deepcopy(self.model.model.bert)
 
     def forward(self, inputs):
-        embeddings = self.model.model.bert.embeddings(input_ids=inputs['input_ids'], pinyin_ids=inputs['pinyin_ids'],
-                                                      token_type_ids=inputs['token_type_ids'])
+        # embeddings = self.model.model.bert.embeddings(input_ids=inputs['input_ids'], pinyin_ids=inputs['pinyin_ids'],
+        #                                               token_type_ids=inputs['token_type_ids'])
 
         bert_hidden_state = self.model.model.bert(**inputs).last_hidden_state
-        plugin_hidden_state = self.plugin_model(embeddings, inputs['attention_mask'])
+        plugin_hidden_state = self.plugin_model(**inputs).last_hidden_state
 
         logits = self.model.model.cls(bert_hidden_state + plugin_hidden_state)
 
@@ -72,7 +74,7 @@ class ScopeWithPlugin(pl.LightningModule):
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
 
-        optimizer = torch.optim.Adam(self.plugin_model.parameters(), lr=3e-4)
+        optimizer = torch.optim.Adam(self.plugin_model.parameters(), lr=5e-5)
         scheduler = LambdaLR(optimizer, lr_lambda=lambda epoch: 0.9 ** (epoch))
 
         return [optimizer], [{"scheduler": scheduler, "interval": "epoch"}]

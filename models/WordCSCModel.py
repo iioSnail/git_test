@@ -50,8 +50,8 @@ class ScopeWithPlugin(pl.LightningModule):
 
         self.args = args
         self.hyper_params = args.hyper_params
-        self.tokenizer = AutoTokenizer.from_pretrained("iioSnail\ChineseBERT-for-csc", trust_remote_code=True)
-        self.model = AutoModel.from_pretrained("iioSnail\ChineseBERT-for-csc", trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained("iioSnail/ChineseBERT-for-csc", trust_remote_code=True)
+        self.model = AutoModel.from_pretrained("iioSnail/ChineseBERT-for-csc", trust_remote_code=True)
 
         # self.plugin_model = WordCSCModel(args)
 
@@ -69,7 +69,7 @@ class ScopeWithPlugin(pl.LightningModule):
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
 
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=3e-4)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
         scheduler = LambdaLR(optimizer, lr_lambda=lambda epoch: 0.9 ** (epoch))
 
         return [optimizer], [{"scheduler": scheduler, "interval": "epoch"}]

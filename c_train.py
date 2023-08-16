@@ -18,7 +18,7 @@ from utils.log_utils import log, init_log, add_file_handler
 from utils.str_utils import is_float
 from utils.utils import setup_seed, mkdir
 
-os.environ["TOKENIZERS_PARALLELISM"] = "true"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 class C_Train(object):
@@ -158,7 +158,7 @@ class C_Train(object):
         self.args.train_loader = train_loader
         self.args.val_loader = val_loader
 
-        checkpoint_callback = CheckpointCallback(dir_path=self.args.ckpt_dir)
+        checkpoint_callback = CheckpointCallback(dir_path=self.args.ckpt_dir, args=self.args)
 
         ckpt_path = None
         if self.args.resume:

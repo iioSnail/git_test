@@ -23,10 +23,10 @@ python c_train.py \
   --model scope-p \
   --data medical_entities \
   --data-type word \
-  --limit-batches -1 \
+  --limit-batches -2 \
   --batch-size 128 \
-  --workers 0 \
-  --epochs 20 \
+  --workers 4 \
+  --epochs 40 \
   --no-resume \
   --eval \
   --test-data mcsc_sm

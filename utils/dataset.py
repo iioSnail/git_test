@@ -3,6 +3,7 @@ from pathlib import Path
 
 from utils.confusions import confuse_word
 from utils.log_utils import log
+from utils.str_utils import pad_words
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[1]
@@ -125,6 +126,10 @@ class WordsDataset(Dataset):
         word = self.words[index]
         src = confuse_word(word)
         tgt = word
+
+        # 将词扩展成句子
+        src, tgt = pad_words(src, tgt)
+
         src = ' '.join(src).replace("?", "[MASK]")
         tgt = ' '.join(tgt)
         return src, tgt
