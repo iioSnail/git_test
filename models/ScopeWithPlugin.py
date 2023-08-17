@@ -67,7 +67,8 @@ class ScopeWithPlugin(pl.LightningModule):
         bert_hidden_state = self.model.model.bert(**inputs).last_hidden_state
         plugin_hidden_state = self.plugin_model(**inputs).last_hidden_state
 
-        logits = self.model.model.cls(bert_hidden_state + plugin_hidden_state)
+        if self.hyper_params['plugin'] != "false":
+            logits = self.model.model.cls(bert_hidden_state + plugin_hidden_state)
 
         return logits
 
